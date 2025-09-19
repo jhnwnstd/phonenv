@@ -771,7 +771,7 @@ def normalize_ipa(text: str) -> str:
 
 
 def validate_ipa(text: str) -> bool:
-    """Validate IPA text (legacy function)."""
+    """Deprecated: do not use for target validation; use segmentation instead."""
     return bool(text and all(_in_blocks(c) or c.isspace() or c in "[]()#_" for c in text))
 
 

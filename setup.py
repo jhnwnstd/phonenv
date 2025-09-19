@@ -16,7 +16,7 @@ setup(
     name="phonenv",
     version="2.0.0",
     author="shameedjob",
-    description="A Python library for phonetic environment analysis",
+    description="A robust Python library for phonetic environment analysis with comprehensive validation and multiple output formats",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/shameedjob/phonenv",
@@ -26,7 +26,7 @@ setup(
         "Issues": "https://github.com/shameedjob/phonenv/issues",
     },
     license="MIT",
-    license_files=["LICENSE", "LICENSE.txt", "LICENSE.md"],
+    license_files=["LICENSE"],
     keywords=[
         "phonetics",
         "phonology",
@@ -34,23 +34,29 @@ setup(
         "unicode",
         "linguistics",
         "text-processing",
+        "segmentation",
+        "transcription",
+        "validation",
+        "environment-analysis",
     ],
-    packages=find_packages(include=["phonenv", "phonenv.*"], exclude=("tests", "tests.*")),
+    py_modules=["analysis", "cli", "data", "phonenv_io", "validate"],
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
+        "Intended Audience :: Education",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Text Processing :: Linguistic",
+        "Topic :: Text Processing :: General",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
-        # Add newer versions here only when you test them
+        "Programming Language :: Python :: 3.12",
+        "Operating System :: OS Independent",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         "regex>=2021.0",  # Unicode-aware regex/grapheme clustering
     ],
@@ -63,20 +69,22 @@ setup(
             "pytest>=6.0",
             "black>=21.0",
             "flake8>=3.9",
-            "mypy>=0.910",
+            "mypy>=1.0",
+        ],
+        "test": [
+            "pytest>=6.0",
+            "pytest-cov>=2.0",
         ],
     },
     entry_points={
         "console_scripts": [
-            # Ensure phonenv/cli.py:main exists or point to your actual entry function.
-            "phonenv=phonenv.cli:main",
+            "phonenv=cli:main",
         ],
     },
     include_package_data=True,
-    package_data={
-        # Attach data explicitly to the package to avoid implicit top-level globs.
-        "phonenv": ["data/*.txt"],
-    },
+    data_files=[
+        ("phonenv_data", ["data/dataset.txt", "data/targets.txt"]),
+    ],
     zip_safe=False,
     platforms=["any"],
 )

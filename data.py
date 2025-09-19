@@ -22,24 +22,7 @@ _SECTION = re.compile(r"^\[(?P<body>.+)\]\s*$")
 _KV = re.compile(r"\s*([a-zA-Z_][\w-]*)\s*=\s*([^;]+)\s*")
 _BRACKETS = re.compile(r"\[(?P<tag>[^\[\]]+)\]")
 
-# ---- IPA whitelist + helpers (for targets + dataset hygiene) ----
-_ASCII_IPA_BASE = "ptkbdgfszhrljwmnqxvaeio u"  # conservative ASCII fallbacks
-
-_IPA_TOKEN_RE = re.compile(
-    r"^["
-    r"a-z"            # Basic Latin letters used in IPA (t, s, d, z, p, k, etc.)
-    r"\u0250-\u02AF"  # IPA Extensions
-    r"\u1D00-\u1DBF"  # Phonetic Extensions (+ Supplement)
-    r"\u0300-\u036F"  # Combining Diacritical Marks
-    r"\u1AB0-\u1AFF"  # Combining Marks Extended
-    r"\u1DC0-\u1DFF"  # Combining Marks Supplement
-    r"\u02B0-\u02FF"  # Spacing Modifier Letters
-    r"\uA700-\uA71F"  # Modifier Tone Letters
-    r"\u207F"         # superscript n
-    r"]+$"
-)
-
-_ASCII_ONLY_RE = re.compile(rf"^[{re.escape(_ASCII_IPA_BASE.replace(' ', ''))}]+$")
+# ---- Target processing helpers ----
 
 _TIEBAR_ABOVE = "\u0361"  # COMBINING DOUBLE INVERTED BREVE
 _TIEBAR_BELOW = "\u035C"  # COMBINING DOUBLE BREVE BELOW
@@ -59,21 +42,7 @@ def _split_targets_line(line: str) -> List[str]:
     return parts
 
 
-def _clean_token(tok: str) -> str:
-    """
-    Canonicalize one target token:
-      - trim, strip brackets
-      - NFC normalize + tie-bar normalize
-      - enforce IPA whitelist (or conservative ASCII)
-    Returns '' for junk.
-    """
-    tok = tok.strip().strip("[]")
-    if not tok:
-        return ""
-    tok = _normalize_tiebar(ud.normalize("NFC", tok))
-    if _IPA_TOKEN_RE.match(tok) or _ASCII_ONLY_RE.match(tok):
-        return tok
-    return ""
+# Deprecated: _clean_token removed - now using segmentation-based validation
 
 
 @dataclass(frozen=True)
@@ -404,11 +373,26 @@ class TargetsProcessor:
         self.analyzer = analyzer
 
     def load_targets(self) -> List[str]:
-        """Load targets from targets.txt file (sanitized, deduped, order-preserving)."""
+        """Load targets from targets.txt file (sanitized, deduped, order-preserving).
+
+        Uses segmentation-based validation to ensure only valid single IPA segments
+        are accepted as targets.
+        """
         if not self.targets_path.exists():
             raise FileNotFoundError(f"Targets file not found: {self.targets_path}")
 
         try:
+            # Lazy import to avoid circular dependency
+            from analysis import IPAProcessorV2, get_config_for_transcription_mode
+
+            proc = IPAProcessorV2(get_config_for_transcription_mode("broad"))
+
+            def _is_single_segment(tok: str) -> bool:
+                """Validate that token is exactly one IPA segment."""
+                s = _normalize_tiebar(ud.normalize("NFC", tok))
+                segs = proc.ipa_segments(s)
+                return len(segs) == 1
+
             seen: set[str] = set()
             out: list[str] = []
 
@@ -425,13 +409,17 @@ class TargetsProcessor:
                             continue
 
                     for tok in _split_targets_line(line):
-                        clean = _clean_token(tok)
-                        if not clean:
-                            # silently skip junk like 'GA', 'English', '#', '(dark)', etc.
+                        tok = tok.strip().strip("[]")  # Remove brackets and whitespace
+                        if not tok:
                             continue
-                        if clean not in seen:
-                            seen.add(clean)
-                            out.append(clean)
+
+                        # Normalize and validate as single segment
+                        norm = _normalize_tiebar(ud.normalize("NFC", tok))
+                        if _is_single_segment(norm):
+                            if norm not in seen:
+                                seen.add(norm)
+                                out.append(norm)
+                        # Silently drop multi-segment tokens (e.g., English words)
 
             return out
 

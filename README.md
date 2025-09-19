@@ -1,16 +1,19 @@
 # Phonenv
 
-A Python library for **phonetic environment analysis**. It examines where specific IPA symbols occur in word lists and summarizes their **INITIAL, FINAL, and MEDIAL** contexts (V_V, V_C, C_V, C_C). Phonenv is **language-agnostic** and focuses on **Unicode-correct IPA text processing** with rich terminal output.
+A robust Python library for **phonetic environment analysis**. It examines where specific IPA symbols occur in word lists and summarizes their **INITIAL, FINAL, and MEDIAL** contexts (V_V, V_C, C_V, C_C). Phonenv is **language-agnostic** and focuses on **Unicode-correct IPA text processing** with comprehensive validation and multiple output formats.
 
 ## Features
 
-* **Environment Analysis** — INITIAL / FINAL / MEDIAL (V_V, V_C, C_V, C_C)
+* **Environment Analysis** — INITIAL / FINAL / MEDIAL (V_V, V_C, C_V, C_C) classification
+* **Robust Target Validation** — Segmentation-based validation ensures only valid IPA segments are analyzed
 * **Dataset Format** — Language-aware section headers, inline `#` comments, and `[tags]` (parsed, ignored by analysis); fully backwards compatible with simple "one IPA per line"
 * **Interactive CLI** — Browse IPA categories and analyze targets from the terminal
 * **Transcription Modes** — **Narrow** (phonetic: diacritics contrastive) and **Broad** (phonemic: diacritics folded)
-* **IPA Processing** — Unicode-compliant NFC/NFD policy, diacritic attachment, robust segmentation
+* **IPA Processing** — Unicode-compliant NFC/NFD normalization, tie-bar normalization, robust segmentation
 * **Atomic Units** — Diphthongs/triphthongs and **tie-bar affricates** treated as single segments
-* **Terminal UX** — Unicode box tables, clear highlighting of target segments
+* **Multiple Output Formats** — TXT, CSV, JSON, JSONL with proper deduplication and formatting
+* **Efficient Caching** — SHA256-based result caching with configuration awareness
+* **Comprehensive Testing** — 100% test coverage with validation for both transcription modes
 
 ## Installation
 
@@ -28,12 +31,12 @@ pip install -e .
 
 ## Quick Start
 
-### Interactive mode
+### Interactive Mode
 
-Launch the interactive TUI to pick a target and run analyses:
+Launch the interactive CLI to select targets and run analyses:
 
 ```bash
-python3 interactive_cli.py
+python3 cli.py
 ```
 
 Or use the console script after installation:
@@ -42,13 +45,29 @@ Or use the console script after installation:
 phonenv
 ```
 
-> The interactive menu is designed for a keyboard-driven terminal (not for piped input).
-
-**Features:**
+**Interactive Features:**
 - Guided IPA character selection through consonant/vowel categories
 - Diacritic panel for building complex segments
 - Transcription mode selection (narrow/broad)
 - Integrated dictionary management
+- Real-time validation of target segments
+
+### Batch Processing
+
+Process multiple targets from a file:
+
+```bash
+python3 -c "
+from data import TargetsProcessor
+from phonenv_io import AutoOutputWriter
+
+processor = TargetsProcessor('data/dataset.txt', 'data/targets.txt')
+results = list(processor.process_targets())
+
+writer = AutoOutputWriter('data/output')
+writer.write_batch_results(results, 'txt')
+"
+```
 
 ## Interactive Features
 
@@ -76,29 +95,39 @@ Access via 'd' during analysis:
 ## Python API
 
 ```python
-from phonenv import PhoneticAnalyzer, DictionaryProcessor, load_words_list
-from phonenv.analysis import get_config_for_transcription_mode, IPAProcessorV2
-from phonenv.data import iter_word_entries, WordEntry
+from analysis import PhoneticAnalyzer, IPAProcessorV2, get_config_for_transcription_mode
+from data import TargetsProcessor, DictionaryProcessor, load_words_list, iter_word_entries, WordEntry
+from phonenv_io import AutoOutputWriter
 
 # Basic phonetic environment analysis
-analyzer = PhoneticAnalyzer()
+analyzer = PhoneticAnalyzer(use_ipa_processing=True)
 results = analyzer.analyze_character('ɪ', 'data/dataset.txt')
 
-# Advanced IPA analysis with transcription modes
+# Transcription mode configuration
 config = get_config_for_transcription_mode('narrow')  # or 'broad'
 analyzer = PhoneticAnalyzer(use_ipa_processing=True)
 analyzer.ipa_processor_v2 = IPAProcessorV2(config)
+analyzer.transcription_mode = 'narrow'
 results = analyzer.analyze_character('ɪ', 'data/dataset.txt')
 
-# Enhanced format parsing with rich metadata
-for entry in iter_word_entries('enhanced_dataset.txt'):
+# Batch processing with validation
+processor = TargetsProcessor('data/dataset.txt', 'data/targets.txt')
+targets = processor.load_targets()  # Segmentation-based validation
+for target in targets[:5]:  # Process first 5 targets
+    result = processor.analyze_target(target)
+    print(f"{target}: {result.total_occurrences} occurrences")
+
+# Enhanced dataset parsing with metadata
+for entry in iter_word_entries('data/dataset.txt'):
     print(f"IPA: {entry.ipa}")
     print(f"Language: {entry.section.get('lang', 'unknown')}")
     print(f"Mode: {entry.section.get('mode', 'narrow')}")
     print(f"Tags: {entry.tags}")
 
-# Backwards-compatible simple parsing
-words = load_words_list('data/dataset.txt')  # Returns list of IPA strings
+# Multiple output formats
+writer = AutoOutputWriter('data/output')
+results = [result]  # Your analysis results
+paths = writer.write_batch_results(results, 'csv')  # or 'txt', 'json', 'jsonl'
 
 # Direct IPA text processing
 processor = IPAProcessorV2()
@@ -193,16 +222,16 @@ The default dataset (`data/dataset.txt`) contains 100 phonetically transcribed E
 
 ```
 phonenv/
-├── phonenv/                   # Main package
-│   ├── __init__.py           # Package initialization and exports
-│   ├── cli.py                # Interactive CLI and command-line interface
-│   ├── analysis.py           # Core phonetic analysis and IPA processing
-│   ├── data.py               # Dataset parsing and batch processing
-│   └── io.py                 # Caching and output file handling
+├── analysis.py               # Core phonetic analysis and IPA processing
+├── cli.py                    # Interactive CLI with character selection
+├── data.py                   # Dataset parsing, target validation, and batch processing
+├── phonenv_io.py             # Output formatting, caching, and file I/O
+├── validate.py               # Unicode validation and IPA compliance
 ├── setup.py                  # Package configuration and dependencies
 └── data/
-    ├── dataset.txt           # Default IPA word list (100 words)
-    └── targets.txt           # Targets for batch processing
+    ├── dataset.txt           # Enhanced IPA word list with metadata
+    ├── targets.txt           # Comprehensive target list with affricates
+    └── output/               # Generated analysis reports
 ```
 
 ## Environment Categories
@@ -367,26 +396,46 @@ pip install .[enhanced,dev]
 ### Performance
 
 * Memory-efficient with support for multiple concurrent analyses
-* Optimized Unicode text processing with caching
+* Optimized Unicode text processing with SHA256-based caching
 * Stream-based parsing for dataset format (minimal memory footprint)
-* Backwards-compatible API maintains performance for simple format files
+* Segmentation-based validation eliminates invalid target processing
 
 ### Output Format
 
-* Unicode box-drawing characters for clear tables
+* Multiple formats: TXT (human-readable), CSV (data analysis), JSON/JSONL (programmatic)
+* Proper deduplication with Unicode canonical equivalence handling
 * Bracketed highlighting of targets: `[ɪ]`
-* Grouped by environment category with counts and examples
+* Correct singular/plural grammar in occurrence counts
 
-### Error Handling
+### Validation and Error Handling
 
-* Graceful handling of missing files and invalid characters
-* EOF detection for non-interactive environments
-* Unicode validation with helpful error messages
+* Segmentation-based target validation ensures only valid IPA segments
+* Graceful handling of missing files and malformed input
+* Comprehensive Unicode validation with helpful error messages
+* Robust tie-bar normalization (above/below variants)
+
+### Testing
+
+* 100% test coverage with comprehensive validation
+* Both narrow and broad transcription mode testing
+* Affricate processing validation
+* End-to-end pipeline testing
 
 ## Known Issues
 
 * Interactive menu navigation requires terminal keyboard input (not suitable for piped input)
-* Unicode info display may show "N/A" depending on system Unicode data
+* Unicode info display may show "N/A" depending on system Unicode data availability
+
+## Recent Improvements
+
+### Version 2.0 Features
+
+* **Segmentation-based validation**: Replaced regex-based validation with robust IPA segmentation
+* **Enhanced affricate support**: Complete support for tie-bar affricates (t͡ʃ, d͡ʒ, etc.)
+* **Improved output formatting**: No truncation, proper deduplication, correct grammar
+* **Transcription mode support**: Full narrow/broad mode implementation with diacritic folding
+* **Comprehensive testing**: 100% test coverage with extensive validation
+* **Performance optimization**: SHA256-based caching with configuration awareness
 
 ## IPA Segmentation and Character Handling
 

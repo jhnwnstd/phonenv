@@ -6,6 +6,10 @@ phonetic environment analysis, including batch processing capabilities.
 
 from __future__ import annotations
 
+from pathlib import Path
+import os, shutil
+from shutil import get_terminal_size
+from pathlib import Path
 import sys
 import argparse
 import unicodedata as ud
@@ -14,7 +18,6 @@ from typing import Dict, List, Optional, Mapping
 from analysis import PhoneticAnalyzer
 from data import DictionaryProcessor, TargetsProcessor, create_sample_targets_file, targets_exist
 from phonenv_io import get_cache, clear_cache, get_cache_stats, AutoOutputWriter
-
 
 # ========================= DIACRITIC PANEL =========================
 
@@ -221,6 +224,54 @@ class InteractivePhonenvCLI:
         },
     }
 
+    def _hr(self, ch: str = "─") -> None:
+        print(ch * shutil.get_terminal_size((80, 20)).columns)
+
+    def _clear(self) -> None:
+        os.system("cls" if os.name == "nt" else "clear")
+
+    def _banner(self, title: str, *, clear: bool = True, subtitle: str | None = None) -> None:
+        if clear:
+            self._clear()
+        term_w = shutil.get_terminal_size((100, 20)).columns
+        line = f" {title} ".center(term_w, "═")
+        print(line)
+        status = f"[ Mode: {self.transcription_mode} | Dataset: {Path(self.file_path).name} ]"
+        print(status.center(term_w))
+        if subtitle:
+            print(subtitle.center(term_w))
+        print()  # spacer
+
+    def _menu(self, options: list[str], back_label: str | None = None, prompt: str | None = None) -> int | None:
+        """
+        Render a numbered list with aligned numbers.
+        Returns: 1-based index, or None if user chose Back.
+        """
+        total = len(options) + (1 if back_label else 0)
+        width = len(str(total))
+        for i, text in enumerate(options, 1):
+            print(f"  {i:>{width}}. {text}")
+        if back_label:
+            print(f"  {total:>{width}}. {back_label}")
+        print()
+        prompt = prompt or f"Choose (1–{total}) › "
+        choice = input(prompt).strip().lower()
+
+        if back_label and choice in {str(total), "b", "back"}:
+            return None
+
+        if choice.isdigit():
+            n = int(choice)
+            if 1 <= n <= len(options):
+                return n
+
+        print("Please enter a valid option.\n")
+        return self._menu(options, back_label, prompt)  # re-prompt
+
+    def _status(self) -> None:
+        """One-line status bar shown under banners."""
+        print(f"[ Mode: {self.transcription_mode} | Dataset: {Path(self.file_path).name} ]\n")
+
     def __init__(self, file_path: str = "data/dataset.txt"):
         """Initialize the interactive CLI."""
         self.file_path = file_path
@@ -244,10 +295,7 @@ class InteractivePhonenvCLI:
 
     def run(self) -> None:
         """Run the interactive CLI."""
-        print("Phonenv - Interactive Phonetic Environment Analysis")
-        print("=" * 55)
-        print()
-
+        self._banner("Phonenv — Interactive Phonetic Environment Analysis")
         self._set_transcription_mode()
 
         while True:
@@ -259,15 +307,12 @@ class InteractivePhonenvCLI:
                 if not self.analyzer:
                     self._create_analyzer()
                 if self.analyzer:
-                    print(
-                        f"\nAnalyzing phonetic environments for '{character}' ({self.transcription_mode} transcription)..."
-                    )
-                    print()
+                    print(f"\nAnalyzing phonetic environments for '{character}' ({self.transcription_mode} transcription)...\n")
                     self.analyzer.print_analysis(character, self.file_path, show_unicode_info=False)
                 else:
                     print("\nError: Analyzer could not be initialized. Please check the configuration.")
 
-                print("\n" + "-" * 55)
+                self._hr()
                 if not self._continue_prompt():
                     print("\nGoodbye!")
                     break
@@ -279,188 +324,125 @@ class InteractivePhonenvCLI:
                 print(f"\nError: {e}")
                 print("Please try again.\n")
 
-    def _set_transcription_mode(self):
+    def _set_transcription_mode(self, allow_back: bool = False) -> None:
         """Set the transcription mode (broad vs narrow)."""
-        print("Select transcription analysis mode:")
-        print()
-        print("1. Narrow transcription")
-        print("   - Distinguishes diacritic variants (p ≠ pʰ)")
-        print("   - Focus on surface phonetic detail")
-        print()
-        print("2. Broad transcription")
-        print("   - Treats diacritic variants as the same (p = pʰ)")
-        print("   - Focus on underlying phonological patterns")
-        print()
-
         while True:
-            choice = input("Select mode (1-2): ").strip()
-            if choice == "1":
-                self.transcription_mode = "narrow"
-                break
-            elif choice == "2":
-                self.transcription_mode = "broad"
-                break
-            else:
-                print("Please enter 1 for narrow or 2 for broad.")
+            # Header
+            self._banner("TRANSCRIPTION MODE")
+            cur = getattr(self, "transcription_mode", "broad")
 
-        print(f"\nMode set to: {self.transcription_mode} transcription")
-        self._create_analyzer()
+            # Menu (mark current)
+            print(f"Current mode: {cur}\n")
+            print(f"  1. Narrow transcription{'   [current]' if cur == 'narrow' else ''}")
+            print("     - Distinguishes diacritic variants (p ≠ pʰ)")
+            print("     - Focus on surface phonetic detail\n")
+            print(f"  2. Broad transcription{'    [current]' if cur == 'broad' else ''}")
+            print("     - Treats diacritic variants as the same (p = pʰ)")
+            print("     - Focus on underlying phonological patterns\n")
+            if allow_back:
+                print("  3. ← Back\n")
+
+            prompt = "Select mode (1-2): " if not allow_back else "Select mode (1-2) or '3'/'b' to go back: "
+            choice = input(prompt).strip().lower()
+
+            if allow_back and choice in {"3", "b", "back"}:
+                return
+
+            mapping = {"1": "narrow", "narrow": "narrow", "2": "broad", "broad": "broad"}
+            if choice not in mapping:
+                print("Please enter 1 for narrow or 2 for broad.\n")
+                continue
+
+            new_mode = mapping[choice]
+            if new_mode == cur:
+                print(f"\nMode unchanged ({cur}).\n")
+                return
+
+            self.transcription_mode = new_mode
+            print(f"\nMode set to: {self.transcription_mode} transcription\n")
+            self._create_analyzer()
+            return
 
     def _get_character_choice(self) -> Optional[str]:
-        """Get character choice from user via interactive menus."""
         while True:
-            print("Select character type:")
-            print("1. Consonants")
-            print("2. Vowels")
-            print("3. Change transcription mode")
-            print("4. Advanced: paste IPA segment")
-            print("5. Batch processing (targets.txt)")
-            print("6. Dictionary management")
-            print("7. Exit")
-            print()
-
-            choice = input("Enter your choice (1-7): ").strip()
-            if choice == "1":
+            self._banner("MAIN MENU")
+            idx = self._menu([
+                "Consonants",
+                "Vowels",
+                "Change transcription mode",
+                "Advanced: paste IPA segment",
+                "Batch processing (targets.txt)",
+                "Dictionary management",
+                "Exit",
+            ])
+            if idx == 1:
                 return self._select_consonant()
-            elif choice == "2":
+            if idx == 2:
                 return self._select_vowel()
-            elif choice == "3":
-                self._set_transcription_mode()
-                # loop continues and redraws the menu
-            elif choice == "4":
+            if idx == 3:
+                self._set_transcription_mode(allow_back=True)
+            if idx == 4:
                 pasted = input("Paste IPA segment (NFC recommended): ").strip()
                 return ud.normalize("NFC", pasted) if pasted else None
-            elif choice == "5":
-                self._batch_processing_menu()  # returns here; loop redraws
-            elif choice == "6":
-                self._dictionary_menu()        # returns here; loop redraws
-            elif choice == "7":
+            if idx == 5:
+                self._batch_processing_menu()
+            if idx == 6:
+                self._dictionary_menu()
+            if idx == 7:
                 return None
-            else:
-                print("Invalid choice. Please enter 1–7.\n")
 
     def _select_consonant(self) -> Optional[str]:
-        """Interactive consonant selection."""
-        print("\nConsonant Categories:")
+        self._banner("CONSONANTS")
         categories = list(self.CONSONANT_CATEGORIES.keys())
-
-        for i, category in enumerate(categories, 1):
-            print(f"{i}. {category}")
-        print(f"{len(categories) + 1}. ← Previous menu")
-        print()
-
-        while True:
-            try:
-                choice = input(f"Select category (1-{len(categories) + 1}): ").strip()
-                choice_num = int(choice)
-
-                if choice_num == len(categories) + 1:
-                    return self._get_character_choice()
-                elif 1 <= choice_num <= len(categories):
-                    category = categories[choice_num - 1]
-                    return self._select_from_subcategory(category, self.CONSONANT_CATEGORIES[category], "consonant")
-                else:
-                    print(f"Please enter a number between 1 and {len(categories) + 1}.")
-            except ValueError:
-                print("Please enter a valid number.")
+        idx = self._menu(categories, back_label="← Back")
+        if idx is None:
+            return None
+        category = categories[idx - 1]
+        return self._select_from_subcategory(category, self.CONSONANT_CATEGORIES[category], "consonant")
 
     def _select_vowel(self) -> Optional[str]:
-        """Interactive vowel selection."""
-        print("\nVowel Categories:")
+        self._banner("VOWELS")
         categories = list(self.VOWEL_CATEGORIES.keys())
-
-        for i, category in enumerate(categories, 1):
-            print(f"{i}. {category}")
-        print(f"{len(categories) + 1}. ← Previous menu")
-        print()
-
-        while True:
-            try:
-                choice = input(f"Select category (1-{len(categories) + 1}): ").strip()
-                choice_num = int(choice)
-
-                if choice_num == len(categories) + 1:
-                    return self._get_character_choice()
-                elif 1 <= choice_num <= len(categories):
-                    category = categories[choice_num - 1]
-                    return self._select_from_subcategory(category, self.VOWEL_CATEGORIES[category], "vowel")
-                else:
-                    print(f"Please enter a number between 1 and {len(categories) + 1}.")
-            except ValueError:
-                print("Please enter a valid number.")
+        idx = self._menu(categories, back_label="← Back")
+        if idx is None:
+            return None
+        category = categories[idx - 1]
+        return self._select_from_subcategory(category, self.VOWEL_CATEGORIES[category], "vowel")
 
     def _select_from_subcategory(
         self, main_category: str, subcategories: Dict[str, List[str]], sound_type: str
     ) -> Optional[str]:
-        """Select from subcategory."""
-        print(f"\n{main_category}:")
-        subcategory_names = list(subcategories.keys())
-
-        for i, subcat in enumerate(subcategory_names, 1):
-            sounds = subcategories[subcat]
-            print(f"{i}. {subcat}: {' '.join(sounds)}")
-        print(f"{len(subcategory_names) + 1}. ← Previous menu")
-        print()
-
-        while True:
-            try:
-                choice = input(f"Select subcategory (1-{len(subcategory_names) + 1}): ").strip()
-                choice_num = int(choice)
-
-                if choice_num == len(subcategory_names) + 1:
-                    if sound_type == "consonant":
-                        return self._select_consonant()
-                    else:
-                        return self._select_vowel()
-                elif 1 <= choice_num <= len(subcategory_names):
-                    subcat = subcategory_names[choice_num - 1]
-                    sounds = subcategories[subcat]
-                    return self._select_specific_sound(sounds, subcat, sound_type)
-                else:
-                    print(f"Please enter a number between 1 and {len(subcategory_names) + 1}.")
-            except ValueError:
-                print("Please enter a valid number.")
+        self._banner(main_category.upper(), subtitle=sound_type.capitalize())
+        sub_names = list(subcategories.keys())
+        # show each with preview of sounds on same line
+        options = [f"{name}: {' '.join(subcategories[name])}" for name in sub_names]
+        idx = self._menu(options, back_label="← Back")
+        if idx is None:
+            return None
+        subcat = sub_names[idx - 1]
+        sounds = subcategories[subcat]
+        return self._select_specific_sound(sounds, subcat, sound_type)
 
     def _select_specific_sound(
         self, sounds: List[str], subcategory: str, sound_type: str
     ) -> Optional[str]:
-        """Select specific sound from list."""
-        print(f"\n{subcategory} {sound_type}s:")
+        self._banner(subcategory.upper(), subtitle=f"{sound_type.capitalize()}s")
+        options = sounds + ["Apply diacritics"]
+        idx = self._menu(options, back_label="← Back")
+        if idx is None:
+            return None
 
-        for i, sound in enumerate(sounds, 1):
-            print(f"{i}. {sound}")
-        print(f"{len(sounds) + 1}. Apply diacritics")
-        print(f"{len(sounds) + 2}. ← Previous menu")
-        print()
+        # Apply diacritics flow
+        if idx == len(options):
+            self._banner("APPLY DIACRITICS", subtitle=f"Base: choose a {sound_type}")
+            base_idx = self._menu(sounds, back_label="← Cancel")
+            if base_idx is None:
+                return None
+            base_sound = sounds[base_idx - 1]
+            return self._diacritic_quick_panel(base_sound, sound_type)
 
-        while True:
-            try:
-                choice = input(f"Select sound (1-{len(sounds) + 2}): ").strip()
-                choice_num = int(choice)
-
-                if choice_num == len(sounds) + 2:
-                    return self._select_from_subcategory(
-                        # Need to find the main category - this is a limitation of the current structure
-                        subcategory, {subcategory: sounds}, sound_type
-                    )
-                elif choice_num == len(sounds) + 1:
-                    # Choose base sound first
-                    base_choice = input(f"Choose base sound (1-{len(sounds)}): ").strip()
-                    try:
-                        base_idx = int(base_choice) - 1
-                        if 0 <= base_idx < len(sounds):
-                            base_sound = sounds[base_idx]
-                            return self._diacritic_quick_panel(base_sound, sound_type)
-                        else:
-                            print(f"Please enter a number between 1 and {len(sounds)}.")
-                    except ValueError:
-                        print("Please enter a valid number.")
-                elif 1 <= choice_num <= len(sounds):
-                    return sounds[choice_num - 1]
-                else:
-                    print(f"Please enter a number between 1 and {len(sounds) + 2}.")
-            except ValueError:
-                print("Please enter a valid number.")
+        # Regular pick
+        return sounds[idx - 1]
 
     def _diacritic_quick_panel(self, base: str, scope: str) -> str:
         """Quick diacritic selection panel."""
@@ -515,131 +497,105 @@ class InteractivePhonenvCLI:
                 print("Please enter 'y' for yes or 'n' for no.")
 
     def _dictionary_menu(self) -> None:
-        """Dictionary management menu."""
         while True:
-            print("\n" + "="*50)
-            print("DICTIONARY MANAGEMENT")
-            print("="*50)
-
+            self._banner("DICTIONARY MANAGEMENT")
             try:
                 stats = self.dict_processor.get_stats()
-                print(f"Current dataset: {stats['total_words']} words")
-                if stats['longest_word']:
-                    print(f"Range: {stats['shortest_word']} to {stats['longest_word']}")
+                print(f"Current dataset: {stats.get('total_words', 0)} words")
+                if stats.get('longest_word'):
+                    print(f"Range: {stats.get('shortest_word','')} to {stats.get('longest_word','')}")
                 print()
             except Exception as e:
                 print(f"Error reading dictionary: {e}\n")
 
-            print("1. Show all words")
-            print("2. Add word")
-            print("3. Remove words containing...")
-            print("4. Clear dictionary")
-            print("5. Dictionary statistics")
-            print("6. ← Back to analysis")
-            print()
+            idx = self._menu([
+                "Show all words",
+                "Add word",
+                "Remove words containing…",
+                "Clear dictionary",
+                "Dictionary statistics",
+            ], back_label="← Back")
 
-            choice = input("Choose option (1-6): ").strip()
-
+            if idx is None:
+                break
             try:
-                if choice == "1":
+                if idx == 1:
                     self.dict_processor.print_dictionary()
-                elif choice == "2":
+                elif idx == 2:
                     word = input("Enter IPA word to add: ").strip()
                     if word:
                         if self.dict_processor.add_word(word):
                             print(f"Added '{word}' to dictionary")
                         else:
                             print(f"Word '{word}' already exists")
-                elif choice == "3":
+                elif idx == 3:
                     substring = input("Remove words containing: ").strip()
                     if substring:
                         removed = self.dict_processor.remove_words_containing(substring)
                         print(f"Removed {removed} words containing '{substring}'")
-                elif choice == "4":
+                elif idx == 4:
                     confirm = input("Clear entire dictionary? (y/N): ").strip().lower()
-                    if confirm in ["y", "yes"]:
+                    if confirm in {"y", "yes"}:
                         self.dict_processor.clear_dictionary()
                         print("Dictionary cleared")
-                elif choice == "5":
+                elif idx == 5:
                     stats = self.dict_processor.get_stats()
-                    print(f"\nDictionary Statistics:")
-                    print(f"   Total words: {stats['total_words']}")
-                    print(f"   Unique letters: {stats['unique_letters']}")
-                    print(f"   Average length: {stats['avg_word_length']:.2f}")
-                    print(f"   Longest: {stats['longest_word']}")
-                    print(f"   Shortest: {stats['shortest_word']}")
-                elif choice == "6":
-                    break
-                else:
-                    print("Please enter 1-6")
+                    print("\nDictionary Statistics:")
+                    print(f"   Total words: {stats.get('total_words', 0)}")
+                    print(f"   Unique letters: {stats.get('unique_letters', 0)}")
+                    avg_len = stats.get('avg_word_length', 0.0)
+                    print(f"   Average length: {avg_len:.2f}")
+                    print(f"   Longest: {stats.get('longest_word','')}")
+                    print(f"   Shortest: {stats.get('shortest_word','')}")
             except Exception as e:
                 print(f"Error: {e}")
 
     def _batch_processing_menu(self) -> None:
-        """Batch processing menu for targets.txt."""
         while True:
-            print("\n" + "="*50)
-            print("BATCH PROCESSING (targets.txt)")
-            print("="*50)
-
+            self._banner("BATCH PROCESSING (targets.txt)")
             if targets_exist():
                 try:
-                    processor = TargetsProcessor(
-                        dataset_path=self.file_path,
-                        analyzer=self.analyzer
-                    )
+                    processor = TargetsProcessor(dataset_path=self.file_path, analyzer=self.analyzer)
                     summary = processor.get_targets_summary()
-
-                    # Safer field access with defaults
-                    total = summary.get("total_targets", 0)
-                    ds_file = summary.get("dataset_file", self.file_path)
-                    ds_exists = bool(summary.get("dataset_exists", False))
-
+                    total    = summary.get("total_targets", 0)
+                    ds_file  = summary.get("dataset_file", self.file_path)
+                    ds_exist = bool(summary.get("dataset_exists", False))
                     print(f"Targets file: data/targets.txt ({total} targets)")
-                    print(f"Dataset: {ds_file} ({'exists' if ds_exists else 'missing'})")
+                    print(f"Dataset: {ds_file} ({'exists' if ds_exist else 'missing'})")
 
-                    # Preview up to 5 unique targets in stable order
-                    targets_list = summary.get("targets") or []
-                    seen = set()
-                    uniq_list = []
-                    for t in targets_list:
+                    seen, uniq = set(), []
+                    for t in (summary.get("targets") or []):
                         if t not in seen:
                             seen.add(t)
-                            uniq_list.append(t)
-
-                    if uniq_list:
-                        head = ", ".join(uniq_list[:5])
-                        more = len(uniq_list) - 5
+                            uniq.append(t)
+                    if uniq:
+                        head = ", ".join(uniq[:5])
+                        more = len(uniq) - 5
                         print(f"Targets: {head}" + (f" (+{more} more)" if more > 0 else ""))
-
                 except Exception as e:
                     print(f"Error reading targets: {e}")
             else:
                 print("No targets.txt file found")
-
-            print()
-            print("1. Run batch analysis")
-            print("2. Create sample targets.txt")
-            print("3. View targets summary")
-            print("4. Cache management")
-            print("5. ← Back to main menu")
             print()
 
-            choice = input("Choose option (1-5): ").strip()
+            idx = self._menu([
+                "Run batch analysis",
+                "Create sample targets.txt",
+                "View targets summary",
+                "Cache management",
+            ], back_label="← Back to main menu")
 
+            if idx is None:
+                break
             try:
-                if choice == "1":
+                if idx == 1:
                     self._run_batch_analysis()
-                elif choice == "2":
+                elif idx == 2:
                     self._create_sample_targets()
-                elif choice == "3":
-                    self._show_targets_summary()  # <-- apply the same safe preview logic there too
-                elif choice == "4":
+                elif idx == 3:
+                    self._show_targets_summary()
+                elif idx == 4:
                     self._cache_management_menu()
-                elif choice == "5":
-                    break
-                else:
-                    print("Please enter 1-5")
             except Exception as e:
                 print(f"Error: {e}")
 
@@ -648,6 +604,15 @@ class InteractivePhonenvCLI:
         if not targets_exist():
             print("No targets.txt file found. Create one first!")
             return
+
+        def _normalize_format(fmt: str) -> str:
+            m = {
+                "txt": "txt", "text": "txt", "plain": "txt", "plaintext": "txt",
+                "json": "json",
+                "jsonl": "jsonl", "jsonlines": "jsonl", "ndjson": "jsonl",
+                "csv": "csv",
+            }
+            return m.get(fmt, "")
 
         try:
             print("\nStarting batch analysis...")
@@ -660,14 +625,16 @@ class InteractivePhonenvCLI:
             cache = get_cache()
             output_writer = AutoOutputWriter()
 
-            results = []
             targets = processor.load_targets()
+            if not targets:
+                print("No targets found in data/targets.txt.")
+                return
 
             print(f"Processing {len(targets)} targets...")
 
+            results = []
             for i, target in enumerate(targets, 1):
                 print(f"  [{i}/{len(targets)}] Analyzing '{target}'...", end=" ")
-
                 cached_result = cache.get(target, self.file_path, self.analyzer)
                 if cached_result:
                     print("(cached)")
@@ -678,16 +645,23 @@ class InteractivePhonenvCLI:
                     print("(analyzed)")
                     results.append(result)
 
-            output_format = input("\nOutput format (jsonl/json/csv/txt) [text]: ").strip().lower()
-            if not output_format:
-                output_format = "txt"
+            fmt_in = input("\nOutput format (jsonl/json/csv/txt) [txt]: ").strip().lower()
+            fmt = _normalize_format(fmt_in) or "txt"
+            if fmt_in and not _normalize_format(fmt_in):
+                print(f"Unknown format '{fmt_in}', falling back to 'txt'.")
 
-            output_paths = output_writer.write_batch_results(results, output_format)
+            output_paths = output_writer.write_batch_results(results, fmt)
 
-            print(f"\nBatch analysis complete!")
+            # Summary
+            print("\nBatch analysis complete!")
             print(f"Results written to: {list(output_paths.values())[0]}")
             print(f"Analyzed {len(results)} targets")
-            print(f"Total occurrences: {sum(r.total_occurrences for r in results)}")
+            # If your TargetResult has total_occurrences per target:
+            try:
+                total_occ = sum(getattr(r, "total_occurrences", 0) for r in results)
+                print(f"Total occurrences: {total_occ}")
+            except Exception:
+                pass
 
             cache.save()
 
@@ -698,8 +672,8 @@ class InteractivePhonenvCLI:
         """Create a sample targets.txt file."""
         try:
             create_sample_targets_file()
-            print("Created sample targets.txt file with common IPA targets")
-            print("Edit data/targets.txt to customize your target list")
+            print("Created sample targets.txt with common IPA targets.")
+            print("Edit data/targets.txt to customize your target list.")
         except Exception as e:
             print(f"Failed to create targets file: {e}")
 
@@ -716,74 +690,71 @@ class InteractivePhonenvCLI:
             )
             summary = processor.get_targets_summary()
 
-            print(f"\nTargets Summary:")
-            print(f"   File: {summary['targets_file']}")
-            print(f"   Dataset: {summary['dataset_file']}")
-            print(f"   Total targets: {summary['total_targets']}")
-            print(f"   Unique targets: {summary['unique_targets']}")
-            print(f"   Targets exist: {summary['targets_exist']}")
-            print(f"   Dataset exists: {summary['dataset_exists']}")
+            print("\nTargets Summary:")
+            print(f"   File: {summary.get('targets_file', 'data/targets.txt')}")
+            print(f"   Dataset: {summary.get('dataset_file', self.file_path)}")
+            print(f"   Total targets: {summary.get('total_targets', 0)}")
+            print(f"   Unique targets: {summary.get('unique_targets', 0)}")
+            print(f"   Targets exist: {summary.get('targets_exist', False)}")
+            print(f"   Dataset exists: {summary.get('dataset_exists', False)}")
 
-            if summary.get('targets'):
-                print(f"\nTarget list:")
-                for target in summary['targets']:
-                    print(f"   • {target}")
+            targets_list = list(summary.get('targets') or [])
+            if targets_list:
+                print("\nTarget list:")
+                # Show in stable order, but don't flood the screen
+                preview_cap = 50
+                for t in targets_list[:preview_cap]:
+                    print(f"   • {t}")
+                if len(targets_list) > preview_cap:
+                    print(f"   … (+{len(targets_list) - preview_cap} more)")
 
         except Exception as e:
             print(f"Error reading targets: {e}")
 
     def _cache_management_menu(self) -> None:
-        """Cache management submenu."""
         while True:
-            print("\n" + "-"*40)
-            print("CACHE MANAGEMENT")
-            print("-"*40)
-
+            self._banner("CACHE MANAGEMENT")
             try:
                 stats = get_cache_stats()
-                print(f"Cache entries: {stats['total_entries']}")
-                print(f"Unique targets: {stats['unique_targets']}")
-                print(f"Cache dir: {stats['cache_dir']}")
-                if stats['total_entries'] > 0:
-                    print(f"Latest: {stats['newest_entry']}")
+                print(f"Cache entries:  {stats.get('total_entries', 0)}")
+                print(f"Unique targets: {stats.get('unique_targets', 0)}")
+                print(f"Cache dir:      {stats.get('cache_dir', '')}")
+                if stats.get('total_entries', 0) > 0:
+                    print(f"Latest:         {stats.get('newest_entry', '')}")
             except Exception as e:
                 print(f"Error reading cache: {e}")
-
-            print()
-            print("1. View cache statistics")
-            print("2. Clear entire cache")
-            print("3. Clear cache for current dataset")
-            print("4. ← Back")
             print()
 
-            choice = input("Choose option (1-4): ").strip()
+            idx = self._menu([
+                "View cache statistics",
+                "Clear entire cache",
+                "Clear cache for current dataset",
+            ], back_label="← Back")
 
+            if idx is None:
+                break
             try:
-                if choice == "1":
+                if idx == 1:
                     stats = get_cache_stats()
-                    print(f"\nDetailed Cache Statistics:")
+                    print("\nDetailed Cache Statistics:")
                     for key, value in stats.items():
-                        if key == 'targets' and isinstance(value, list):
-                            print(f"   {key}: {', '.join(value[:10])}" +
-                                  (f" (+{len(value)-10} more)" if len(value) > 10 else ""))
+                        if key == "targets" and isinstance(value, list):
+                            head = ", ".join(value[:10])
+                            more = len(value) - 10
+                            print(f"   {key}: {head}" + (f" (+{more} more)" if more > 0 else ""))
                         else:
                             print(f"   {key}: {value}")
-                elif choice == "2":
+                elif idx == 2:
                     confirm = input("Clear entire cache? (y/N): ").strip().lower()
-                    if confirm in ["y", "yes"]:
+                    if confirm in {"y", "yes"}:
                         clear_cache()
                         print("Cache cleared")
-                elif choice == "3":
+                elif idx == 3:
                     cache = get_cache()
                     removed = cache.clear_dataset(self.file_path)
                     print(f"Removed {removed} entries for current dataset")
-                elif choice == "4":
-                    break
-                else:
-                    print("Please enter 1-4")
             except Exception as e:
                 print(f"Error: {e}")
-
 
 # ========================= COMMAND LINE INTERFACE =========================
 

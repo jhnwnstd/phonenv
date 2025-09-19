@@ -1,12 +1,245 @@
+"""Phonetic environment analysis and IPA processing functionality.
+
+This module consolidates the core analysis capabilities including:
+- Phonetic environment analysis
+- IPA text processing and normalization
+- Segmentation and feature analysis
+"""
+
 from __future__ import annotations
 
-from typing import Dict, List, Set, Tuple, OrderedDict as OrderedDictType
+import unicodedata as ud
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List, Set, Tuple, OrderedDict as OrderedDictType, Optional, Any
 from collections import defaultdict, OrderedDict
 from shutil import get_terminal_size
 
-from ipa_processor_v2 import IPAProcessorV2, get_config_for_transcription_mode
 
+# ========================= IPA PROCESSING =========================
+
+@dataclass
+class IPAConfig:
+    use_panphon: bool = False
+    tie_bar_clusters: Optional[List[str]] = None
+    diphthong_patterns: Optional[List[str]] = None
+    normalization_mode: str = "NFC"
+    match_mode: str = "broad"   # "narrow" | "broad"
+
+    def __post_init__(self):
+        if self.tie_bar_clusters is None:
+            self.tie_bar_clusters = ["t͡s", "d͡z", "t͡ʃ", "d͡ʒ", "t͡ɕ", "d͡ʑ", "ʈ͡ʂ", "ɖ͡ʐ"]
+        if self.diphthong_patterns is None:
+            self.diphthong_patterns = ["aɪ", "eɪ", "ɔɪ", "aʊ", "oʊ", "ɪə", "eə", "ʊə"]
+
+# Suprasegmentals to ignore when picking context neighbors
+_SUPRA: Set[str] = {"ˈ", "ˌ", "|", "‖"}
+
+def _is_combining(ch: str) -> bool: return ud.category(ch) == "Mn"
+def _is_spacing_modifier(ch: str) -> bool: return ud.category(ch) in ("Sk", "Lm") and ch not in _SUPRA
+
+_IPA_BLOCKS = {
+    (0x0250, 0x02AF),  # IPA Extensions
+    (0x1D00, 0x1D7F),  # Phonetic Extensions
+    (0x1D80, 0x1DBF),  # Phonetic Extensions Supplement
+    (0x0300, 0x036F),  # Combining Diacritical Marks
+    (0x1AB0, 0x1AFF),  # Combining Diacritical Marks Extended
+    (0x1DC0, 0x1DFF),  # Combining Diacritical Marks Supplement
+    (0x02B0, 0x02FF),  # Spacing Modifier Letters
+    (0xA700, 0xA71F),  # Modifier Tone Letters
+}
+
+def _skip_left(segments: List[str], i: int) -> int:
+    j = i - 1
+    while j >= 0 and segments[j] in _SUPRA:
+        j -= 1
+    return j
+
+def _skip_right(segments: List[str], i: int) -> int:
+    j = i + 1
+    while j < len(segments) and segments[j] in _SUPRA:
+        j += 1
+    return j
+
+def _in_blocks(ch: str) -> bool:
+    """Check if character is in IPA Unicode blocks."""
+    cp = ord(ch)
+    return any(start <= cp <= end for start, end in _IPA_BLOCKS)
+
+def _strip_length(s: str) -> str:
+    """Remove length markers (ː, ˑ)."""
+    return s.replace("ː", "").replace("ˑ", "")
+
+def _strip_diacritics(s: str) -> str:
+    """Remove combining diacritics."""
+    return "".join(c for c in ud.normalize("NFD", s) if not _is_combining(c))
+
+def _strip_all_nonbase(s: str) -> str:
+    """Remove all non-base characters (combining marks + spacing modifiers)."""
+    nfd = ud.normalize("NFD", s)
+    return "".join(c for c in nfd if not (_is_combining(c) or _is_spacing_modifier(c)))
+
+
+class IPAProcessorV2:
+    """Advanced IPA text processor with configurable behavior."""
+
+    def __init__(self, config: Optional[IPAConfig] = None):
+        self.config = config or IPAConfig()
+        self._panphon_ft = None
+        self._setup_panphon()
+
+    def _setup_panphon(self) -> None:
+        """Setup panphon if available and requested."""
+        if self.config.use_panphon:
+            try:
+                import panphon
+                self._panphon_ft = panphon.FeatureTable()
+            except (ImportError, AttributeError):
+                print("Warning: panphon not available, falling back to basic processing")
+                self.config.use_panphon = False
+
+    def normalize_nfc(self, text: str) -> str:
+        """Normalize text to NFC form."""
+        return ud.normalize("NFC", text)
+
+    def normalize_nfd(self, text: str) -> str:
+        """Normalize text to NFD form."""
+        return ud.normalize("NFD", text)
+
+    def ipa_segments(self, text: str) -> List[str]:
+        """Segment IPA text into phonetic units."""
+        if not text:
+            return []
+
+        text = self.normalize_nfc(text)
+
+        # 1) Wrap multi-symbol nuclei (diphthongs/triphthongs) first (longest-first).
+        for pat in sorted(self.config.diphthong_patterns or [], key=len, reverse=True):
+            if pat and pat in text:
+                text = text.replace(pat, f"◊{pat}◊")
+
+        chars = list(text)
+        segments: List[str] = []
+        i = 0
+        TIEBARS = ("\u0361", "\u035C")  # ͡ COMBINING DOUBLE INVERTED BREVE, ͜ COMBINING DOUBLE BREVE BELOW
+
+        while i < len(chars):
+            ch = chars[i]
+
+            # Unwrap sentinel-wrapped nuclei ◊...◊ as atomic segments; attach trailing marks.
+            if ch == "◊":
+                j = i + 1
+                while j < len(chars) and chars[j] != "◊":
+                    j += 1
+                if j < len(chars):
+                    seg = "".join(chars[i + 1:j])
+                    k = j + 1
+                    while k < len(chars) and _is_combining(chars[k]):
+                        seg += chars[k]; k += 1
+                    while k < len(chars) and _is_spacing_modifier(chars[k]):
+                        seg += chars[k]; k += 1
+                    segments.append(seg)
+                    i = k
+                    continue
+                i += 1
+                continue
+
+            # Parenthesized specials "(...)" stay intact.
+            if ch == "(":
+                j = text.find(")", i + 1)
+                if j != -1:
+                    seg = text[i:j + 1].replace("◊", "")
+                    segments.append(seg)
+                    i = j + 1
+                    continue
+                # unmatched "(": fall through as a single char
+
+            # === Generic tie-bar affricates: <left>(͡|͜)<right> ===
+            # Parse left base + any *immediately following* combining marks.
+            left_start = i
+            left = chars[i]
+            i1 = i + 1
+            while i1 < len(chars) and _is_combining(chars[i1]):
+                left += chars[i1]
+                i1 += 1
+
+            # If next codepoint is a tiebar, try to read right base + its combining marks.
+            if i1 < len(chars) and chars[i1] in TIEBARS and (i1 + 1) < len(chars):
+                tie = chars[i1]
+                right = chars[i1 + 1]
+                i2 = i1 + 2
+                # right-side combining on the base
+                while i2 < len(chars) and _is_combining(chars[i2]):
+                    right += chars[i2]
+                    i2 += 1
+                seg = left + tie + right
+                # cluster-level combining after the right base (rare but legal)
+                while i2 < len(chars) and _is_combining(chars[i2]):
+                    seg += chars[i2]
+                    i2 += 1
+                # spacing modifiers (length, aspiration, ʷ, ʲ, etc.)
+                while i2 < len(chars) and _is_spacing_modifier(chars[i2]):
+                    seg += chars[i2]
+                    i2 += 1
+                segments.append(seg)
+                i = i2
+                continue
+
+            # Default: single base + trailing combining marks + spacing modifiers.
+            segment = left
+            i = i1
+            while i < len(chars) and _is_combining(chars[i]):
+                segment += chars[i]; i += 1
+            while i < len(chars) and _is_spacing_modifier(chars[i]):
+                segment += chars[i]; i += 1
+            segments.append(segment)
+
+        return [seg for seg in segments if seg]
+
+    def phoneme_matches(self, target: str, segment: str) -> bool:
+        """Check if target matches segment using intelligent phonetic matching."""
+
+        # Normalize both
+        target_norm = self.normalize_nfc(target)
+        segment_norm = self.normalize_nfc(segment)
+
+        if self.config.match_mode == "narrow":
+            return target_norm == segment_norm
+
+        # Strip diacritics for broad matching
+        target_base = _strip_all_nonbase(target_norm)
+        segment_base = _strip_all_nonbase(segment_norm)
+
+        return target_base == segment_base
+
+    def get_segment_info(self, segment: str) -> Dict[str, Any]:
+        """Get detailed information about a segment."""
+        if not segment:
+            return {}
+
+        base_char = segment[0] if segment else ""
+
+        return {
+            "segment": segment,
+            "base_character": base_char,
+            "code_point": f"U+{ord(base_char):04X}" if base_char else "",
+            "name": ud.name(base_char, "UNKNOWN") if base_char else "",
+            "category": ud.category(base_char) if base_char else "",
+            "is_ipa_base": _in_blocks(base_char) if base_char else False,
+            "is_combining": _is_combining(base_char) if base_char else False,
+            "length": len(segment),
+            "has_combining": any(_is_combining(c) for c in segment),
+            "has_modifiers": any(_is_spacing_modifier(c) for c in segment),
+        }
+
+
+def get_config_for_transcription_mode(mode: str) -> IPAConfig:
+    if mode == "narrow":
+        return IPAConfig(use_panphon=True, match_mode="narrow")
+    return IPAConfig(use_panphon=False, match_mode="broad")
+
+
+# ========================= PHONETIC ANALYSIS =========================
 
 class PhoneticAnalyzer:
     """
@@ -46,7 +279,6 @@ class PhoneticAnalyzer:
         self.no_color = no_color
 
         if use_ipa_processing:
-            # Use transcription mode to configure IPA processing
             config = get_config_for_transcription_mode(transcription_mode)
             self.ipa_processor_v2 = IPAProcessorV2(config)
         else:
@@ -54,8 +286,8 @@ class PhoneticAnalyzer:
 
         self._load_special_characters()
 
-    # ------------------------- Special chars I/O -------------------------
     def _load_special_characters(self) -> None:
+        """Load special characters from file."""
         try:
             if self.special_chars_file.exists():
                 with self.special_chars_file.open("r", encoding="utf-8") as f:
@@ -66,13 +298,14 @@ class PhoneticAnalyzer:
             print(f"Warning: Could not load special characters: {e}")
 
     def _write_special_characters(self, characters: Set[str]) -> None:
+        """Write special characters to file."""
         self.special_chars_file.parent.mkdir(parents=True, exist_ok=True)
         with self.special_chars_file.open("w", encoding="utf-8") as f:
             for char in sorted(characters):
                 f.write(f"{char}\n")
 
-    # ----------------------- Preprocessing & helpers ---------------------
     def _prepare_word(self, word: str) -> str:
+        """Prepare word for analysis."""
         processed = word
         for special in self._special_characters:
             processed = processed.replace(special, f"({special})")
@@ -84,11 +317,11 @@ class PhoneticAnalyzer:
 
     @staticmethod
     def _strip_paren_group(token: str) -> str:
+        """Strip parentheses from token."""
         return token[1:-1] if token.startswith("(") and token.endswith(")") else token
 
     def _segment_base_char(self, token: str) -> str:
-        import unicodedata as ud
-
+        """Get base character from token."""
         s = self._strip_paren_group(token)
         if not s:
             return ""
@@ -104,20 +337,27 @@ class PhoneticAnalyzer:
         return ch0
 
     def _is_vowel_segment(self, token: str) -> bool:
+        s = self._strip_paren_group(token)
+        nfd = self.ipa_processor_v2.normalize_nfd(s) if (self.use_ipa_processing and self.ipa_processor_v2) else ud.normalize("NFD", s)
+        if "\u0329" in nfd:   # syllabic
+            return True
+        if "\u032F" in nfd:   # non-syllabic
+            return False
         return self._segment_base_char(token) in self._IPA_VOWEL_BASES
 
     def _classify_side(self, token: str) -> str:
+        """Classify token as vowel, consonant, or boundary."""
         if token == "#":
             return "#"
         return "V" if self._is_vowel_segment(token) else "C"
 
     def _get_environment(self, word: str, character: str, index: int) -> str:
+        """Get phonetic environment for character at index."""
         # Find left context (skip prosodic markers)
         left_idx = index - 1
         while left_idx >= 0:
             left_char = word[left_idx]
             if self.use_ipa_processing and self.ipa_processor_v2 and left_char in "ˈˌ‖|":
-                # Skip prosodic markers
                 left_idx -= 1
                 continue
             break
@@ -138,7 +378,6 @@ class PhoneticAnalyzer:
         while right_idx < len(word):
             right_char = word[right_idx]
             if self.use_ipa_processing and self.ipa_processor_v2 and right_char in "ˈˌ‖|":
-                # Skip prosodic markers
                 right_idx += 1
                 continue
             break
@@ -156,6 +395,7 @@ class PhoneticAnalyzer:
         return f"{left}__{right}"
 
     def _classify_env(self, env: str) -> str:
+        """Classify environment type."""
         left, right = env.split("__", 1)
         L = self._classify_side(left)
         R = self._classify_side(right)
@@ -167,6 +407,7 @@ class PhoneticAnalyzer:
 
     @staticmethod
     def _highlight_character(word: str, character: str, occurrence_index: int) -> str:
+        """Highlight specific occurrence of character in word."""
         count = 0
         i = 0
         while i < len(word):
@@ -179,14 +420,13 @@ class PhoneticAnalyzer:
             i = j + len(character)
         return word
 
-    # -------- Presentation helpers (simple & readable) -------------------
     def _split_env(self, env: str, target_display: str) -> Tuple[str, str, str]:
-        """Turn 'left__right' into (left, target_display, right)."""
+        """Split environment into left, target, right."""
         left, right = env.split("__", 1)
         return left, target_display, right
 
     def _target_for_display(self, raw_query: str) -> str:
-        """Pretty target token for the Target column (e.g., '[a]' or '[t͡ʃ]')."""
+        """Format target for display."""
         q = raw_query
         if self.use_ipa_processing and self.ipa_processor_v2:
             q = self.ipa_processor_v2.normalize_nfc(q)
@@ -194,6 +434,7 @@ class PhoneticAnalyzer:
 
     @staticmethod
     def _format_examples(words: List[str], max_samples: int = 5, max_width: int = 60) -> str:
+        """Format example words for display."""
         shown = words[:max_samples]
         rest = len(words) - len(shown)
         s = ", ".join(shown)
@@ -208,9 +449,7 @@ class PhoneticAnalyzer:
         grouped: Dict[str, OrderedDictType[str, List[str]]],
         target_disp: str,
     ) -> Tuple[int, int, int, int, int]:
-        """
-        Compute global widths for Group, Left, Target, Right, Count across ALL rows.
-        """
+        """Compute column widths for table display."""
         group_w = len("Group")
         left_w = len("Left")
         targ_w = max(len("Target"), len(target_disp))
@@ -230,16 +469,13 @@ class PhoneticAnalyzer:
 
         return group_w, left_w, targ_w, right_w, count_w
 
-    # ------------------------------ Analysis ------------------------------
     def analyze_character(
-        self, character: str, file_path: str = "data/input.txt"
+        self, character: str, file_path: str = "data/dataset.txt"
     ) -> Dict[str, OrderedDictType[str, List[str]]]:
-        """
-        Return grouped, per-group-sorted environments:
-        { macro_group: OrderedDict({ env: [examples...] }) }
-        """
+        """Analyze phonetic environments for a character."""
         try:
-            words = self._load_words(file_path)
+            from data import load_words_list
+            words = load_words_list(file_path)
         except (IOError, OSError) as e:
             print(f"Error reading file {file_path}: {e}")
             return {}
@@ -249,26 +485,22 @@ class PhoneticAnalyzer:
             q = self.ipa_processor_v2.normalize_nfc(q)
 
         target = f"({q})" if q in self._special_characters else q
-
         env2words: Dict[str, List[str]] = defaultdict(list)
 
         for original in words:
             processed = self._prepare_word(original)
 
             if self.use_ipa_processing:
-                # Use IPA segmentation for more accurate analysis
                 if self.ipa_processor_v2:
                     segments = self.ipa_processor_v2.ipa_segments(processed)
                 else:
                     segments = []
 
                 if segments:
-                    self._analyze_segments(segments, target, original, env2words)
+                    self._analyze_segments(segments, target, env2words)
                 else:
-                    # Fall back to character-by-character analysis
                     self._analyze_characters(processed, target, env2words)
             else:
-                # Fall back to character-by-character analysis
                 self._analyze_characters(processed, target, env2words)
 
         grouped: Dict[str, OrderedDictType[str, List[str]]] = {k: OrderedDict() for k in self._ORDER}
@@ -287,31 +519,34 @@ class PhoneticAnalyzer:
 
         return {k: v for k, v in grouped.items() if v}
 
-    def _analyze_segments(self, segments: List[str], target: str, original_word: str, env2words: Dict[str, List[str]]) -> None:
-        """Analyze target in IPA segments list using phonetic matching."""
-        occurrence_count = 0
-        for i, segment in enumerate(segments):
-            # Use intelligent phonetic matching
-            if self.use_ipa_processing and self.ipa_processor_v2:
-                matches = self.ipa_processor_v2.phoneme_matches(target, segment)
-            else:
-                matches = (segment == target)
+    def _analyze_segments(
+        self,
+        segments: List[str],
+        target: str,
+        env2words: Dict[str, List[str]]
+    ) -> None:
+        """Analyze target in IPA segments using phonetic matching."""
+        for i, seg in enumerate(segments):
+            is_match = (
+                self.ipa_processor_v2.phoneme_matches(target, seg)
+                if self.use_ipa_processing and self.ipa_processor_v2
+                else (seg == target)
+            )
+            if not is_match:
+                continue
 
-            if matches:
-                # Get left context
-                left = "#" if i == 0 else segments[i - 1]
+            li = _skip_left(segments, i)
+            ri = _skip_right(segments, i)
 
-                # Get right context
-                right = "#" if i == len(segments) - 1 else segments[i + 1]
+            left  = "#" if li < 0 else segments[li]
+            right = "#" if ri >= len(segments) else segments[ri]
+            env = f"{left}__{right}"
 
-                env = f"{left}__{right}"
-                # Create clean highlighted example for this specific occurrence
-                highlighted = self._create_clean_example(segments, target, i, occurrence_count)
-                env2words[env].append(highlighted)
-                occurrence_count += 1
+            example = self._create_clean_example(segments, i)
+            env2words[env].append(example)
 
     def _analyze_characters(self, processed: str, target: str, env2words: Dict[str, List[str]]) -> None:
-        """Fall back to character-by-character analysis (legacy mode)."""
+        """Character-by-character analysis fallback."""
         idx = 0
         nth = 0
         while idx < len(processed):
@@ -332,58 +567,24 @@ class PhoneticAnalyzer:
             idx = found + len(target)
             nth += 1
 
-    def _create_clean_example(self, segments: List[str], target_segment: str, segment_index: int, occurrence_count: int) -> str:
-        """Create a clean highlighted example showing only the specific target occurrence."""
-        result_segments = []
+    def _create_clean_example(
+        self,
+        segments: List[str],
+        match_index: int) -> str:
+        """Bracket exactly the matched segment (includes any diacritics/modifiers)."""
+        return "".join(f"[{s}]" if idx == match_index else s
+                    for idx, s in enumerate(segments))
 
-        for i, segment in enumerate(segments):
-            if i == segment_index:
-                # If target is found within a larger segment (like ɪ in aɪ), highlight just the target
-                if target_segment in segment and target_segment != segment:
-                    # Find the position of target within the segment
-                    target_pos = segment.find(target_segment)
-                    if target_pos != -1:
-                        before = segment[:target_pos]
-                        after = segment[target_pos + len(target_segment):]
-                        highlighted = f"{before}[{target_segment}]{after}"
-                        result_segments.append(highlighted)
-                    else:
-                        # Fallback: highlight the whole segment
-                        result_segments.append(f"[{segment}]")
-                else:
-                    # Target is the whole segment
-                    result_segments.append(f"[{target_segment}]")
-            else:
-                result_segments.append(segment)
-
-        return "".join(result_segments)
-
-    def _highlight_segment_in_word(self, original_word: str, target_segment: str, segment_index: int, segments: List[str]) -> str:
-        """Legacy method - kept for backward compatibility."""
-        return self._create_clean_example(segments, target_segment, segment_index, 0)
-
-    # ------------------------------- I/O ---------------------------------
-    @staticmethod
-    def _load_words(file_path: str) -> List[str]:
-        p = Path(file_path)
-        with p.open("r", encoding="utf-8") as f:
-            return [line.strip() for line in f if line.strip()]
-
-    # ----------------------------- Presentation --------------------------
     def print_analysis(
         self,
         character: str,
-        file_path: str = "data/input.txt",
+        file_path: str = "data/dataset.txt",
         show_unicode_info: bool = False,
         max_examples_per_env: int = 5,
-        compact_groups: bool = True,   # only print group name on the first row of each group
+        compact_groups: bool = True,
         encoding: str = "utf-8",
     ) -> None:
-        """
-        Pretty-print grouped analysis with globally aligned columns.
-        Single table: Group | Left | Target | Right | Count | Examples
-        Uses 'rich' if available; falls back to stdlib.
-        """
+        """Pretty-print analysis results."""
         if show_unicode_info and self.use_ipa_processing and self.ipa_processor_v2:
             info = self.ipa_processor_v2.get_segment_info(character)
             print(f"\nUnicode Information for '{character}':")
@@ -402,7 +603,7 @@ class PhoneticAnalyzer:
         target_disp = self._target_for_display(character)
         group_w, left_w, targ_w, right_w, count_w = self._compute_global_widths(grouped, target_disp)
 
-        # Build a flat list of rows (group, left, target, right, count, examples, is_separator)
+        # Build rows for display
         rows: List[Tuple[str, str, str, str, int, str, bool]] = []
         group_count = 0
         for macro_group in self._ORDER:
@@ -410,9 +611,8 @@ class PhoneticAnalyzer:
             if not env_map:
                 continue
 
-            # Add separator before group (except first one)
             if group_count > 0:
-                rows.append(("", "", "", "", 0, "", True))  # separator row
+                rows.append(("", "", "", "", 0, "", True))  # separator
 
             first = True
             for env, words in env_map.items():
@@ -422,7 +622,7 @@ class PhoneticAnalyzer:
                 first = False
             group_count += 1
 
-        # Try Rich first
+        # Try Rich formatting first
         try:
             from rich.console import Console
             from rich.table import Table
@@ -443,13 +643,10 @@ class PhoneticAnalyzer:
             table.add_column("Count", justify="right", no_wrap=True, style="magenta", width=count_w)
             table.add_column("Examples", overflow="fold")
 
-            # Examples column width (remaining space)
             examples_width = max(24, term_w - (group_w + left_w + targ_w + right_w + count_w + 14))
 
-            # Emit rows
             for group, left, tgt, right, cnt, examples, is_separator in rows:
                 if is_separator:
-                    # Add a visual separator
                     table.add_row("", "", "", "", "", "", end_section=True)
                 else:
                     table.add_row(
@@ -465,9 +662,9 @@ class PhoneticAnalyzer:
             return
 
         except Exception:
-            pass  # fall through to stdlib
+            pass  # Fall back to plain text
 
-        # Stdlib fallback (aligned with the same global widths)
+        # Plain text fallback
         term_w = get_terminal_size((100, 20)).columns
         examples_header_w = max(8, term_w - (group_w + left_w + targ_w + right_w + count_w + 16))
         print("=" * term_w)
@@ -483,7 +680,6 @@ class PhoneticAnalyzer:
 
         for group, left, tgt, right, cnt, examples, is_separator in rows:
             if is_separator:
-                # Print separator line
                 print("─" * term_w)
             else:
                 ex_width = max(20, term_w - (group_w + left_w + targ_w + right_w + count_w + 16))
@@ -498,10 +694,10 @@ class PhoneticAnalyzer:
                     f"{ex_str}"
                 )
 
-    # -------------------------- Config management ------------------------
     def add_special_character(
         self, character: str, delete: bool = False, erase: bool = False
     ) -> None:
+        """Manage special characters."""
         try:
             current = set()
             if self.special_chars_file.exists():
@@ -536,17 +732,44 @@ class PhoneticAnalyzer:
             print(f"Error managing special characters: {e}")
 
 
-# --------------------------- Back-compat helpers ---------------------------
-def analyze_character(character: str, file: str = "data/input.txt") -> Dict[str, OrderedDict]:
+# ========================= CONVENIENCE FUNCTIONS =========================
+
+def analyze_character(character: str, file: str = "data/dataset.txt") -> Dict[str, OrderedDict]:
+    """Analyze character environments (convenience function)."""
     analyzer = PhoneticAnalyzer(use_ipa_processing=True)
     return analyzer.analyze_character(character, file)
 
 
-def analyze_character_print(character: str, file: str = "data/input.txt") -> None:
+def analyze_character_print(character: str, file: str = "data/dataset.txt") -> None:
+    """Print character analysis (convenience function)."""
     analyzer = PhoneticAnalyzer(use_ipa_processing=True)
     analyzer.print_analysis(character, file)
 
 
 def add_special_character(character: str, delete: bool = False, erase: bool = False) -> None:
+    """Manage special characters (convenience function)."""
     analyzer = PhoneticAnalyzer(use_ipa_processing=True)
     analyzer.add_special_character(character, delete, erase)
+
+
+# Legacy functions for IPA processing
+def ipa_segments(text: str) -> List[str]:
+    """Segment IPA text (legacy function)."""
+    processor = IPAProcessorV2()
+    return processor.ipa_segments(text)
+
+
+def normalize_ipa(text: str) -> str:
+    """Normalize IPA text (legacy function)."""
+    processor = IPAProcessorV2()
+    return processor.normalize_nfc(text)
+
+
+def validate_ipa(text: str) -> bool:
+    """Validate IPA text (legacy function)."""
+    return bool(text and all(_in_blocks(c) or c.isspace() or c in "[]()#_" for c in text))
+
+
+def get_processor(config: Optional[IPAConfig] = None) -> IPAProcessorV2:
+    """Get IPA processor instance (legacy function)."""
+    return IPAProcessorV2(config)

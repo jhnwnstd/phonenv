@@ -1,10 +1,13 @@
+# ===== English core set (RP-like), narrow transcription =====
+[lang=en-GB; mode=narrow; profile=english; tag=RP]
+
 bʌs
 dʒʌmp
-həˈloʊ
-kʰoʊʃən
+həˈloʊ                    # "hello" (comment ignored)
+kʰoʊʃən                   # "caution" style
 kʰæt
 pʰleɪ
-pʰɹɪˈzɛnt
+pʰɹɪˈzɛnt                 [stress]   # present (verb) — tag ignored downstream
 stɹɪŋ
 sɑːm
 tɹaɪ
@@ -17,7 +20,7 @@ wɪn
 ɡʊd
 ɹeɪn
 ʃiːp
-ˈaɪsˌkʰɹiːm
+ˈaɪsˌkʰɹiːm               # ice cream
 ˈbɹɛd
 ˈbʌtər
 ˈdɔːtə
@@ -34,7 +37,7 @@ wɪn
 ˈkwɛstʃən
 ˈkʰwɪkli
 ˈkʰælkjʊleɪtɚ
-ˈkʰæptʰən
+ˈkʰæptʰən                  [proper?]  # captain — tag ignored
 ˈkʰɔːfɪ
 ˈkʰɪtʃən
 ˈlaɪbɹɛɹi
@@ -44,7 +47,7 @@ wɪn
 ˈlɪŋgwɪst
 ˈmoʊmənt
 ˈmuːvɪŋ
-ˈmænˌhaɪtən
+ˈmænˌhaɪtən                [proper]   # Manhattan (proper noun tag ignored)
 ˈmɛməɹi
 ˈmɛn
 ˈnaɪt
@@ -95,3 +98,11 @@ wɪn
 ˈθʌmb
 ˌækˈsɛpt
 θɪŋk
+
+# ----- Switch metadata mid-file to test header handling -----
+[lang=en-US; mode=broad; profile=english; tag=GA]
+
+# Below entries inherit GA/broad; IPA stays the same, this just tests metadata switching.
+kʰæt                    [GA]
+ˈpʰɹəʊɡræm             [RP]     # mixed tags; both ignored downstream
+stɹɪŋ                   # comment-only after IPA is fine

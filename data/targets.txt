@@ -1,0 +1,35 @@
+# Common IPA targets for phonetic environment analysis
+# Vowels
+ɪ
+ɛ
+æ
+ɑ
+ɔ
+ʊ
+ə
+
+# Consonants
+p
+t
+k
+b
+d
+ɡ
+s
+z
+ʃ
+ʒ
+
+# Affricates
+t͡ʃ
+d͡ʒ
+
+# Liquids
+l
+r
+ɹ
+
+# Nasals
+m
+n
+ŋ

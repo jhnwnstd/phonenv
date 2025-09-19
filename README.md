@@ -1,110 +1,104 @@
 # Phonenv
 
-A Python library for phonetic environment analysis that examines the phonetic contexts where specific sounds occur in word lists. Provides professional-grade International Phonetic Alphabet (IPA) text processing with Unicode compliance and rich terminal output.
+A Python library for **phonetic environment analysis**. It examines where specific IPA symbols occur in word lists and summarizes their **INITIAL, FINAL, and MEDIAL** contexts (V_V, V_C, C_V, C_C). Phonenv is **language-agnostic** and focuses on **Unicode-correct IPA text processing** with rich terminal output.
 
 ## Features
 
-- **Phonetic Environment Analysis**: Categorizes contexts as INITIAL, FINAL, and MEDIAL (V_V, V_C, C_V, C_C) based on surrounding phonetic environments  
-- **Interactive IPA Interface**: Navigate through organized consonant and vowel categories with intuitive command-line menus  
-- **Transcription Mode Support**: Choose between narrow (phonetic) and broad (phonemic) analysis approaches  
-- **Professional IPA Processing**: Unicode-compliant text processing with proper NFC/NFD normalization and segmentation  
-- **Advanced Segmentation**: Treats diphthongs, triphthongs, and tie-bar affricates as atomic phonological units  
-- **Rich Terminal Output**: Beautiful tables with Unicode box-drawing characters and highlighted target segments  
-- **Comprehensive CLI**: Full command-line interface for analysis and dictionary management  
+* **Environment Analysis** — INITIAL / FINAL / MEDIAL (V_V, V_C, C_V, C_C)
+* **Dataset Format** — Language-aware section headers, inline `#` comments, and `[tags]` (parsed, ignored by analysis); fully backwards compatible with simple "one IPA per line"
+* **Interactive CLI** — Browse IPA categories and analyze targets from the terminal
+* **Transcription Modes** — **Narrow** (phonetic: diacritics contrastive) and **Broad** (phonemic: diacritics folded)
+* **IPA Processing** — Unicode-compliant NFC/NFD policy, diacritic attachment, robust segmentation
+* **Atomic Units** — Diphthongs/triphthongs and **tie-bar affricates** treated as single segments
+* **Terminal UX** — Unicode box tables, clear highlighting of target segments
 
 ## Installation
 
-Install the required dependency:
-
 ```bash
+# Core dependency
 pip install regex
-````
 
-For enhanced IPA processing capabilities:
+# Optional enhancements
+pip install panphon         # feature vectors & helpers (optional)
+pip install rich            # prettier terminal output (optional)
 
-```bash
-pip install panphon
-```
-
-Install the package:
-
-```bash
+# Install Phonenv (editable for development)
 pip install -e .
 ```
 
 ## Quick Start
 
-### Interactive Mode
+### Interactive mode
 
-The interactive mode provides guided navigation through IPA character categories:
-
-```bash
-python3 phonenv_cl.py interactive
-```
-
-Or analyze a specific character with mode selection:
+Launch the interactive TUI to pick a target and run analyses:
 
 ```bash
-python3 phonenv_cl.py interactive 'ɪ' --mode narrow --file data/input.txt
+python3 interactive_cli.py
 ```
 
-**Note**: The fully interactive menu system (with character selection) is designed for terminal use with keyboard input.
-
-### Direct Analysis Commands
-
-For scripted or automated analysis:
+Or use the console script after installation:
 
 ```bash
-# Basic environment analysis
-python3 phonenv_cl.py analyze 'ɪ' --file data/input.txt
-
-# Advanced IPA-aware analysis with Unicode information
-python3 phonenv_cl.py ipa_analyze 'ɪ' --file data/input.txt --unicode-info
+phonenv
 ```
 
-## Command Reference
+> The interactive menu is designed for a keyboard-driven terminal (not for piped input).
 
-### Interactive Analysis
+**Features:**
+- Guided IPA character selection through consonant/vowel categories
+- Diacritic panel for building complex segments
+- Transcription mode selection (narrow/broad)
+- Integrated dictionary management
 
-* `interactive` - Launch interactive mode with transcription mode selection
-* `interactive <character>` - Analyze specific character with interactive setup
-* `interactive <character> --mode <narrow|broad>` - Set transcription mode directly
-* `interactive <character> --file <path>` - Use custom word list
+## Interactive Features
 
-### Environment Analysis
+### Character Selection
+- Browse consonants by place/manner of articulation
+- Browse vowels by height/backness/rounding
+- Select from common diphthongs and triphthongs
+- Build complex segments with diacritic panel
 
-* `analyze <character>` - Basic phonetic environment analysis
-* `ipa_analyze <character>` - Advanced IPA-aware analysis with Unicode support
-* `ipa_analyze <character> --unicode-info` - Include detailed Unicode character information
+### Analysis Options
+- Choose narrow (phonetic) or broad (phonemic) transcription mode
+- Analyze selected character across all environment types
+- View results in organized tables with examples
 
 ### Dictionary Management
 
-* `dict --print` - Display current word list
-* `dict --append <word>` - Add word to dictionary
-* `dict --delete <substring>` - Remove words containing substring
-* `dict --stats` - Show dictionary statistics (total words, unique letters, etc.)
-* `dict --clear` - Clear entire dictionary
+Access via 'd' during analysis:
 
-### Special Characters
-
-* `add_special <character>` - Add custom phonetic character
-* `add_special <character> --erase` - Remove special character
+- **View Dictionary**: Display all words in current dataset
+- **Add Words**: Add new IPA transcriptions to dataset
+- **Remove Words**: Delete words containing specific substrings
+- **Statistics**: View word count, length statistics, character usage
+- **Clear Dataset**: Remove all words (with confirmation)
 
 ## Python API
 
 ```python
-from environment_analyzer import PhoneticAnalyzer
-from ipa_processor_v2 import IPAProcessorV2, get_config_for_transcription_mode
+from phonenv import PhoneticAnalyzer, DictionaryProcessor, load_words_list
+from phonenv.analysis import get_config_for_transcription_mode, IPAProcessorV2
+from phonenv.data import iter_word_entries, WordEntry
 
 # Basic phonetic environment analysis
 analyzer = PhoneticAnalyzer()
-results = analyzer.analyze_character('ɪ', 'data/input.txt')
+results = analyzer.analyze_character('ɪ', 'data/dataset.txt')
 
 # Advanced IPA analysis with transcription modes
 config = get_config_for_transcription_mode('narrow')  # or 'broad'
 analyzer = PhoneticAnalyzer(use_ipa_processing=True)
 analyzer.ipa_processor_v2 = IPAProcessorV2(config)
-results = analyzer.analyze_character('ɪ', 'data/input.txt')
+results = analyzer.analyze_character('ɪ', 'data/dataset.txt')
+
+# Enhanced format parsing with rich metadata
+for entry in iter_word_entries('enhanced_dataset.txt'):
+    print(f"IPA: {entry.ipa}")
+    print(f"Language: {entry.section.get('lang', 'unknown')}")
+    print(f"Mode: {entry.section.get('mode', 'narrow')}")
+    print(f"Tags: {entry.tags}")
+
+# Backwards-compatible simple parsing
+words = load_words_list('data/dataset.txt')  # Returns list of IPA strings
 
 # Direct IPA text processing
 processor = IPAProcessorV2()
@@ -114,37 +108,31 @@ segments = processor.ipa_segments(normalized_text)
 
 ## Transcription Modes
 
-### Narrow Transcription (Phonetic)
+### Narrow (phonetic; default in interactive UI)
 
-* **Default mode in interactive interface**
-* **Diacritics are contrastive**: \[p] ≠ \[pʰ], \[a] ≠ \[ã], \[i] ≠ \[iː]
-* Focuses on surface phonetic detail and allophonic variation
-* Uses exact string matching for precise phonetic analysis
-* Best for detailed phonetic environment studies
+* **Diacritics contrastive**: `[p] ≠ [pʰ]`, `[a] ≠ [ã]`, `[i] ≠ [iː]`
+* Exact segment equality (base + diacritics + length)
 
-### Broad Transcription (Phonemic)
+### Broad (phonemic)
 
-* **Diacritics are not contrastive**: \[p] = \[pʰ], \[a] = \[ã], \[i] = \[iː]
-* Focuses on underlying phonological patterns rather than phonetic variation
-* Uses base symbol equivalence for matching
-* Best for phonological analysis and pattern discovery
+* **Diacritics not contrastive**: `[p] = [pʰ]`, `[a] = [ã]`, `[i] = [iː]`
+* Collapses to base symbol (language-agnostic folding)
 
 ## Special Handling Rules
 
 ### Diacritics
 
-* Diacritics are **never treated as standalone characters**.
-* They must always be attached to a base character (e.g., \[pʰ], not \[ʰ]).
+* Never standalone; always attach to a base (e.g., `[pʰ]`, not `[ʰ]`)
 
-### Diphthongs and Triphthongs
+### Diphthongs & Triphthongs
 
-* Treated as **atomic vocalic nuclei**.
-* Searching for \[a] will **not** match \[aɪ] or \[aʊ].
+* Treated as **single nuclei** (atomic)
+* Searching for `[a]` **does not** match `[aɪ]`/`[aʊ]`
 
 ### Affricates
 
-* Only **tie-bar affricates** (e.g., \[t͡ʃ], \[d͜ʒ]) are treated as single phonological units.
-* If no tie bar is present (e.g., \[dʒ]), the sequence is analyzed as a **stop + fricative cluster**.
+* **Tie-bar** forms (e.g., `t͡ʃ`, `d͜ʒ`) are **single segments**
+* Without a tie-bar (e.g., `dʒ`) → treated as **cluster**
 
 ## Example Output
 
@@ -162,50 +150,160 @@ segments = processor.ipa_segments(normalized_text)
                        tʰ      [ɪ]      p               1   tʰ[ɪ]p
 ```
 
-## Input Format
+## Input Format (v1.1+)
 
-Word lists should contain one IPA transcription per line in UTF-8 encoding:
+The format uses optional language-aware sections, comments, and inline tags:
 
 ```
-kʰæt
-tʰɪp
-sɑːm
-ʃiːp
-θɪŋk
+# English (RP)
+[lang=en-GB; mode=narrow; profile=english; tag=RP]
+kʰæt                     # cat
+θɪŋk [dental]           # think - dental fricative
+t͡ʃɪp                    # chip
+
+# English (GA)
+[lang=en-US; mode=broad; profile=english; tag=GA]
+spɹɪŋ [GA]              # spring - General American
+kæt                      # cat (broad transcription)
+
+# Spanish (MX)
+[lang=es-MX; mode=broad; profile=spanish]
+t͡ʃiko                   # chico
+mweɣo [dialect]         # fuego (diphthong nucleus)
 ```
 
-The default dataset (`data/input.txt`) contains 96 phonetically transcribed English words.
+**Format Features:**
+
+- **Section Headers**: `[lang=…; mode=…; profile=…]` set language, transcription mode, and analysis profile
+- **Comments**: Everything after `#` is ignored - perfect for glosses and notes
+- **Inline Tags**: `[tag]` tokens are parsed but ignored by analysis (useful for metadata)
+- **Flexible Spacing**: Headers and tags tolerate extra whitespace
+- **Backwards Compatible**: Simple format files work without modification
+
+**Section Parameters:**
+
+- `lang`: Language code (e.g., `en`, `en-GB`, `es-MX`)
+- `mode`: `narrow` (phonetic) or `broad` (phonemic)
+- `profile`: Analysis profile name (e.g., `english`, `spanish`, `custom`)
+- `tag`: Optional section label for organization
+
+The default dataset (`data/dataset.txt`) contains 100 phonetically transcribed English words using the simple format.
 
 ## Project Structure
 
 ```
 phonenv/
-├── phonenv_cl.py              # Main command-line interface
-├── interactive_cli.py         # Interactive IPA character selection
-├── environment_analyzer.py    # Core phonetic analysis engine
-├── ipa_processor_v2.py        # Professional IPA text processing
-├── dict_parse.py              # Dictionary management utilities
-├── setup.py                   # Package configuration and dependencies
+├── phonenv/                   # Main package
+│   ├── __init__.py           # Package initialization and exports
+│   ├── cli.py                # Interactive CLI and command-line interface
+│   ├── analysis.py           # Core phonetic analysis and IPA processing
+│   ├── data.py               # Dataset parsing and batch processing
+│   └── io.py                 # Caching and output file handling
+├── setup.py                  # Package configuration and dependencies
 └── data/
-    └── input.txt              # Default IPA word list (96 words)
+    ├── dataset.txt           # Default IPA word list (100 words)
+    └── targets.txt           # Targets for batch processing
 ```
 
 ## Environment Categories
 
-**INITIAL**: Word-initial position (#\_X)
+**INITIAL**: Word-initial position (#_X)
 
-* Example: \[ɪ]nɪʃəl for target 'ɪ'
+* Example: `[ɪ]`nɪʃəl for target 'ɪ'
 
-**FINAL**: Word-final position (X\_#)
+**FINAL**: Word-final position (X_#)
 
-* Example: kʰɔːf\[ɪ] for target 'ɪ'
+* Example: kʰɔːf`[ɪ]` for target 'ɪ'
 
 **MEDIAL**: Word-medial positions, classified by phonetic context:
 
-* **V\_V**: Between vowels (vowel-vowel environment)
-* **V\_C**: After vowel, before consonant
-* **C\_V**: After consonant, before vowel
-* **C\_C**: Between consonants (consonant cluster environment)
+* **V_V**: Between vowels (vowel-vowel environment)
+* **V_C**: After vowel, before consonant
+* **C_V**: After consonant, before vowel
+* **C_C**: Between consonants (consonant cluster environment)
+
+## Dataset Format (v1.1)
+
+### Migration Guide
+
+**Existing users**: Your current `data/dataset.txt` files work without any changes. The format is fully backwards compatible.
+
+**Immediate benefits**: Start adding comments to your existing files today:
+
+```
+kʰæt    # cat - aspirated voiceless stop
+tʰɪp    # tip - aspirated
+```
+
+**Advanced usage**: Add language sections for multi-language datasets:
+
+```
+[lang=en; mode=narrow]
+kʰæt    # English: cat
+tʰɪp    # English: tip
+
+[lang=es; mode=broad]
+gato    # Spanish: cat
+```
+
+### Format Specification
+
+**File Structure:**
+1. Lines starting with `[...]` are section headers
+2. Everything after `#` is a comment (ignored by analysis)
+3. `[tag]` tokens within lines are metadata tags (parsed but ignored by analysis)
+4. Blank lines and whitespace are ignored
+5. One IPA transcription per line (after processing comments/tags)
+
+**Section Headers:**
+- Update settings for all following entries
+- Format: `[key=value; key2=value2]`
+- Settings persist until the next header
+- Comments allowed: `[lang=en] # English section`
+
+**Valid Section Keys:**
+- `lang`: Language/locale code (ISO 639, e.g., `en`, `en-US`, `es-MX`)
+- `mode`: `narrow` (phonetic) or `broad` (phonemic)
+- `profile`: Custom analysis profile name
+- `tag`: Section label for organization
+
+**Example Enhanced Dataset:**
+
+```
+# Multi-language phonetic dataset
+# Demonstrates section headers, comments, and tags
+
+[lang=en-GB; mode=narrow; profile=rp; tag=received_pronunciation]
+kʰæt [basic]                    # cat - basic vocabulary
+θɪŋk [fricative] [dental]      # think - dental fricative
+t͡ʃɪp                          # chip - affricate
+
+[lang=en-US; mode=broad; profile=ga]
+kæt [basic]                     # cat - General American (broad)
+θɪŋk                           # think - simplified transcription
+
+# Spanish Mexican variety
+[lang=es-MX; mode=broad; profile=mexican]
+gato [cognate]                  # cat - Spanish cognate
+t͡ʃiko [native]                 # chico - native vocabulary
+
+# Loan words section
+[tag=loanwords]
+kʰaɾe [loan] [japanese]        # karate - from Japanese
+```
+
+### Parsing Behavior
+
+**Robust Processing:**
+- Invalid section headers are treated as regular lines
+- Malformed tags don't break parsing
+- Extra whitespace is tolerated everywhere
+- Unicode normalization maintains data integrity
+
+**Backwards Compatibility:**
+- Files without headers use default settings: `lang=und; mode=narrow; profile=default`
+- All existing CLI commands work unchanged
+- Legacy API functions (`load_words_list`, `load_words_set`) return plain IPA strings
 
 ## IPA Processing Features
 
@@ -242,7 +340,7 @@ Validates against official IPA Unicode ranges:
 **Optional**:
 
 * `panphon` (≥0.20) - IPA segmentation and phonetic feature analysis
-* `rich` (≥10.0) - Enhanced terminal output formatting
+* `rich` (≥10.0) - Terminal output formatting
 
 **Development**:
 
@@ -270,11 +368,13 @@ pip install .[enhanced,dev]
 
 * Memory-efficient with support for multiple concurrent analyses
 * Optimized Unicode text processing with caching
+* Stream-based parsing for dataset format (minimal memory footprint)
+* Backwards-compatible API maintains performance for simple format files
 
 ### Output Format
 
 * Unicode box-drawing characters for clear tables
-* Bracketed highlighting of targets: \[ɪ]
+* Bracketed highlighting of targets: `[ɪ]`
 * Grouped by environment category with counts and examples
 
 ### Error Handling
@@ -287,6 +387,110 @@ pip install .[enhanced,dev]
 
 * Interactive menu navigation requires terminal keyboard input (not suitable for piped input)
 * Unicode info display may show "N/A" depending on system Unicode data
+
+## IPA Segmentation and Character Handling
+
+This section provides implementation guidance for how Phonenv treats IPA characters and diacritics in analysis, aligned with standard phonetic practice.
+
+### Normalization & Text Hygiene
+
+**Policy:**
+* **Store/emit in NFC; analyze in NFD**
+  * On input: normalize to **NFC** for file integrity, display, and reproducible storage
+  * For segmentation/matching: convert to **NFD** so all combining diacritics are explicit and attachable to a base
+* **Canonical equivalence must not change analysis** - e.g., `ã` ≡ `a + ̃` must segment to the same object
+
+**Why:** NFC prevents "look-the-same but compare-different" bugs in files; NFD makes diacritic attachment explicit for the analyzer.
+
+### Segment Model
+
+Each segment is represented as an object with these components:
+
+```python
+Segment {
+  base: codepoint          # e.g., t, a, ɪ, ʃ, ɚ …
+  diacritics: list         # combining marks and spacing modifiers bound to base
+  length: {none, half, long}  # ˑ, ː (also handle geminates)
+  suprasegmentals: dict    # stress, tone_seq, boundary_flags stored separately
+}
+```
+
+**Attach to the Base:**
+* **Combining marks** from U+0300–036F: nasalization ̃, voiceless ̥, voiced ̬, advanced ̟, retracted ̠, raised ̝, lowered ̞, syllabicity ̩, etc.
+* **Spacing modifier letters** (U+02B0–02FF): aspiration `ʰ`, breathy `ʱ`, labialization `ʷ`, palatalization `ʲ`, velarization `ˠ`, pharyngealization `ˤ`, nasal release `ⁿ`, lateral release `ˡ`, etc.
+* **Length marks** `ː` long, `ˑ` half-long → store in `length`, not as separate segments
+
+**Do Not Attach:**
+* **Stress markers** `ˈ`, `ˌ` → suprasegmental, not part of the segment
+* **Tone letters/diacritics** → suprasegmental; ignore for left/right segmental context
+* **Word/foot boundaries**, pauses, intonation—ignore for C/V context
+
+### Vowel vs. Consonant Classification
+
+**Vowels include:**
+* Vowel bases: i, e, a, ɑ, u, ʊ, ɪ, y, ʏ, ø, œ, ɘ, ɤ, ə, ɜ, ɞ, ɨ, ʉ, ɯ, …
+* **Syllabic consonants** (diacritic **̩**): treat as **vocalic nuclei** for environment classification (e.g., `n̩` behaves as **V**)
+
+**Consonants include:**
+* Pulmonic/non-pulmonic consonant bases and their diacritics
+* Approximants `j, ɹ, ɻ, ɰ, ʋ` are consonants unless syllabic `̩`
+
+### Complex Segments (Atomic Units)
+
+**Affricates with Tie-Bar Only:**
+* `t͡ʃ`, `d͡ʒ`, `ts͡`, etc. (tie bars `͡` or `͜`) → **single segment**
+* **Without tie-bar** (`dʒ`, `ts`) → treat as **clusters** (two segments)
+
+**Diphthongs/Triphthongs:**
+* Language/profile-driven lists (English: `{aɪ, aʊ, eɪ, oʊ, ɔɪ}`, Spanish: `{ai, ei, oi, au, eu, ia, ie, io, ua, ue, uo}`)
+* Treat each as **one vocalic nucleus** for environment classification
+
+### Narrow vs. Broad Matching
+
+**Narrow Mode (Phonetic):**
+* **Exact segment equality**: base + diacritics + length must match
+* `p ≠ pʰ`, `a ≠ ã`, `i ≠ iː`
+
+**Broad Mode (Phonemic):**
+* **Collapse to base**: strip diacritics and map allophones to phoneme classes
+* Example folds: `pʰ → p`, `ã → a`, `iː → i`, `ɚ → ə`, `t̪ → t`
+* Language/profile-specific (e.g., don't fold aspiration in Hindi)
+
+### Environment Classification
+
+* **INITIAL** `# _ X`: first segment after stripping suprasegmentals
+* **FINAL** `X _ #`: last segment
+* **MEDIAL**: V_V, C_V, V_C, C_C based on neighbor classification
+
+**Examples:**
+* `ˈspɹɪŋ` → segments: `s p ɹ ɪ ŋ` (stress stripped)
+* For target `ɪ`: left `ɹ` (C), right `ŋ` (C) ⇒ **C_C**
+* `n̩` counts as **V** (syllabic) for environment classification
+
+### Implementation Guidelines
+
+**Tokenization Steps:**
+1. **NFC in → NFD for analysis**
+2. **Scan by base**: detect tie-bar affricates, diphthongs, or simple bases
+3. **Consume trailing diacritics**: attach combining marks, spacing modifiers, length marks
+4. **Record suprasegmentals** separately (stress, tone)
+5. Build segment list
+
+**Test Invariants:**
+* Normalization: `segment("ã")` equals `segment("a\u0303")`
+* Affricates: `len(segment("t͡ʃ")) == 1`; `len(segment("tʃ")) == 2`
+* Length: `iː` narrow ≠ `i`; broad equal if non-contrastive
+* Stress: removing `ˈ`/`ˌ` doesn't change segment neighbors for C/V logic
+
+### Unicode Block Validation
+
+Validates against official IPA Unicode ranges:
+* IPA Extensions (U+0250–02AF)
+* Spacing Modifier Letters (U+02B0–02FF)
+* Combining Diacritical Marks (U+0300–036F)
+* Phonetic Extensions (U+1D00–1D7F)
+* Phonetic Extensions Supplement (U+1D80–1DBF)
+* Modifier Tone Letters (U+A700–A71F)
 
 ## Contributing
 

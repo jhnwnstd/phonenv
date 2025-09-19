@@ -1,0 +1,1227 @@
+PHONETIC ENVIRONMENT ANALYSIS REPORT
+============================================================
+Generated: 2025-09-19 08:54:15
+Total targets analyzed: 73
+
+SUMMARY
+------------------------------------------------------------
+Target     Occurrences  Environments    Source
+------------------------------------------------------------
+i          1            1               dataset.txt
+ɪ          35           30              dataset.txt
+e          2            2               dataset.txt
+ɛ          9            9               dataset.txt
+a          0            0               dataset.txt
+ɑ          4            4               dataset.txt
+ɒ          8            8               dataset.txt
+ɔ          4            4               dataset.txt
+o          0            0               dataset.txt
+ʊ          5            5               dataset.txt
+u          0            0               dataset.txt
+ə          13           11              dataset.txt
+ʌ          9            9               dataset.txt
+ɜ          0            0               dataset.txt
+ɚ          7            5               dataset.txt
+ɝ          0            0               dataset.txt
+aɪ         3            2               dataset.txt
+eɪ         9            8               dataset.txt
+ɔɪ         1            1               dataset.txt
+aʊ         1            1               dataset.txt
+oʊ         4            3               dataset.txt
+ɪə         1            1               dataset.txt
+eə         0            0               dataset.txt
+ʊə         3            3               dataset.txt
+p          18           15              dataset.txt
+t          26           17              dataset.txt
+k          23           18              dataset.txt
+b          17           10              dataset.txt
+d          17           13              dataset.txt
+ɡ          11           11              dataset.txt
+f          6            5               dataset.txt
+v          1            1               dataset.txt
+s          28           18              dataset.txt
+z          11           8               dataset.txt
+ʃ          4            4               dataset.txt
+ʒ          7            7               dataset.txt
+h          4            4               dataset.txt
+ʔ          5            4               dataset.txt
+t͡s        0            0               dataset.txt
+d͡z        0            0               dataset.txt
+t͡ʃ        6            6               dataset.txt
+d͡ʒ        3            3               dataset.txt
+t͡ɕ        0            0               dataset.txt
+d͡ʑ        0            0               dataset.txt
+ʈ͡ʂ        0            0               dataset.txt
+ɖ͡ʐ        0            0               dataset.txt
+ɸ          0            0               dataset.txt
+ʝ          0            0               dataset.txt
+x          0            0               dataset.txt
+ɣ          0            0               dataset.txt
+ʁ          0            0               dataset.txt
+l          10           9               dataset.txt
+ɫ          5            5               dataset.txt
+r          1            1               dataset.txt
+ɹ          19           18              dataset.txt
+ɾ          5            5               dataset.txt
+m          12           10              dataset.txt
+n          15           14              dataset.txt
+l̩         2            2               dataset.txt
+n̩         2            2               dataset.txt
+m̩         1            1               dataset.txt
+pʰ         8            5               dataset.txt
+tʰ         1            1               dataset.txt
+kʰ         7            5               dataset.txt
+p̚         1            1               dataset.txt
+t̚         1            1               dataset.txt
+k̚         0            0               dataset.txt
+t̪         1            1               dataset.txt
+d̪         0            0               dataset.txt
+j          5            5               dataset.txt
+w          10           8               dataset.txt
+ɥ          0            0               dataset.txt
+ʋ          0            0               dataset.txt
+
+============================================================
+
+TARGET 1: 'i'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  FINAL:
+    ɾ _ # (1 occurrence): ˈsɪɾ[i]
+
+------------------------------------------------------------
+
+TARGET 2: 'ɪ'
+----------------------------------------
+Total occurrences: 35
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ m (4 occurrences): ˈ[ɪ]mpʰʊls, ˈ[ɪ]mpʊt, ˈ[ɪ]mpʰɔːt, [ɪ]mˈpʰɔːt
+    # _ k (1 occurrence): [ɪ]kˈspleɪn
+    # _ ɡ (1 occurrence): [ɪ]ɡˈzækt
+
+  FINAL:
+    d _ # (1 occurrence): ˈdɑd[ɪ]
+
+  MEDIAL C_C:
+    s _ z (2 occurrences): ˈhɔːs[ɪ]z, ˈhɔɹs[ɪ]z
+    ɹ _ ŋ (2 occurrences): ʃɹ[ɪ]ŋk, pɹeɪɹ[ɪ]ŋ
+    f _ f (1 occurrence): f[ɪ]fθ
+    f _ ŋ (1 occurrence): ˈf[ɪ]ŋɡə
+    k _ k (1 occurrence): ˈk[ɪ]kɪŋ
+    k _ t (1 occurrence): sk[ɪ]t
+    k _ ŋ (1 occurrence): ˈkɪk[ɪ]ŋ
+    k _ ʔ (1 occurrence): ˈk[ɪ]ʔn̩
+    kʰ _ t (1 occurrence): kʰ[ɪ]t
+    l _ p (1 occurrence): kʰl[ɪ]p
+    m _ ɫ (1 occurrence): m[ɪ]ɫk
+    n _ d (1 occurrence): ˈwɑn[ɪ]d
+    n _ t (1 occurrence): ˈjuːn[ɪ]t
+    p _ n (1 occurrence): sp[ɪ]n
+    p _ t (1 occurrence): ˈpʌp[ɪ]t
+    pʰ _ n (1 occurrence): pʰ[ɪ]n
+    s _ ŋ (1 occurrence): ˈs[ɪ]ŋə
+    s _ ɾ (1 occurrence): ˈs[ɪ]ɾi
+    t _ d (1 occurrence): ˈwɒnt[ɪ]d
+    v _ ʒ (1 occurrence): ˈv[ɪ]ʒən
+    z _ k (1 occurrence): ˈmjuːz[ɪ]k
+    ɫ _ t (1 occurrence): spɫ[ɪ]ts
+    ɹ _ z (1 occurrence): pʰɹ[ɪ]ˈzɛnt
+    ɹ _ ð (1 occurrence): ˈɹ[ɪ]ðm̩
+    ʃ _ p (1 occurrence): ʃ[ɪ]p
+    θ _ ŋ (1 occurrence): θ[ɪ]ŋk
+
+------------------------------------------------------------
+
+TARGET 3: 'e'
+----------------------------------------
+Total occurrences: 2
+Source file: data/dataset.txt
+
+  MEDIAL C_C:
+    l _ ɾ (1 occurrence): ˈl[e]ɾɚ
+    m _ ʒ (1 occurrence): ˈm[e]ʒɚ
+
+------------------------------------------------------------
+
+TARGET 4: 'ɛ'
+----------------------------------------
+Total occurrences: 9
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ d͡ʒ (1 occurrence): [ɛ]d͡ʒ
+
+  MEDIAL C_V:
+    w _ ə (1 occurrence): skw[ɛ]ə
+
+  MEDIAL C_C:
+    l _ ŋ (1 occurrence): l[ɛ]ŋθ
+    m _ ʒ (1 occurrence): ˈm[ɛ]ʒə
+    p _ p (1 occurrence): ˈp[ɛ]pɚ
+    pʰ _ p (1 occurrence): ˈpʰ[ɛ]pə
+    z _ n (1 occurrence): pʰɹɪˈz[ɛ]nt
+    ɹ _ z (1 occurrence): ˈpʰɹ[ɛ]zənt
+    ɹ _ θ (1 occurrence): bɹ[ɛ]θ
+
+------------------------------------------------------------
+
+TARGET 5: 'a'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 6: 'ɑ'
+----------------------------------------
+Total occurrences: 4
+Source file: data/dataset.txt
+
+  MEDIAL C_C:
+    b _ ɾ (1 occurrence): ˈb[ɑ]ɾəl
+    d _ d (1 occurrence): ˈd[ɑ]dɪ
+    w _ n (1 occurrence): ˈw[ɑ]nɪd
+    ɹ _ b (1 occurrence): ɹ[ɑ]bd
+
+------------------------------------------------------------
+
+TARGET 7: 'ɒ'
+----------------------------------------
+Total occurrences: 8
+Source file: data/dataset.txt
+
+  MEDIAL C_C:
+    b _ ʔ (1 occurrence): ˈb[ɒ]ʔl̩
+    d _ ɡ (1 occurrence): d[ɒ]ɡ
+    l _ s (1 occurrence): ɡl[ɒ]s
+    p _ s (1 occurrence): ˈp[ɒ]st͡ʃə
+    t _ p (1 occurrence): st[ɒ]p
+    tʰ _ p (1 occurrence): tʰ[ɒ]p
+    w _ n (1 occurrence): ˈw[ɒ]ntɪd
+    ɹ _ b (1 occurrence): ɹ[ɒ]bd
+
+------------------------------------------------------------
+
+TARGET 8: 'ɔ'
+----------------------------------------
+Total occurrences: 4
+Source file: data/dataset.txt
+
+  MEDIAL C_C:
+    d _ ɡ (1 occurrence): d[ɔ]ɡz
+    h _ ɹ (1 occurrence): ˈh[ɔ]ɹsɪz
+    w _ k (1 occurrence): w[ɔ]kt
+    w _ ɾ (1 occurrence): ˈw[ɔ]ɾɚ
+
+------------------------------------------------------------
+
+TARGET 9: 'o'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 10: 'ʊ'
+----------------------------------------
+Total occurrences: 5
+Source file: data/dataset.txt
+
+  MEDIAL V_C:
+    ə _ t (1 occurrence): ɡə[ʊ]t
+
+  MEDIAL C_C:
+    f _ ɫ (1 occurrence): f[ʊ]ɫ
+    p _ t (1 occurrence): ˈɪmp[ʊ]t
+    pʰ _ l (1 occurrence): ˈɪmpʰ[ʊ]ls
+    s _ ɡ (1 occurrence): ˈs[ʊ]ɡɚ
+
+------------------------------------------------------------
+
+TARGET 11: 'u'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 12: 'ə'
+----------------------------------------
+Total occurrences: 13
+Source file: data/dataset.txt
+
+  FINAL:
+    t͡ʃ _ # (2 occurrences): ˈneɪt͡ʃ[ə], ˈpɒst͡ʃ[ə]
+    ʒ _ # (2 occurrences): ˈmɛʒ[ə], ˈæʒ[ə]
+    p _ # (1 occurrence): ˈpʰɛp[ə]
+    ŋ _ # (1 occurrence): ˈsɪŋ[ə]
+    ɛ _ # (1 occurrence): skwɛ[ə]
+    ɡ _ # (1 occurrence): ˈfɪŋɡ[ə]
+
+  MEDIAL C_V:
+    ɡ _ ʊ (1 occurrence): ɡ[ə]ʊt
+
+  MEDIAL C_C:
+    t _ l (1 occurrence): ˈbæt[ə]l
+    z _ n (1 occurrence): ˈpʰɹɛz[ə]nt
+    ɾ _ l (1 occurrence): ˈbɑɾ[ə]l
+    ʒ _ n (1 occurrence): ˈvɪʒ[ə]n
+
+------------------------------------------------------------
+
+TARGET 13: 'ʌ'
+----------------------------------------
+Total occurrences: 9
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ʔ (1 occurrence): ˈ[ʌ]ʔoʊ
+
+  MEDIAL C_C:
+    b _ t (1 occurrence): ˈb[ʌ]tn̩
+    b _ z (1 occurrence): b[ʌ]z
+    b _ ɾ (1 occurrence): ˈb[ʌ]ɾɚ
+    d͡ʒ _ d͡ʒ (1 occurrence): d͡ʒ[ʌ]d͡ʒ
+    m _ n (1 occurrence): ˈm[ʌ]nθ
+    p _ p (1 occurrence): ˈp[ʌ]pɪt
+    ɹ _ ʃ (1 occurrence): ɹ[ʌ]ʃ
+    ʔ _ ʔ (1 occurrence): ˈʔ[ʌ]ʔoʊ
+
+------------------------------------------------------------
+
+TARGET 14: 'ɜ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 15: 'ɚ'
+----------------------------------------
+Total occurrences: 7
+Source file: data/dataset.txt
+
+  FINAL:
+    ɾ _ # (3 occurrences): ˈbʌɾ[ɚ], ˈwɔɾ[ɚ], ˈleɾ[ɚ]
+    p _ # (1 occurrence): ˈpɛp[ɚ]
+    ɡ _ # (1 occurrence): ˈsʊɡ[ɚ]
+    ʒ _ # (1 occurrence): ˈmeʒ[ɚ]
+
+  MEDIAL V_C:
+    iː _ s (1 occurrence): kʰʊəɹiː[ɚ]s
+
+------------------------------------------------------------
+
+TARGET 16: 'ɝ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 17: 'aɪ'
+----------------------------------------
+Total occurrences: 3
+Source file: data/dataset.txt
+
+  FINAL:
+    k _ # (1 occurrence): sk[aɪ]
+
+  MEDIAL C_C:
+    ɹ _ s (2 occurrences): pʰɹ[aɪ]s, pɹ[aɪ]s
+
+------------------------------------------------------------
+
+TARGET 18: 'eɪ'
+----------------------------------------
+Total occurrences: 9
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ t̪ (1 occurrence): [eɪ]t̪θ
+
+  FINAL:
+    ɹ _ # (2 occurrences): ðɹ[eɪ], spɹ[eɪ]
+    d _ # (1 occurrence): ˈtʃuːzˌd[eɪ]
+
+  MEDIAL C_C:
+    b _ ʒ (1 occurrence): b[eɪ]ʒ
+    f _ s (1 occurrence): f[eɪ]s
+    l _ n (1 occurrence): ɪkˈspl[eɪ]n
+    n _ t͡ʃ (1 occurrence): ˈn[eɪ]t͡ʃə
+    ɹ _ ɹ (1 occurrence): pɹ[eɪ]ɹɪŋ
+
+------------------------------------------------------------
+
+TARGET 19: 'ɔɪ'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  MEDIAL C_C:
+    t͡ʃ _ s (1 occurrence): t͡ʃ[ɔɪ]s
+
+------------------------------------------------------------
+
+TARGET 20: 'aʊ'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  MEDIAL C_C:
+    m _ θ (1 occurrence): m[aʊ]θ
+
+------------------------------------------------------------
+
+TARGET 21: 'oʊ'
+----------------------------------------
+Total occurrences: 4
+Source file: data/dataset.txt
+
+  FINAL:
+    ʔ _ # (2 occurrences): ˈʔʌʔ[oʊ], ˈʌʔ[oʊ]
+
+  MEDIAL C_C:
+    g _ t (1 occurrence): g[oʊ]t
+    ɹ _ k (1 occurrence): stɹ[oʊ]k
+
+------------------------------------------------------------
+
+TARGET 22: 'ɪə'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  FINAL:
+    n _ # (1 occurrence): n[ɪə]
+
+------------------------------------------------------------
+
+TARGET 23: 'eə'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 24: 'ʊə'
+----------------------------------------
+Total occurrences: 3
+Source file: data/dataset.txt
+
+  FINAL:
+    j _ # (1 occurrence): kj[ʊə]
+    t _ # (1 occurrence): t[ʊə]
+
+  MEDIAL C_C:
+    kʰ _ ɹ (1 occurrence): kʰ[ʊə]ɹiːɚs
+
+------------------------------------------------------------
+
+TARGET 25: 'p'
+----------------------------------------
+Total occurrences: 18
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɹ (2 occurrences): [p]ɹeɪɹɪŋ, [p]ɹaɪs
+    # _ ɒ (1 occurrence): ˈ[p]ɒst͡ʃə
+    # _ ɛ (1 occurrence): ˈ[p]ɛpɚ
+    # _ ʌ (1 occurrence): ˈ[p]ʌpɪt
+
+  FINAL:
+    ɒ _ # (2 occurrences): tʰɒ[p], stɒ[p]
+    ɪ _ # (2 occurrences): ʃɪ[p], kʰlɪ[p]
+
+  MEDIAL V_V:
+    æ _ ɫ̩ (1 occurrence): ˈæ[p]ɫ̩
+    ɛ _ ə (1 occurrence): ˈpʰɛ[p]ə
+    ɛ _ ɚ (1 occurrence): ˈpɛ[p]ɚ
+    ʌ _ ɪ (1 occurrence): ˈpʌ[p]ɪt
+
+  MEDIAL C_V:
+    m _ ʊ (1 occurrence): ˈɪm[p]ʊt
+    s _ ɪ (1 occurrence): s[p]ɪn
+
+  MEDIAL C_C:
+    s _ l (1 occurrence): ɪkˈs[p]leɪn
+    s _ ɫ (1 occurrence): s[p]ɫɪts
+    s _ ɹ (1 occurrence): s[p]ɹeɪ
+
+------------------------------------------------------------
+
+TARGET 26: 't'
+----------------------------------------
+Total occurrences: 26
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ j (1 occurrence): [t]juːn
+    # _ ʃ (1 occurrence): ˈ[t]ʃuːzˌdeɪ
+    # _ ʊə (1 occurrence): [t]ʊə
+
+  FINAL:
+    ɪ _ # (4 occurrences): kʰɪ[t], skɪ[t], ˈjuːnɪ[t], ˈpʌpɪ[t]
+    k _ # (3 occurrences): wɔːk[t], wɔk[t], ɪɡˈzæk[t]
+    n _ # (2 occurrences): ˈpʰɹɛzən[t], pʰɹɪˈzɛn[t]
+    ɔː _ # (2 occurrences): ˈɪmpʰɔː[t], ɪmˈpʰɔː[t]
+    ʊ _ # (2 occurrences): ˈɪmpʊ[t], ɡəʊ[t]
+    oʊ _ # (1 occurrence): goʊ[t]
+    ɑː _ # (1 occurrence): kɑː[t]
+
+  MEDIAL V_V:
+    æ _ ə (1 occurrence): ˈbæ[t]əl
+    ʌ _ n̩ (1 occurrence): ˈbʌ[t]n̩
+
+  MEDIAL V_C:
+    æ _ s (2 occurrences): kʰæ[t]s, kæ[t]s
+    ɪ _ s (1 occurrence): spɫɪ[t]s
+
+  MEDIAL C_V:
+    n _ ɪ (1 occurrence): ˈwɒn[t]ɪd
+    s _ ɒ (1 occurrence): s[t]ɒp
+
+  MEDIAL C_C:
+    s _ ɹ (1 occurrence): s[t]ɹoʊk
+
+------------------------------------------------------------
+
+TARGET 27: 'k'
+----------------------------------------
+Total occurrences: 23
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɑː (3 occurrences): [k]ɑː, [k]ɑːt, [k]ɑːd
+    # _ ɪ (2 occurrences): ˈ[k]ɪʔn̩, ˈ[k]ɪkɪŋ
+    # _ j (1 occurrence): [k]jʊə
+    # _ æ (1 occurrence): [k]æts
+
+  FINAL:
+    ŋ _ # (3 occurrences): θɪŋ[k], bæŋ[k], ʃɹɪŋ[k]
+    oʊ _ # (1 occurrence): stɹoʊ[k]
+    ɪ _ # (1 occurrence): ˈmjuːzɪ[k]
+    ɫ _ # (1 occurrence): mɪɫ[k]
+
+  MEDIAL V_V:
+    ɪ _ ɪ (1 occurrence): ˈkɪ[k]ɪŋ
+
+  MEDIAL V_C:
+    æ _ s (1 occurrence): bæ[k]s
+    æ _ t (1 occurrence): ɪɡˈzæ[k]t
+    ɔ _ t (1 occurrence): wɔ[k]t
+    ɔː _ t (1 occurrence): wɔː[k]t
+    ɪ _ s (1 occurrence): ɪ[k]ˈspleɪn
+
+  MEDIAL C_V:
+    s _ aɪ (1 occurrence): s[k]aɪ
+    s _ uː (1 occurrence): s[k]uːl
+    s _ ɪ (1 occurrence): s[k]ɪt
+
+  MEDIAL C_C:
+    s _ w (1 occurrence): s[k]wɛə
+
+------------------------------------------------------------
+
+TARGET 28: 'b'
+----------------------------------------
+Total occurrences: 17
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ æ (5 occurrences): [b]æɡ̚, [b]æŋk, ˈ[b]ætəl, [b]æks, [b]æɡz
+    # _ ʌ (3 occurrences): [b]ʌz, ˈ[b]ʌtn̩, ˈ[b]ʌɾɚ
+    # _ ɹ (2 occurrences): [b]ɹiːð, [b]ɹɛθ
+    # _ eɪ (1 occurrence): [b]eɪʒ
+    # _ ɑ (1 occurrence): ˈ[b]ɑɾəl
+    # _ ɒ (1 occurrence): ˈ[b]ɒʔl̩
+    # _ ɝː (1 occurrence): [b]ɝːd
+
+  MEDIAL V_C:
+    ɑ _ d (1 occurrence): ɹɑ[b]d
+    ɒ _ d (1 occurrence): ɹɒ[b]d
+
+  MEDIAL C_V:
+    m _ æ (1 occurrence): ˈhæm[b]æɡ
+
+------------------------------------------------------------
+
+TARGET 29: 'd'
+----------------------------------------
+Total occurrences: 17
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɑ (1 occurrence): ˈ[d]ɑdɪ
+    # _ ɒ (1 occurrence): [d]ɒɡ
+    # _ ɔ (1 occurrence): [d]ɔɡz
+    # _ ɔː (1 occurrence): [d]ɔːɡz
+
+  FINAL:
+    b _ # (2 occurrences): ɹɒb[d], ɹɑb[d]
+    ɝː _ # (2 occurrences): bɝː[d], wɝː[d]
+    ɪ _ # (2 occurrences): ˈwɒntɪ[d], ˈwɑnɪ[d]
+    ɫ _ # (2 occurrences): ˈwɜːɫ[d], ˈwɝːɫ[d]
+    ɑː _ # (1 occurrence): kɑː[d]
+
+  MEDIAL V_V:
+    iː _ l̩ (1 occurrence): ˈliː[d]l̩
+    ɑ _ ɪ (1 occurrence): ˈdɑ[d]ɪ
+
+  MEDIAL V_C:
+    uː _ ʒ (1 occurrence): ˈhjuː[d]ʒ
+
+  MEDIAL C_V:
+    z _ eɪ (1 occurrence): ˈtʃuːzˌ[d]eɪ
+
+------------------------------------------------------------
+
+TARGET 30: 'ɡ'
+----------------------------------------
+Total occurrences: 11
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ l (1 occurrence): [ɡ]lɒs
+    # _ æ (1 occurrence): ˈ[ɡ]ærɑːʒ
+    # _ ə (1 occurrence): [ɡ]əʊt
+
+  FINAL:
+    æ _ # (1 occurrence): ˈhæmbæ[ɡ]
+    ɒ _ # (1 occurrence): dɒ[ɡ]
+
+  MEDIAL V_V:
+    ʊ _ ɚ (1 occurrence): ˈsʊ[ɡ]ɚ
+
+  MEDIAL V_C:
+    æ _ z (1 occurrence): bæ[ɡ]z
+    ɔ _ z (1 occurrence): dɔ[ɡ]z
+    ɔː _ z (1 occurrence): dɔː[ɡ]z
+    ɪ _ z (1 occurrence): ɪ[ɡ]ˈzækt
+
+  MEDIAL C_V:
+    ŋ _ ə (1 occurrence): ˈfɪŋ[ɡ]ə
+
+------------------------------------------------------------
+
+TARGET 31: 'f'
+----------------------------------------
+Total occurrences: 6
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɪ (2 occurrences): [f]ɪfθ, ˈ[f]ɪŋɡə
+    # _ eɪ (1 occurrence): [f]eɪs
+    # _ ɝː (1 occurrence): [f]ɝː
+    # _ ʊ (1 occurrence): [f]ʊɫ
+
+  MEDIAL V_C:
+    ɪ _ θ (1 occurrence): fɪ[f]θ
+
+------------------------------------------------------------
+
+TARGET 32: 'v'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɪ (1 occurrence): ˈ[v]ɪʒən
+
+------------------------------------------------------------
+
+TARGET 33: 's'
+----------------------------------------
+Total occurrences: 28
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ k (4 occurrences): [s]kɪt, [s]kwɛə, [s]kuːl, [s]kaɪ
+    # _ p (3 occurrences): [s]pɪn, [s]pɹeɪ, [s]pɫɪts
+    # _ t (2 occurrences): [s]tɒp, [s]tɹoʊk
+    # _ ɪ (2 occurrences): ˈ[s]ɪŋə, ˈ[s]ɪɾi
+    # _ ʊ (1 occurrence): ˈ[s]ʊɡɚ
+
+  FINAL:
+    t _ # (3 occurrences): kʰæt[s], spɫɪt[s], kæt[s]
+    aɪ _ # (2 occurrences): pʰɹaɪ[s], pɹaɪ[s]
+    eɪ _ # (1 occurrence): feɪ[s]
+    k _ # (1 occurrence): bæk[s]
+    l _ # (1 occurrence): ˈɪmpʰʊl[s]
+    ɒ _ # (1 occurrence): ɡlɒ[s]
+    ɔɪ _ # (1 occurrence): t͡ʃɔɪ[s]
+    ɚ _ # (1 occurrence): kʰʊəɹiːɚ[s]
+    ɝː _ # (1 occurrence): ˈnɝː[s]
+
+  MEDIAL V_V:
+    ɔː _ ɪ (1 occurrence): ˈhɔː[s]ɪz
+
+  MEDIAL V_C:
+    ɒ _ t͡ʃ (1 occurrence): ˈpɒ[s]t͡ʃə
+
+  MEDIAL C_V:
+    ɹ _ ɪ (1 occurrence): ˈhɔɹ[s]ɪz
+
+  MEDIAL C_C:
+    k _ p (1 occurrence): ɪkˈ[s]pleɪn
+
+------------------------------------------------------------
+
+TARGET 34: 'z'
+----------------------------------------
+Total occurrences: 11
+Source file: data/dataset.txt
+
+  FINAL:
+    ɡ _ # (3 occurrences): dɔːɡ[z], bæɡ[z], dɔɡ[z]
+    ɪ _ # (2 occurrences): ˈhɔːsɪ[z], ˈhɔɹsɪ[z]
+    ʌ _ # (1 occurrence): bʌ[z]
+
+  MEDIAL V_V:
+    uː _ ɪ (1 occurrence): ˈmjuː[z]ɪk
+    ɛ _ ə (1 occurrence): ˈpʰɹɛ[z]ənt
+    ɪ _ ɛ (1 occurrence): pʰɹɪˈ[z]ɛnt
+
+  MEDIAL V_C:
+    uː _ d (1 occurrence): ˈtʃuː[z]ˌdeɪ
+
+  MEDIAL C_V:
+    ɡ _ æ (1 occurrence): ɪɡˈ[z]ækt
+
+------------------------------------------------------------
+
+TARGET 35: 'ʃ'
+----------------------------------------
+Total occurrences: 4
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɪ (1 occurrence): [ʃ]ɪp
+    # _ ɹ (1 occurrence): [ʃ]ɹɪŋk
+
+  FINAL:
+    ʌ _ # (1 occurrence): ɹʌ[ʃ]
+
+  MEDIAL C_V:
+    t _ uː (1 occurrence): ˈt[ʃ]uːzˌdeɪ
+
+------------------------------------------------------------
+
+TARGET 36: 'ʒ'
+----------------------------------------
+Total occurrences: 7
+Source file: data/dataset.txt
+
+  FINAL:
+    d _ # (1 occurrence): ˈhjuːd[ʒ]
+    eɪ _ # (1 occurrence): beɪ[ʒ]
+    ɑː _ # (1 occurrence): ˈɡærɑː[ʒ]
+
+  MEDIAL V_V:
+    e _ ɚ (1 occurrence): ˈme[ʒ]ɚ
+    æ _ ə (1 occurrence): ˈæ[ʒ]ə
+    ɛ _ ə (1 occurrence): ˈmɛ[ʒ]ə
+    ɪ _ ə (1 occurrence): ˈvɪ[ʒ]ən
+
+------------------------------------------------------------
+
+TARGET 37: 'h'
+----------------------------------------
+Total occurrences: 4
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ j (1 occurrence): ˈ[h]juːdʒ
+    # _ æ (1 occurrence): ˈ[h]æmbæɡ
+    # _ ɔ (1 occurrence): ˈ[h]ɔɹsɪz
+    # _ ɔː (1 occurrence): ˈ[h]ɔːsɪz
+
+------------------------------------------------------------
+
+TARGET 38: 'ʔ'
+----------------------------------------
+Total occurrences: 5
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ʌ (1 occurrence): ˈ[ʔ]ʌʔoʊ
+
+  MEDIAL V_V:
+    ʌ _ oʊ (2 occurrences): ˈʔʌ[ʔ]oʊ, ˈʌ[ʔ]oʊ
+    ɒ _ l̩ (1 occurrence): ˈbɒ[ʔ]l̩
+    ɪ _ n̩ (1 occurrence): ˈkɪ[ʔ]n̩
+
+------------------------------------------------------------
+
+TARGET 39: 't͡s'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 40: 'd͡z'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 41: 't͡ʃ'
+----------------------------------------
+Total occurrences: 6
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɔɪ (1 occurrence): [t͡ʃ]ɔɪs
+    # _ ɜː (1 occurrence): [t͡ʃ]ɜːt͡ʃ
+
+  FINAL:
+    æ _ # (1 occurrence): mæ[t͡ʃ]
+    ɜː _ # (1 occurrence): t͡ʃɜː[t͡ʃ]
+
+  MEDIAL V_V:
+    eɪ _ ə (1 occurrence): ˈneɪ[t͡ʃ]ə
+
+  MEDIAL C_V:
+    s _ ə (1 occurrence): ˈpɒs[t͡ʃ]ə
+
+------------------------------------------------------------
+
+TARGET 42: 'd͡ʒ'
+----------------------------------------
+Total occurrences: 3
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ʌ (1 occurrence): [d͡ʒ]ʌd͡ʒ
+
+  FINAL:
+    ɛ _ # (1 occurrence): ɛ[d͡ʒ]
+    ʌ _ # (1 occurrence): d͡ʒʌ[d͡ʒ]
+
+------------------------------------------------------------
+
+TARGET 43: 't͡ɕ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 44: 'd͡ʑ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 45: 'ʈ͡ʂ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 46: 'ɖ͡ʐ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 47: 'ɸ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 48: 'ʝ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 49: 'x'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 50: 'ɣ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 51: 'ʁ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 52: 'l'
+----------------------------------------
+Total occurrences: 10
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ e (1 occurrence): ˈ[l]eɾɚ
+    # _ iː (1 occurrence): ˈ[l]iːdl̩
+    # _ ɛ (1 occurrence): [l]ɛŋθ
+
+  FINAL:
+    ə _ # (2 occurrences): ˈbætə[l], ˈbɑɾə[l]
+    uː _ # (1 occurrence): skuː[l]
+
+  MEDIAL V_C:
+    ʊ _ s (1 occurrence): ˈɪmpʰʊ[l]s
+
+  MEDIAL C_V:
+    kʰ _ ɪ (1 occurrence): kʰ[l]ɪp
+    p _ eɪ (1 occurrence): ɪkˈsp[l]eɪn
+    ɡ _ ɒ (1 occurrence): ɡ[l]ɒs
+
+------------------------------------------------------------
+
+TARGET 53: 'ɫ'
+----------------------------------------
+Total occurrences: 5
+Source file: data/dataset.txt
+
+  FINAL:
+    ʊ _ # (1 occurrence): fʊ[ɫ]
+
+  MEDIAL V_C:
+    ɜː _ d (1 occurrence): ˈwɜː[ɫ]d
+    ɪ _ k (1 occurrence): mɪ[ɫ]k
+
+  MEDIAL C_V:
+    p _ ɪ (1 occurrence): sp[ɫ]ɪts
+
+  MEDIAL C_C:
+    ɝː _ d (1 occurrence): ˈwɝː[ɫ]d
+
+------------------------------------------------------------
+
+TARGET 54: 'r'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  MEDIAL V_V:
+    æ _ ɑː (1 occurrence): ˈɡæ[r]ɑːʒ
+
+------------------------------------------------------------
+
+TARGET 55: 'ɹ'
+----------------------------------------
+Total occurrences: 19
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɑ (1 occurrence): [ɹ]ɑbd
+    # _ ɒ (1 occurrence): [ɹ]ɒbd
+    # _ ɪ (1 occurrence): ˈ[ɹ]ɪðm̩
+    # _ ʌ (1 occurrence): [ɹ]ʌʃ
+
+  MEDIAL V_V:
+    eɪ _ ɪ (1 occurrence): pɹeɪ[ɹ]ɪŋ
+    ʊə _ iː (1 occurrence): kʰʊə[ɹ]iːɚs
+
+  MEDIAL V_C:
+    ɔ _ s (1 occurrence): ˈhɔ[ɹ]sɪz
+
+  MEDIAL C_V:
+    p _ eɪ (2 occurrences): sp[ɹ]eɪ, p[ɹ]eɪɹɪŋ
+    b _ iː (1 occurrence): b[ɹ]iːð
+    b _ ɛ (1 occurrence): b[ɹ]ɛθ
+    p _ aɪ (1 occurrence): p[ɹ]aɪs
+    pʰ _ aɪ (1 occurrence): pʰ[ɹ]aɪs
+    pʰ _ ɛ (1 occurrence): ˈpʰ[ɹ]ɛzənt
+    pʰ _ ɪ (1 occurrence): pʰ[ɹ]ɪˈzɛnt
+    t _ oʊ (1 occurrence): st[ɹ]oʊk
+    ð _ eɪ (1 occurrence): ð[ɹ]eɪ
+    ʃ _ ɪ (1 occurrence): ʃ[ɹ]ɪŋk
+    θ _ iː (1 occurrence): θ[ɹ]iː
+
+------------------------------------------------------------
+
+TARGET 56: 'ɾ'
+----------------------------------------
+Total occurrences: 5
+Source file: data/dataset.txt
+
+  MEDIAL V_V:
+    e _ ɚ (1 occurrence): ˈle[ɾ]ɚ
+    ɑ _ ə (1 occurrence): ˈbɑ[ɾ]əl
+    ɔ _ ɚ (1 occurrence): ˈwɔ[ɾ]ɚ
+    ɪ _ i (1 occurrence): ˈsɪ[ɾ]i
+    ʌ _ ɚ (1 occurrence): ˈbʌ[ɾ]ɚ
+
+------------------------------------------------------------
+
+TARGET 57: 'm'
+----------------------------------------
+Total occurrences: 12
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ aʊ (1 occurrence): [m]aʊθ
+    # _ e (1 occurrence): ˈ[m]eʒɚ
+    # _ j (1 occurrence): ˈ[m]juːzɪk
+    # _ æ (1 occurrence): [m]æt͡ʃ
+    # _ ɛ (1 occurrence): ˈ[m]ɛʒə
+    # _ ɪ (1 occurrence): [m]ɪɫk
+    # _ ʌ (1 occurrence): ˈ[m]ʌnθ
+
+  MEDIAL V_C:
+    ɪ _ pʰ (3 occurrences): ˈɪ[m]pʰʊls, ˈɪ[m]pʰɔːt, ɪ[m]ˈpʰɔːt
+    æ _ b (1 occurrence): ˈhæ[m]bæɡ
+    ɪ _ p (1 occurrence): ˈɪ[m]pʊt
+
+------------------------------------------------------------
+
+TARGET 58: 'n'
+----------------------------------------
+Total occurrences: 15
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ eɪ (1 occurrence): ˈ[n]eɪt͡ʃə
+    # _ ɝː (1 occurrence): ˈ[n]ɝːs
+    # _ ɪə (1 occurrence): [n]ɪə
+
+  FINAL:
+    ɪ _ # (2 occurrences): pʰɪ[n], spɪ[n]
+    eɪ _ # (1 occurrence): ɪkˈspleɪ[n]
+    iː _ # (1 occurrence): kʰwiː[n]
+    uː _ # (1 occurrence): tjuː[n]
+    ə _ # (1 occurrence): ˈvɪʒə[n]
+
+  MEDIAL V_V:
+    uː _ ɪ (1 occurrence): ˈjuː[n]ɪt
+    ɑ _ ɪ (1 occurrence): ˈwɑ[n]ɪd
+
+  MEDIAL V_C:
+    ɒ _ t (1 occurrence): ˈwɒ[n]tɪd
+    ə _ t (1 occurrence): ˈpʰɹɛzə[n]t
+    ɛ _ t (1 occurrence): pʰɹɪˈzɛ[n]t
+    ʌ _ θ (1 occurrence): ˈmʌ[n]θ
+
+------------------------------------------------------------
+
+TARGET 59: 'l̩'
+----------------------------------------
+Total occurrences: 2
+Source file: data/dataset.txt
+
+  FINAL:
+    d _ # (1 occurrence): ˈliːd[l̩]
+    ʔ _ # (1 occurrence): ˈbɒʔ[l̩]
+
+------------------------------------------------------------
+
+TARGET 60: 'n̩'
+----------------------------------------
+Total occurrences: 2
+Source file: data/dataset.txt
+
+  FINAL:
+    t _ # (1 occurrence): ˈbʌt[n̩]
+    ʔ _ # (1 occurrence): ˈkɪʔ[n̩]
+
+------------------------------------------------------------
+
+TARGET 61: 'm̩'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  FINAL:
+    ð _ # (1 occurrence): ˈɹɪð[m̩]
+
+------------------------------------------------------------
+
+TARGET 62: 'pʰ'
+----------------------------------------
+Total occurrences: 8
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɹ (3 occurrences): [pʰ]ɹaɪs, ˈ[pʰ]ɹɛzənt, [pʰ]ɹɪˈzɛnt
+    # _ ɛ (1 occurrence): ˈ[pʰ]ɛpə
+    # _ ɪ (1 occurrence): [pʰ]ɪn
+
+  MEDIAL C_V:
+    m _ ɔː (2 occurrences): ˈɪm[pʰ]ɔːt, ɪmˈ[pʰ]ɔːt
+    m _ ʊ (1 occurrence): ˈɪm[pʰ]ʊls
+
+------------------------------------------------------------
+
+TARGET 63: 'tʰ'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɒ (1 occurrence): [tʰ]ɒp
+
+------------------------------------------------------------
+
+TARGET 64: 'kʰ'
+----------------------------------------
+Total occurrences: 7
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ æ (3 occurrences): [kʰ]æp̚, [kʰ]æt̚, [kʰ]æts
+    # _ l (1 occurrence): [kʰ]lɪp
+    # _ w (1 occurrence): [kʰ]wiːn
+    # _ ɪ (1 occurrence): [kʰ]ɪt
+    # _ ʊə (1 occurrence): [kʰ]ʊəɹiːɚs
+
+------------------------------------------------------------
+
+TARGET 65: 'p̚'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  FINAL:
+    æ _ # (1 occurrence): kʰæ[p̚]
+
+------------------------------------------------------------
+
+TARGET 66: 't̚'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  FINAL:
+    æ _ # (1 occurrence): kʰæ[t̚]
+
+------------------------------------------------------------
+
+TARGET 67: 'k̚'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 68: 't̪'
+----------------------------------------
+Total occurrences: 1
+Source file: data/dataset.txt
+
+  MEDIAL V_C:
+    eɪ _ θ (1 occurrence): eɪ[t̪]θ
+
+------------------------------------------------------------
+
+TARGET 69: 'd̪'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 70: 'j'
+----------------------------------------
+Total occurrences: 5
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ uː (1 occurrence): ˈ[j]uːnɪt
+
+  MEDIAL C_V:
+    h _ uː (1 occurrence): ˈh[j]uːdʒ
+    k _ ʊə (1 occurrence): k[j]ʊə
+    m _ uː (1 occurrence): ˈm[j]uːzɪk
+    t _ uː (1 occurrence): t[j]uːn
+
+------------------------------------------------------------
+
+TARGET 71: 'w'
+----------------------------------------
+Total occurrences: 10
+Source file: data/dataset.txt
+
+  INITIAL:
+    # _ ɔ (2 occurrences): ˈ[w]ɔɾɚ, [w]ɔkt
+    # _ ɝː (2 occurrences): [w]ɝːd, ˈ[w]ɝːɫd
+    # _ ɑ (1 occurrence): ˈ[w]ɑnɪd
+    # _ ɒ (1 occurrence): ˈ[w]ɒntɪd
+    # _ ɔː (1 occurrence): [w]ɔːkt
+    # _ ɜː (1 occurrence): ˈ[w]ɜːɫd
+
+  MEDIAL C_V:
+    k _ ɛ (1 occurrence): sk[w]ɛə
+    kʰ _ iː (1 occurrence): kʰ[w]iːn
+
+------------------------------------------------------------
+
+TARGET 72: 'ɥ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+
+------------------------------------------------------------
+
+TARGET 73: 'ʋ'
+----------------------------------------
+Total occurrences: 0
+Source file: data/dataset.txt
+
+No environments found.
+

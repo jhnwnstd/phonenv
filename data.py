@@ -27,6 +27,7 @@ _ASCII_IPA_BASE = "ptkbdgfszhrljwmnqxvaeio u"  # conservative ASCII fallbacks
 
 _IPA_TOKEN_RE = re.compile(
     r"^["
+    r"a-z"            # Basic Latin letters used in IPA (t, s, d, z, p, k, etc.)
     r"\u0250-\u02AF"  # IPA Extensions
     r"\u1D00-\u1DBF"  # Phonetic Extensions (+ Supplement)
     r"\u0300-\u036F"  # Combining Diacritical Marks

@@ -430,15 +430,22 @@ class OutputWriter:
                         for env, examples in envs.items():
                             if not isinstance(examples, (list, tuple)):
                                 examples = []
+
+                            # Deduplicate examples and normalize to NFC to handle canonical equivalents
+                            import unicodedata as ud
+                            deduped_examples = list(dict.fromkeys(ud.normalize("NFC", ex) for ex in examples))
+
+                            # Parse environment key - use full tokens, don't truncate affricates
                             left, right = (env.split("__", 1) + [""])[:2] if "__" in env else (env, "")
+
                             writer.writerow({
                                 "target": target,
                                 "group": group_name,
                                 "environment": env,
                                 "left_context": left,
                                 "right_context": right,
-                                "count": len(examples),
-                                "examples": "; ".join(list(examples)[:5]),
+                                "count": len(deduped_examples),
+                                "examples": "; ".join(deduped_examples[:5]),
                                 "source_file": source_file,
                                 "total_occurrences": total_occ,
                             })
@@ -520,12 +527,23 @@ class OutputWriter:
                         for env, examples in environments.items():
                             if not isinstance(examples, (list, tuple)):
                                 examples = []
+
+                            # Deduplicate examples and normalize to NFC to handle canonical equivalents
+                            import unicodedata as ud
+                            deduped_examples = list(dict.fromkeys(ud.normalize("NFC", ex) for ex in examples))
+
+                            # Parse environment key - use full tokens, don't truncate affricates
                             left, right = (env.split('__', 1) + [''])[:2] if '__' in env else (env, "")
-                            f.write(f"    {left} _ {right} ({len(examples)} occurrences)")
-                            if include_examples and examples:
-                                shown = list(examples)[:max_examples]
+
+                            # Use singular/plural correctly for occurrence count
+                            count = len(deduped_examples)
+                            occ_text = "occurrence" if count == 1 else "occurrences"
+                            f.write(f"    {left} _ {right} ({count} {occ_text})")
+
+                            if include_examples and deduped_examples:
+                                shown = deduped_examples[:max_examples]
                                 f.write(f": {', '.join(shown)}")
-                                extra = max(0, len(examples) - max_examples)
+                                extra = max(0, len(deduped_examples) - max_examples)
                                 if extra:
                                     f.write(f" (+{extra} more)")
                             f.write("\n")

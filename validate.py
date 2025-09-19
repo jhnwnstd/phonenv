@@ -23,19 +23,11 @@ from dataclasses import dataclass
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
+from utils import in_ipa_blocks
 
 # ========================= Unicode blocks & allowances =========================
 
-_IPA_BLOCKS = {
-    (0x0250, 0x02AF),  # IPA Extensions
-    (0x1D00, 0x1D7F),  # Phonetic Extensions
-    (0x1D80, 0x1DBF),  # Phonetic Extensions Supplement
-    (0x0300, 0x036F),  # Combining Diacritical Marks
-    (0x1AB0, 0x1AFF),  # Combining Diacritical Marks Extended
-    (0x1DC0, 0x1DFF),  # Combining Diacritical Marks Supplement
-    (0x02B0, 0x02FF),  # Spacing Modifier Letters
-    (0xA700, 0xA71F),  # Modifier Tone Letters
-}
+# IPA blocks now available from utils.in_ipa_blocks() function
 
 # Prosodics & structural tokens allowed by Phonenv IO/printing
 _ALLOWED_MISC: Set[str] = set("[]()#_ˈˌ|‖.")
@@ -69,15 +61,12 @@ INVISIBLES: Dict[int, str] = {
 
 # ========================= Helpers =========================
 
-def _in_blocks(ch: str) -> bool:
-    cp = ord(ch)
-    return any(a <= cp <= b for a, b in _IPA_BLOCKS)
 
 def _is_allowed_ipa_char(c: str) -> bool:
     """Loosely validate characters acceptable in IPA datasets/targets."""
     if not c or c.isspace():
         return True
-    if _in_blocks(c):
+    if in_ipa_blocks(c):
         return True
     if c in _ALLOWED_MISC:
         return True

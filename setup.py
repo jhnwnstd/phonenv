@@ -39,7 +39,7 @@ setup(
         "validation",
         "environment-analysis",
     ],
-    py_modules=["analysis", "cli", "data", "phonenv_io", "validate"],
+    py_modules=["analysis", "cli", "data", "phonenv_io", "validate", "utils"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",

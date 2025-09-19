@@ -1,165 +1,118 @@
-# ===== English additions (RP-like), narrow transcription =====
-[lang=en-GB; mode=narrow; profile=english; tag=RP-additions]
-
-# --- stops: aspiration vs. s-clusters; final releases/unreleased ---
-pʰɪn                         # pin
-spɪn                        # spin (unaspirated p after s)
-kʰɪt                        # kit
-skɪt                        # skit (unaspirated k after s)
-tʰɒp                        # top
-stɒp                        # stop (unaspirated t after s)
-kʰæp̚                       # cap (final unreleased)
-bæɡ̚                        # bag (final unreleased)
-kʰæt̚                       # cat (final unreleased)
-dɒɡ                        # dog
-
-# --- affricates in multiple positions ---
-t͡ʃɜːt͡ʃ                    # church
-d͡ʒʌd͡ʒ                    # judge
-mæt͡ʃ                      # match
-ɛd͡ʒ                       # edge
-ˈneɪt͡ʃə                   # nature (yod-coalescence)
-ˈpɒst͡ʃə                   # posture
-
-# --- fricatives: dental, alveolar, postalveolar, voiced/voiceless finals ---
-θɪŋk                       # think
-bɹiːð                      # breathe
-bɹɛθ                       # breath
-ˈmʌnθ                      # month
-lɛŋθ                       # length
-eɪt̪θ                      # eighth (dental t)
-fɪfθ                       # fifth
-ʃɪp                        # ship
-ˈmɛʒə                      # measure
-beɪʒ                       # beige
-ɹʌʃ                        # rush
-bʌz                        # buzz
-ˈvɪʒən                     # vision
-
-# --- nasals: place assimilation; ŋ vs ŋɡ ---
-bæŋk                       # bank
-ˈfɪŋɡə                     # finger (RP)
-ˈsɪŋə                      # singer (RP)
-ˈɪmpʰʊls                   # impulse (n→m before p)
-ˈɪmpʊt                     # input (n→m before p)
-ˈhæmbæɡ                    # handbag (n→m, casual)
-
-# --- liquids & approximants: dark-l, clusters, r-less RP finals ---
-fʊɫ                         # full (velarized l in coda)
-mɪɫk                        # milk (dark l cluster)
-kʰlɪp                       # clip
-ɡlɒs                       # gloss
-θɹiː                       # three (θɹ- cluster)
-ðɹeɪ                       # they’re (there) – pronounced “there”
-ʃɹɪŋk                      # shrink
-ˈwɜːɫd                     # world (RP)
-kɑː                        # car (RP, non-rhotic)
-kɑːt                       # cart (RP)
-kɑːd                       # card (RP)
-
-# --- glottalization / glottal stop ---
-ˈbɒʔl̩                     # bottle (glottal t, syllabic l; RP)
-ˈkɪʔn̩                     # kitten (glottal t, syllabic n; RP)
-ˈʔʌʔoʊ                    # uh-oh (RP/GA friendly)
-
-# --- syllabic consonants (n, l, m) ---
-ˈbʌtn̩                     # button
-ˈliːdl̩                    # Lidl (proper name; syllabic l)
-ˈɹɪðm̩                     # rhythm (syllabic m variant)
-
-# --- vowels & diphthongs (face/goat/price/mouth/choice; centring diphthongs) ---
-feɪs                       # face
-ɡəʊt                       # goat
-pʰɹaɪs                     # price
-maʊθ                       # mouth
-t͡ʃɔɪs                     # choice
-nɪə                        # near (RP centring)
-skwɛə                      # square (RP centring)
-kjʊə                       # cure (RP centring)
-tʊə                        # tour (RP centring)
-kʰʊəɹiːɚs                  # curious (RP-like with centring diphthong)
-
-# --- yod / /j/ contexts, labialization, /w/ clusters ---
-kʰwiːn                     # queen
-ˈmjuːzɪk                   # music
-ˈjuːnɪt                    # unit
-tjuːn                      # tune (RP)
-ˈhjuːdʒ                    # huge
-
-# --- morphology / allomorphy: plural and past suffixes ---
-kʰæts                      # cats (/s/ after voiceless)
-dɔːɡz                      # dogs (/z/ after voiced)
-ˈhɔːsɪz                    # horses (/ɪz/ after sibilant)
-wɔːkt                      # walked (/t/ after voiceless)
-ɹɒbd                       # robbed (/d/ after voiced)
-ˈwɒntɪd                    # wanted (/ɪd/ after alveolar stop)
-
-# --- more clusters (s+stop, stop+liquid), multiple target occurrences in one word ---
-skuːl                      # school
-skaɪ                       # sky
-stɹoʊk                     # stroke
-spɹeɪ                      # spray
-spɫɪts                     # splits (two stop clusters)
-ˈpʰɛpə                     # pepper (two p’s; word-internal and medial)
-ˈpʌpɪt                     # puppet (two p’s; different environments)
-ˈæpɫ̩                      # apple (glottal-ish onset, dark-l allophone often)
-
-# --- stress contrasts to exercise grouping logic (same spelling, different stress) ---
-ˈɪmpʰɔːt                    # import (noun, RP)
-ɪmˈpʰɔːt                    # import (verb, RP)
-ˈpʰɹɛzənt                   # present (noun, RP)
-pʰɹɪˈzɛnt                   # present (verb, RP)
-
-
-# ===== American English (GA), broad transcription =====
-[lang=en-US; mode=broad; profile=english; tag=GA-additions]
-
-# --- flapping, rhotic vowels, broad(er) segments (no aspiration marks) ---
-ˈbʌɾɚ                     # butter
-ˈwɔɾɚ                     # water
-ˈsɪɾi                     # city
-ˈleɾɚ                     # letter
-pɹeɪɹɪŋ                   # praying
-ˈnɝːs                     # nurse
-bɝːd                      # bird
-fɝː                        # fur
-wɝːd                      # word
-ˈwɝːɫd                    # world
-
-# --- GA realizations contrasting with RP where useful ---
-goʊt                      # goat
-feɪs                      # face
-pɹaɪs                     # price
-maʊθ                      # mouth
-t͡ʃɔɪs                    # choice
-ˈtʃuːzˌdeɪ                # Tuesday (common coalescence)
-ˈmeʒɚ                     # measure
-ˈsʊɡɚ                     # sugar
-ˈbætəl                     # battle (non-glottal t; compare RP variants)
-ˈkɪʔn̩                    # kitten (glottal t, syllabic n; also common in GA)
-ˈbɑɾəl                     # bottle (flap; casual GA)
-
-# --- final devoicing not phonemic in English, but keep sibilant voicing contrast ---
-bæks                      # backs
-bæɡz                      # bags
-
-# --- plural/tense allomorphs again in GA spelling ---
-wɔkt                      # walked
-ɹɑbd                      # robbed
-ˈwɑnɪd                    # wanted
-ˈhɔɹsɪz                   # horses
-kæts                      # cats
-dɔɡz                      # dogs
-
-# --- more “two hits” targets to ensure multi-hit logic is exercised in GA too ---
-ˈpɛpɚ                     # pepper
-ˈpʌpɪt                    # puppet
-ˈdɑdɪ                     # daddy (two d’s, different positions)
-ˈkɪkɪŋ                    # kicking (two k’s)
-
-# --- edge cases / sanity checks ---
-ˈʌʔoʊ                     # uh-oh
-ˈæʒə                      # Asia (GA)
-ˈɡærɑːʒ                   # garage (GA common)
-ɪɡˈzækt                    # exact (voiced z in prefix)
-ɪkˈspleɪn                 # explain (voiceless s in prefix)
+beɪʒ
+bæks
+bæŋk
+bæɡz
+bæɡ̚
+bɝːd
+bɹiːð
+bɹɛθ
+bʌz
+dɒɡ
+dɔɡz
+dɔːɡz
+d͡ʒʌd͡ʒ
+eɪt̪θ
+feɪs
+fɝː
+fɪfθ
+fʊɫ
+goʊt
+kjʊə
+kæts
+kɑː
+kɑːd
+kɑːt
+kʰlɪp
+kʰwiːn
+kʰæp̚
+kʰæts
+kʰæt̚
+kʰɪt
+kʰʊəɹiːɚs
+lɛŋθ
+maʊθ
+mæt͡ʃ
+mɪɫk
+nɪə
+pɹaɪs
+pɹeɪɹɪŋ
+pʰɪn
+pʰɹaɪs
+pʰɹɪˈzɛnt
+skaɪ
+skuːl
+skwɛə
+skɪt
+spɪn
+spɫɪts
+spɹeɪ
+stɒp
+stɹoʊk
+tjuːn
+tʊə
+tʰɒp
+t͡ʃɔɪs
+t͡ʃɜːt͡ʃ
+wɔkt
+wɔːkt
+wɝːd
+ðɹeɪ
+ɛd͡ʒ
+ɡlɒs
+ɡəʊt
+ɪkˈspleɪn
+ɪmˈpʰɔːt
+ɪɡˈzækt
+ɹɑbd
+ɹɒbd
+ɹʌʃ
+ʃɪp
+ʃɹɪŋk
+ˈbætəl
+ˈbɑɾəl
+ˈbɒʔl̩
+ˈbʌtn̩
+ˈbʌɾɚ
+ˈdɑdɪ
+ˈfɪŋɡə
+ˈhjuːdʒ
+ˈhæmbæɡ
+ˈhɔɹsɪz
+ˈhɔːsɪz
+ˈjuːnɪt
+ˈkɪkɪŋ
+ˈkɪʔn̩
+ˈleɾɚ
+ˈliːdl̩
+ˈmeʒɚ
+ˈmjuːzɪk
+ˈmɛʒə
+ˈmʌnθ
+ˈneɪt͡ʃə
+ˈnɝːs
+ˈpɒst͡ʃə
+ˈpɛpɚ
+ˈpʌpɪt
+ˈpʰɛpə
+ˈpʰɹɛzənt
+ˈsɪŋə
+ˈsɪɾi
+ˈsʊɡɚ
+ˈtʃuːzˌdeɪ
+ˈvɪʒən
+ˈwɑnɪd
+ˈwɒntɪd
+ˈwɔɾɚ
+ˈwɜːɫd
+ˈwɝːɫd
+ˈæpɫ̩
+ˈæʒə
+ˈɡærɑːʒ
+ˈɪmpʊt
+ˈɪmpʰɔːt
+ˈɪmpʰʊls
+ˈɹɪðm̩
+ˈʌʔoʊ
+ˈʔʌʔoʊ
+θɪŋk
+θɹiː

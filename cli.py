@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import os, shutil
-from pathlib import Path
 import sys
 import argparse
 import unicodedata as ud

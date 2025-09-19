@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple, OrderedDict as OrderedDictType, Optional, Any
 from collections import defaultdict, OrderedDict
 from shutil import get_terminal_size
+from utils import normalize_tiebar, in_ipa_blocks, is_combining, is_spacing_modifier
 
 
 # ========================= IPA PROCESSING =========================
@@ -36,22 +37,8 @@ class IPAConfig:
 # Suprasegmentals to ignore when picking context neighbors
 _SUPRA: Set[str] = {"ˈ", "ˌ", "|", "‖"}
 
-TIE_ABOVE = "\u0361"  # ͡
-TIE_BELOW = "\u035C"  # ͜
-
-def _is_combining(ch: str) -> bool: return ud.category(ch) == "Mn"
-def _is_spacing_modifier(ch: str) -> bool: return ud.category(ch) in ("Sk", "Lm") and ch not in _SUPRA
-
-_IPA_BLOCKS = {
-    (0x0250, 0x02AF),  # IPA Extensions
-    (0x1D00, 0x1D7F),  # Phonetic Extensions
-    (0x1D80, 0x1DBF),  # Phonetic Extensions Supplement
-    (0x0300, 0x036F),  # Combining Diacritical Marks
-    (0x1AB0, 0x1AFF),  # Combining Diacritical Marks Extended
-    (0x1DC0, 0x1DFF),  # Combining Diacritical Marks Supplement
-    (0x02B0, 0x02FF),  # Spacing Modifier Letters
-    (0xA700, 0xA71F),  # Modifier Tone Letters
-}
+# Import constants from utils instead of duplicating
+from utils import TIE_ABOVE, TIE_BELOW
 
 def _skip_left(segments: List[str], i: int) -> int:
     j = i - 1
@@ -65,21 +52,12 @@ def _skip_right(segments: List[str], i: int) -> int:
         j += 1
     return j
 
-def _in_blocks(ch: str) -> bool:
-    """Check if character is in IPA Unicode blocks."""
-    cp = ord(ch)
-    return any(start <= cp <= end for start, end in _IPA_BLOCKS)
 
 def _strip_all_nonbase(s: str) -> str:
     """Remove all non-base characters (combining marks + spacing modifiers)."""
     nfd = ud.normalize("NFD", s)
-    return "".join(c for c in nfd if not (_is_combining(c) or _is_spacing_modifier(c)))
+    return "".join(c for c in nfd if not (is_combining(c) or is_spacing_modifier(c)))
 
-def _normalize_tiebar(s: str) -> str:
-    """Unify tie-bar variants and strip accidental spaces around them."""
-    s = s.replace(TIE_BELOW, TIE_ABOVE)
-    # collapse any spaces around the tie bar
-    return re.sub(rf"\s*{re.escape(TIE_ABOVE)}\s*", TIE_ABOVE, s)
 
 class IPAProcessorV2:
     """Advanced IPA text processor with configurable behavior."""
@@ -113,7 +91,7 @@ class IPAProcessorV2:
             return []
 
         text = self.normalize_nfc(text)
-        text = _normalize_tiebar(text)
+        text = normalize_tiebar(text)
 
         # 1) Wrap multi-symbol nuclei (diphthongs/triphthongs) first (longest-first).
         for pat in sorted(self.config.diphthong_patterns or [], key=len, reverse=True):
@@ -136,9 +114,9 @@ class IPAProcessorV2:
                 if j < len(chars):
                     seg = "".join(chars[i + 1:j])
                     k = j + 1
-                    while k < len(chars) and _is_combining(chars[k]):
+                    while k < len(chars) and is_combining(chars[k]):
                         seg += chars[k]; k += 1
-                    while k < len(chars) and _is_spacing_modifier(chars[k]):
+                    while k < len(chars) and is_spacing_modifier(chars[k]):
                         seg += chars[k]; k += 1
                     segments.append(seg)
                     i = k
@@ -163,7 +141,7 @@ class IPAProcessorV2:
             # Gather combining on the LEFT base, but stop before a tie bar if we encounter one.
             left_comb = ""
             tie_pos = None
-            while j < len(chars) and _is_combining(chars[j]):
+            while j < len(chars) and is_combining(chars[j]):
                 if chars[j] in (TIE_ABOVE, TIE_BELOW):
                     tie_pos = j
                     break
@@ -179,17 +157,17 @@ class IPAProcessorV2:
 
                 # Collect combining on the RIGHT base (excluding any stray tie bars)
                 right_comb = ""
-                while k < len(chars) and _is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
+                while k < len(chars) and is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
                     right_comb += chars[k]
                     k += 1
 
                 seg = left_base + left_comb + TIE_ABOVE + right_base + right_comb  # normalize tie below -> above earlier
                 # cluster-level combining after the right base (rare but legal)
-                while k < len(chars) and _is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
+                while k < len(chars) and is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
                     seg += chars[k]
                     k += 1
                 # spacing modifiers (length, aspiration, ʷ, ʲ, etc.)
-                while k < len(chars) and _is_spacing_modifier(chars[k]):
+                while k < len(chars) and is_spacing_modifier(chars[k]):
                     seg += chars[k]
                     k += 1
 
@@ -200,17 +178,17 @@ class IPAProcessorV2:
             # No tie bar: default single segment (left base + any remaining combining/modifiers)
             segment = left_base + left_comb
             i = j
-            while i < len(chars) and _is_combining(chars[i]):
+            while i < len(chars) and is_combining(chars[i]):
                 segment += chars[i]; i += 1
-            while i < len(chars) and _is_spacing_modifier(chars[i]):
+            while i < len(chars) and is_spacing_modifier(chars[i]):
                 segment += chars[i]; i += 1
             segments.append(segment)
 
         return [seg for seg in segments if seg]
 
     def phoneme_matches(self, target: str, segment: str) -> bool:
-        target_norm  = _normalize_tiebar(self.normalize_nfc(target))
-        segment_norm = _normalize_tiebar(self.normalize_nfc(segment))
+        target_norm  = normalize_tiebar(self.normalize_nfc(target))
+        segment_norm = normalize_tiebar(self.normalize_nfc(segment))
         if self.config.match_mode == "narrow":
             return target_norm == segment_norm
         target_base  = _strip_all_nonbase(target_norm)
@@ -230,11 +208,11 @@ class IPAProcessorV2:
             "code_point": f"U+{ord(base_char):04X}" if base_char else "",
             "name": ud.name(base_char, "UNKNOWN") if base_char else "",
             "category": ud.category(base_char) if base_char else "",
-            "is_ipa_base": _in_blocks(base_char) if base_char else False,
-            "is_combining": _is_combining(base_char) if base_char else False,
+            "is_ipa_base": in_ipa_blocks(base_char) if base_char else False,
+            "is_combining": is_combining(base_char) if base_char else False,
             "length": len(segment),
-            "has_combining": any(_is_combining(c) for c in segment),
-            "has_modifiers": any(_is_spacing_modifier(c) for c in segment),
+            "has_combining": any(is_combining(c) for c in segment),
+            "has_modifiers": any(is_spacing_modifier(c) for c in segment),
         }
 
 
@@ -271,14 +249,11 @@ class PhoneticAnalyzer:
 
     def __init__(
         self,
-        special_chars_file: str = "data/special_characters.txt",
         use_ipa_processing: bool = True,
         use_professional_ipa: bool = True,
         transcription_mode: str = "narrow",
         no_color: bool = False,
     ):
-        self.special_chars_file = Path(special_chars_file)
-        self._special_characters: Set[str] = set()
         self.use_ipa_processing = use_ipa_processing
         self.transcription_mode = transcription_mode
         self.no_color = no_color
@@ -289,43 +264,18 @@ class PhoneticAnalyzer:
         else:
             self.ipa_processor_v2 = None
 
-        self._load_special_characters()
-
-    def _load_special_characters(self) -> None:
-        """Load special characters from file."""
-        try:
-            if self.special_chars_file.exists():
-                with self.special_chars_file.open("r", encoding="utf-8") as f:
-                    self._special_characters = {
-                        line.strip() for line in f if line.strip()
-                    }
-        except (IOError, OSError) as e:
-            print(f"Warning: Could not load special characters: {e}")
-
-    def _write_special_characters(self, characters: Set[str]) -> None:
-        """Write special characters to file."""
-        self.special_chars_file.parent.mkdir(parents=True, exist_ok=True)
-        with self.special_chars_file.open("w", encoding="utf-8") as f:
-            for char in sorted(characters):
-                f.write(f"{char}\n")
 
     def _prepare_word(self, word: str) -> str:
         processed = word
-        for special in self._special_characters:
-            processed = processed.replace(special, f"({special})")
         if self.use_ipa_processing and self.ipa_processor_v2:
             processed = self.ipa_processor_v2.normalize_nfc(processed)
-            processed = _normalize_tiebar(processed)  # ← add this
+            processed = normalize_tiebar(processed)
         return processed
 
-    @staticmethod
-    def _strip_paren_group(token: str) -> str:
-        """Strip parentheses from token."""
-        return token[1:-1] if token.startswith("(") and token.endswith(")") else token
 
     def _segment_base_char(self, token: str) -> str:
         """Get base character from token."""
-        s = self._strip_paren_group(token)
+        s = token
         if not s:
             return ""
         ch0 = s[0]
@@ -340,7 +290,7 @@ class PhoneticAnalyzer:
         return ch0
 
     def _is_vowel_segment(self, token: str) -> bool:
-        s = self._strip_paren_group(token)
+        s = token
         nfd = self.ipa_processor_v2.normalize_nfd(s) if (self.use_ipa_processing and self.ipa_processor_v2) else ud.normalize("NFD", s)
         if "\u0329" in nfd:   # syllabic
             return True
@@ -432,7 +382,7 @@ class PhoneticAnalyzer:
         q = raw_query
         if self.use_ipa_processing and self.ipa_processor_v2:
             q = self.ipa_processor_v2.normalize_nfc(q)
-        q = _normalize_tiebar(q)   # <- add this
+        q = normalize_tiebar(q)   # <- add this
         return f"[{q}]"
 
     @staticmethod
@@ -486,8 +436,8 @@ class PhoneticAnalyzer:
         q = character
         if self.use_ipa_processing and self.ipa_processor_v2:
             q = self.ipa_processor_v2.normalize_nfc(q)
-            q = _normalize_tiebar(q)  # ← add this
-        target = f"({q})" if q in self._special_characters else q
+            q = normalize_tiebar(q)  # ← add this
+        target = q
         env2words: Dict[str, List[str]] = defaultdict(list)
 
         for original in words:
@@ -559,11 +509,6 @@ class PhoneticAnalyzer:
             if found == -1:
                 break
 
-            paren_start = processed.rfind("(", 0, found)
-            paren_end = processed.find(")", found)
-            if paren_start != -1 and paren_end != -1 and paren_start < found < paren_end:
-                idx = found + len(target)
-                continue
 
             env = self._get_environment(processed, target, found)
             highlighted = self._highlight_character(processed, target, nth)
@@ -699,82 +644,13 @@ class PhoneticAnalyzer:
                     f"{ex_str}"
                 )
 
-    def add_special_character(
-        self, character: str, delete: bool = False, erase: bool = False
-    ) -> None:
-        """Manage special characters."""
-        try:
-            current = set()
-            if self.special_chars_file.exists():
-                with self.special_chars_file.open("r", encoding="utf-8") as f:
-                    current = {line.strip() for line in f if line.strip()}
-
-            if delete:
-                self.special_chars_file.write_text("", encoding="utf-8")
-                self._special_characters.clear()
-                print("Cleared all special characters")
-                return
-
-            if erase:
-                if character in current:
-                    current.remove(character)
-                    self._write_special_characters(current)
-                    self._special_characters.discard(character)
-                    print(f"Removed '{character}' from special_characters.txt")
-                else:
-                    print(f"'{character}' not found in special_characters.txt")
-                return
-
-            if character not in current:
-                current.add(character)
-                self._write_special_characters(current)
-                self._special_characters.add(character)
-                print(f"Added '{character}' to special_characters.txt")
-            else:
-                print(f"'{character}' already exists in special_characters.txt")
-
-        except (IOError, OSError) as e:
-            print(f"Error managing special characters: {e}")
 
 
 # ========================= CONVENIENCE FUNCTIONS =========================
-
-def analyze_character(character: str, file: str = "data/dataset.txt") -> Dict[str, OrderedDict]:
-    """Analyze character environments (convenience function)."""
-    analyzer = PhoneticAnalyzer(use_ipa_processing=True)
-    return analyzer.analyze_character(character, file)
-
-
-def analyze_character_print(character: str, file: str = "data/dataset.txt") -> None:
-    """Print character analysis (convenience function)."""
-    analyzer = PhoneticAnalyzer(use_ipa_processing=True)
-    analyzer.print_analysis(character, file)
-
-
-def add_special_character(character: str, delete: bool = False, erase: bool = False) -> None:
-    """Manage special characters (convenience function)."""
-    analyzer = PhoneticAnalyzer(use_ipa_processing=True)
-    analyzer.add_special_character(character, delete, erase)
-
-
-# Legacy functions for IPA processing
-def ipa_segments(text: str) -> List[str]:
-    """Segment IPA text (legacy function)."""
-    processor = IPAProcessorV2()
-    return processor.ipa_segments(text)
-
-
-def normalize_ipa(text: str) -> str:
-    """Normalize IPA text (legacy function)."""
-    processor = IPAProcessorV2()
-    return processor.normalize_nfc(text)
-
-
-def validate_ipa(text: str) -> bool:
-    """Deprecated: do not use for target validation; use segmentation instead."""
-    return bool(text and all(_in_blocks(c) or c.isspace() or c in "[]()#_" for c in text))
-
-
-def get_processor(config: Optional[IPAConfig] = None) -> IPAProcessorV2:
-    """Get IPA processor instance (legacy function)."""
-    return IPAProcessorV2(config)
+# Legacy functions removed to eliminate code duplication.
+# Use the class-based API instead:
+# - PhoneticAnalyzer.analyze_character() instead of analyze_character()
+# - PhoneticAnalyzer.print_analysis() instead of analyze_character_print()
+# - IPAProcessorV2.ipa_segments() instead of ipa_segments()
+# - IPAProcessorV2.normalize_nfc() instead of normalize_ipa()
+# - Use segmentation-based validation instead of validate_ipa()

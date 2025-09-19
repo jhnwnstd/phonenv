@@ -13,6 +13,7 @@ import unicodedata as ud
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterator, List, Tuple, Optional, Set, Any, Mapping
+from utils import normalize_tiebar
 
 
 # ========================= WORD ENTRY PARSING =========================
@@ -23,14 +24,9 @@ _KV = re.compile(r"\s*([a-zA-Z_][\w-]*)\s*=\s*([^;]+)\s*")
 _BRACKETS = re.compile(r"\[(?P<tag>[^\[\]]+)\]")
 
 # ---- Target processing helpers ----
-
-_TIEBAR_ABOVE = "\u0361"  # COMBINING DOUBLE INVERTED BREVE
-_TIEBAR_BELOW = "\u035C"  # COMBINING DOUBLE BREVE BELOW
+# Tie-bar constants now imported from utils module
 
 
-def _normalize_tiebar(s: str) -> str:
-    """Normalize all tie-bar variants to U+0361 for consistency."""
-    return s.replace(_TIEBAR_BELOW, _TIEBAR_ABOVE)
 
 
 def _split_targets_line(line: str) -> List[str]:
@@ -138,7 +134,7 @@ def iter_word_entries(path: str | Path) -> Iterator[WordEntry]:
 
             # 4) normalize form + tie-bars for stability
             s = ud.normalize("NFC", s)
-            s = _normalize_tiebar(s)
+            s = normalize_tiebar(s)
 
             yield WordEntry(
                 ipa=s,
@@ -220,7 +216,7 @@ class DictionaryProcessor:
         Returns:
             True if word was added, False if it already existed
         """
-        word = _normalize_tiebar(ud.normalize("NFC", word))
+        word = normalize_tiebar(ud.normalize("NFC", word))
 
         words = self.load_words()
         if word in words:
@@ -304,7 +300,7 @@ class DictionaryProcessor:
 
             # Add word if provided (normalize)
             if append:
-                append_norm = _normalize_tiebar(ud.normalize("NFC", append))
+                append_norm = normalize_tiebar(ud.normalize("NFC", append))
                 if append_norm in words:
                     print(f"Word '{append_norm}' already exists in dictionary")
                 else:
@@ -389,7 +385,7 @@ class TargetsProcessor:
 
             def _is_single_segment(tok: str) -> bool:
                 """Validate that token is exactly one IPA segment."""
-                s = _normalize_tiebar(ud.normalize("NFC", tok))
+                s = normalize_tiebar(ud.normalize("NFC", tok))
                 segs = proc.ipa_segments(s)
                 return len(segs) == 1
 
@@ -414,7 +410,7 @@ class TargetsProcessor:
                             continue
 
                         # Normalize and validate as single segment
-                        norm = _normalize_tiebar(ud.normalize("NFC", tok))
+                        norm = normalize_tiebar(ud.normalize("NFC", tok))
                         if _is_single_segment(norm):
                             if norm not in seen:
                                 seen.add(norm)
@@ -445,7 +441,7 @@ class TargetsProcessor:
                 f.write("# Lines starting with # are comments\n\n")
 
                 for target in targets:
-                    f.write(f"{_normalize_tiebar(ud.normalize('NFC', target))}\n")
+                    f.write(f"{normalize_tiebar(ud.normalize('NFC', target))}\n")
 
         except (IOError, OSError) as e:
             raise IOError(f"Cannot write to targets file {self.targets_path}: {e}") from e
@@ -562,7 +558,7 @@ def create_sample_targets_file(targets_path: str = "data/targets.txt") -> None:
 
     with path.open('w', encoding='utf-8') as f:
         for line in sample_targets:
-            f.write(_normalize_tiebar(ud.normalize("NFC", line)) + "\n")
+            f.write(normalize_tiebar(ud.normalize("NFC", line)) + "\n")
 
 
 def targets_exist(targets_path: str = "data/targets.txt") -> bool:
@@ -579,16 +575,8 @@ def targets_exist(targets_path: str = "data/targets.txt") -> bool:
 
 # ========================= BACKWARDS COMPATIBILITY =========================
 
-def process_dictionary(
-    input_file: str,
-    append: Optional[str] = None,
-    print_dict: bool = False,
-    delete_substring: Optional[str] = None,
-    clear_file: bool = False
-) -> None:
-    """Legacy function for backward compatibility."""
-    processor = DictionaryProcessor(input_file)
-    processor.process_dictionary(append, print_dict, delete_substring, clear_file)
+# Legacy process_dictionary function removed to eliminate code duplication.
+# Use DictionaryProcessor.process_dictionary() instead.
 
 
 def load_targets(targets_path: str = "data/targets.txt") -> List[str]:

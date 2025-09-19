@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import os, shutil
-from shutil import get_terminal_size
 from pathlib import Path
 import sys
 import argparse
@@ -281,14 +280,12 @@ class InteractivePhonenvCLI:
         self._create_analyzer()
 
     def _create_analyzer(self):
-        """Create analyzer based on current transcription mode."""
         from analysis import get_config_for_transcription_mode, IPAProcessorV2
-
         config = get_config_for_transcription_mode(self.transcription_mode)
-
         self.analyzer = PhoneticAnalyzer(
             use_ipa_processing=True,
             use_professional_ipa=True,
+            transcription_mode=self.transcription_mode,  # ← add this
         )
         if getattr(self.analyzer, "ipa_processor_v2", None) is not None:
             self.analyzer.ipa_processor_v2 = IPAProcessorV2(config)
@@ -376,18 +373,27 @@ class InteractivePhonenvCLI:
                 "Exit",
             ])
             if idx == 1:
-                return self._select_consonant()
+                res = self._select_consonant()
+                if res is not None:
+                    return res
+                continue  # back to main menu
             if idx == 2:
-                return self._select_vowel()
+                res = self._select_vowel()
+                if res is not None:
+                    return res
+                continue
             if idx == 3:
                 self._set_transcription_mode(allow_back=True)
+                continue
             if idx == 4:
                 pasted = input("Paste IPA segment (NFC recommended): ").strip()
                 return ud.normalize("NFC", pasted) if pasted else None
             if idx == 5:
                 self._batch_processing_menu()
+                continue
             if idx == 6:
                 self._dictionary_menu()
+                continue
             if idx == 7:
                 return None
 
@@ -887,10 +893,8 @@ def run_batch_cli(args):
         # Wire up analyzer with the chosen transcription mode
         from analysis import get_config_for_transcription_mode, IPAProcessorV2
 
-        analyzer = PhoneticAnalyzer(use_ipa_processing=True)
-        analyzer.ipa_processor_v2 = IPAProcessorV2(
-            get_config_for_transcription_mode(args.mode)
-        )
+        analyzer = PhoneticAnalyzer(use_ipa_processing=True, transcription_mode=args.mode)
+        analyzer.ipa_processor_v2 = IPAProcessorV2(get_config_for_transcription_mode(args.mode))
 
         processor = TargetsProcessor(
             dataset_path=args.dataset,

@@ -9,6 +9,7 @@ This module consolidates all data-related functionality including:
 from __future__ import annotations
 
 import regex as re
+import unicodedata as ud
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterator, List, Tuple, Optional, Set, Any, Mapping
@@ -20,6 +21,58 @@ _COMMENT = re.compile(r"#.*$")
 _SECTION = re.compile(r"^\[(?P<body>.+)\]\s*$")
 _KV = re.compile(r"\s*([a-zA-Z_][\w-]*)\s*=\s*([^;]+)\s*")
 _BRACKETS = re.compile(r"\[(?P<tag>[^\[\]]+)\]")
+
+# ---- IPA whitelist + helpers (for targets + dataset hygiene) ----
+_ASCII_IPA_BASE = "ptkbdgfszhrljwmnqxvaeio u"  # conservative ASCII fallbacks
+
+_IPA_TOKEN_RE = re.compile(
+    r"^["
+    r"\u0250-\u02AF"  # IPA Extensions
+    r"\u1D00-\u1DBF"  # Phonetic Extensions (+ Supplement)
+    r"\u0300-\u036F"  # Combining Diacritical Marks
+    r"\u1AB0-\u1AFF"  # Combining Marks Extended
+    r"\u1DC0-\u1DFF"  # Combining Marks Supplement
+    r"\u02B0-\u02FF"  # Spacing Modifier Letters
+    r"\uA700-\uA71F"  # Modifier Tone Letters
+    r"\u207F"         # superscript n
+    r"]+$"
+)
+
+_ASCII_ONLY_RE = re.compile(rf"^[{re.escape(_ASCII_IPA_BASE.replace(' ', ''))}]+$")
+
+_TIEBAR_ABOVE = "\u0361"  # COMBINING DOUBLE INVERTED BREVE
+_TIEBAR_BELOW = "\u035C"  # COMBINING DOUBLE BREVE BELOW
+
+
+def _normalize_tiebar(s: str) -> str:
+    """Normalize all tie-bar variants to U+0361 for consistency."""
+    return s.replace(_TIEBAR_BELOW, _TIEBAR_ABOVE)
+
+
+def _split_targets_line(line: str) -> List[str]:
+    """Split line by comma or whitespace; supports mixed styles."""
+    if "," in line:
+        parts = [t for t in (p.strip() for p in line.split(",")) if t]
+    else:
+        parts = [t for t in line.split() if t]
+    return parts
+
+
+def _clean_token(tok: str) -> str:
+    """
+    Canonicalize one target token:
+      - trim, strip brackets
+      - NFC normalize + tie-bar normalize
+      - enforce IPA whitelist (or conservative ASCII)
+    Returns '' for junk.
+    """
+    tok = tok.strip().strip("[]")
+    if not tok:
+        return ""
+    tok = _normalize_tiebar(ud.normalize("NFC", tok))
+    if _IPA_TOKEN_RE.match(tok) or _ASCII_ONLY_RE.match(tok):
+        return tok
+    return ""
 
 
 @dataclass(frozen=True)
@@ -113,8 +166,9 @@ def iter_word_entries(path: str | Path) -> Iterator[WordEntry]:
             if not s:
                 continue
 
-            # 4) normalization could happen here if needed
-            # s = normalize("NFC", s)
+            # 4) normalize form + tie-bars for stability
+            s = ud.normalize("NFC", s)
+            s = _normalize_tiebar(s)
 
             yield WordEntry(
                 ipa=s,
@@ -196,6 +250,8 @@ class DictionaryProcessor:
         Returns:
             True if word was added, False if it already existed
         """
+        word = _normalize_tiebar(ud.normalize("NFC", word))
+
         words = self.load_words()
         if word in words:
             return False
@@ -276,13 +332,14 @@ class DictionaryProcessor:
             else:
                 words = self.load_words()
 
-            # Add word if provided
+            # Add word if provided (normalize)
             if append:
-                if append in words:
-                    print(f"Word '{append}' already exists in dictionary")
+                append_norm = _normalize_tiebar(ud.normalize("NFC", append))
+                if append_norm in words:
+                    print(f"Word '{append_norm}' already exists in dictionary")
                 else:
-                    words.add(append)
-                    print(f"Added '{append}' to dictionary")
+                    words.add(append_norm)
+                    print(f"Added '{append_norm}' to dictionary")
 
             # Remove words containing substring
             if delete_substring:
@@ -346,36 +403,36 @@ class TargetsProcessor:
         self.analyzer = analyzer
 
     def load_targets(self) -> List[str]:
-        """Load targets from targets.txt file.
-
-        Returns:
-            List of target characters/phonemes
-
-        Raises:
-            FileNotFoundError: If targets.txt doesn't exist
-            IOError: If file cannot be read
-        """
+        """Load targets from targets.txt file (sanitized, deduped, order-preserving)."""
         if not self.targets_path.exists():
             raise FileNotFoundError(f"Targets file not found: {self.targets_path}")
 
         try:
+            seen: set[str] = set()
+            out: list[str] = []
+
             with self.targets_path.open('r', encoding='utf-8') as f:
-                targets = []
-                for line_num, line in enumerate(f, 1):
-                    line = line.strip()
-                    # Skip empty lines and comments
+                for line_num, raw in enumerate(f, 1):
+                    line = raw.strip()
                     if not line or line.startswith('#'):
                         continue
 
-                    # Support multiple targets per line (space or comma separated)
-                    if ',' in line:
-                        line_targets = [t.strip() for t in line.split(',') if t.strip()]
-                    else:
-                        line_targets = [t.strip() for t in line.split() if t.strip()]
+                    # Allow inline comments: keep content before '#'
+                    if '#' in line:
+                        line = line.split('#', 1)[0].strip()
+                        if not line:
+                            continue
 
-                    targets.extend(line_targets)
+                    for tok in _split_targets_line(line):
+                        clean = _clean_token(tok)
+                        if not clean:
+                            # silently skip junk like 'GA', 'English', '#', '(dark)', etc.
+                            continue
+                        if clean not in seen:
+                            seen.add(clean)
+                            out.append(clean)
 
-                return targets
+            return out
 
         except (IOError, OSError) as e:
             raise IOError(f"Cannot read targets file {self.targets_path}: {e}") from e
@@ -399,7 +456,7 @@ class TargetsProcessor:
                 f.write("# Lines starting with # are comments\n\n")
 
                 for target in targets:
-                    f.write(f"{target}\n")
+                    f.write(f"{_normalize_tiebar(ud.normalize('NFC', target))}\n")
 
         except (IOError, OSError) as e:
             raise IOError(f"Cannot write to targets file {self.targets_path}: {e}") from e
@@ -414,7 +471,7 @@ class TargetsProcessor:
             TargetResult with analysis data
         """
         if not self.analyzer:
-            from .analysis import PhoneticAnalyzer
+            from analysis import PhoneticAnalyzer  # avoid package-relative import issues
             self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
 
         environments = self.analyzer.analyze_character(target, str(self.dataset_path))
@@ -495,21 +552,20 @@ def create_sample_targets_file(targets_path: str = "data/targets.txt") -> None:
     sample_targets = [
         "# Common IPA targets for phonetic environment analysis",
         "# Vowels",
-        "ɪ, ɛ, æ, ɑ, ɔ, ʊ, ə",
+        "i, ɪ, e, ɛ, æ, a, ɑ, ɒ, ɔ, o, ʊ, u, ʌ, ə, ɚ, ɜ, ɞ, y, ʉ",
         "",
         "# Consonants",
-        "p, t, k",
-        "b, d, ɡ",
-        "s, z, ʃ, ʒ",
+        "p, t, k, b, d, ɡ",
+        "f, v, θ, ð, s, z, ʃ, ʒ, ç, ʝ, x, ɣ, χ, ʁ, ħ, ʕ, h, ɦ",
+        "m, n, ŋ, ɲ, ɳ, ɴ",
+        "l, ɫ, r, ɾ, ɹ, ɻ, ʀ",
+        "j, w, ɥ, ʋ",
         "",
-        "# Affricates",
-        "t͡ʃ, d͡ʒ",
+        "# Affricates (tie bar normalized to U+0361)",
+        "t͡s, d͡z, t͡ʃ, d͡ʒ, t͡ɕ, d͡ʑ, ʈ͡ʂ, ɖ͡ʐ",
         "",
-        "# Liquids",
-        "l, r, ɹ",
-        "",
-        "# Nasals",
-        "m, n, ŋ"
+        "# Diacritic-bearing bases (broad mode may merge)",
+        "pʰ, tʰ, kʰ, s̪, n̪, l̩, n̩",
     ]
 
     path = Path(targets_path)
@@ -517,7 +573,7 @@ def create_sample_targets_file(targets_path: str = "data/targets.txt") -> None:
 
     with path.open('w', encoding='utf-8') as f:
         for line in sample_targets:
-            f.write(f"{line}\n")
+            f.write(_normalize_tiebar(ud.normalize("NFC", line)) + "\n")
 
 
 def targets_exist(targets_path: str = "data/targets.txt") -> bool:

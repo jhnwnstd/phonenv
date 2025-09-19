@@ -9,6 +9,7 @@ This module consolidates the core analysis capabilities including:
 from __future__ import annotations
 
 import unicodedata as ud
+import regex as re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, OrderedDict as OrderedDictType, Optional, Any
@@ -34,6 +35,9 @@ class IPAConfig:
 
 # Suprasegmentals to ignore when picking context neighbors
 _SUPRA: Set[str] = {"ˈ", "ˌ", "|", "‖"}
+
+TIE_ABOVE = "\u0361"  # ͡
+TIE_BELOW = "\u035C"  # ͜
 
 def _is_combining(ch: str) -> bool: return ud.category(ch) == "Mn"
 def _is_spacing_modifier(ch: str) -> bool: return ud.category(ch) in ("Sk", "Lm") and ch not in _SUPRA
@@ -66,19 +70,16 @@ def _in_blocks(ch: str) -> bool:
     cp = ord(ch)
     return any(start <= cp <= end for start, end in _IPA_BLOCKS)
 
-def _strip_length(s: str) -> str:
-    """Remove length markers (ː, ˑ)."""
-    return s.replace("ː", "").replace("ˑ", "")
-
-def _strip_diacritics(s: str) -> str:
-    """Remove combining diacritics."""
-    return "".join(c for c in ud.normalize("NFD", s) if not _is_combining(c))
-
 def _strip_all_nonbase(s: str) -> str:
     """Remove all non-base characters (combining marks + spacing modifiers)."""
     nfd = ud.normalize("NFD", s)
     return "".join(c for c in nfd if not (_is_combining(c) or _is_spacing_modifier(c)))
 
+def _normalize_tiebar(s: str) -> str:
+    """Unify tie-bar variants and strip accidental spaces around them."""
+    s = s.replace(TIE_BELOW, TIE_ABOVE)
+    # collapse any spaces around the tie bar
+    return re.sub(rf"\s*{re.escape(TIE_ABOVE)}\s*", TIE_ABOVE, s)
 
 class IPAProcessorV2:
     """Advanced IPA text processor with configurable behavior."""
@@ -112,6 +113,7 @@ class IPAProcessorV2:
             return []
 
         text = self.normalize_nfc(text)
+        text = _normalize_tiebar(text)
 
         # 1) Wrap multi-symbol nuclei (diphthongs/triphthongs) first (longest-first).
         for pat in sorted(self.config.diphthong_patterns or [], key=len, reverse=True):
@@ -154,40 +156,50 @@ class IPAProcessorV2:
                     continue
                 # unmatched "(": fall through as a single char
 
-            # === Generic tie-bar affricates: <left>(͡|͜)<right> ===
-            # Parse left base + any *immediately following* combining marks.
-            left_start = i
-            left = chars[i]
-            i1 = i + 1
-            while i1 < len(chars) and _is_combining(chars[i1]):
-                left += chars[i1]
-                i1 += 1
+            # === Generic tie-bar affricates with lookahead ===
+            left_base = chars[i]
+            j = i + 1
 
-            # If next codepoint is a tiebar, try to read right base + its combining marks.
-            if i1 < len(chars) and chars[i1] in TIEBARS and (i1 + 1) < len(chars):
-                tie = chars[i1]
-                right = chars[i1 + 1]
-                i2 = i1 + 2
-                # right-side combining on the base
-                while i2 < len(chars) and _is_combining(chars[i2]):
-                    right += chars[i2]
-                    i2 += 1
-                seg = left + tie + right
+            # Gather combining on the LEFT base, but stop before a tie bar if we encounter one.
+            left_comb = ""
+            tie_pos = None
+            while j < len(chars) and _is_combining(chars[j]):
+                if chars[j] in (TIE_ABOVE, TIE_BELOW):
+                    tie_pos = j
+                    break
+                left_comb += chars[j]
+                j += 1
+
+            # If we found a tie bar and have a following right base, build the cluster.
+            if tie_pos is not None and (tie_pos + 1) < len(chars):
+                tie = chars[tie_pos]
+                k = tie_pos + 1
+                right_base = chars[k]
+                k += 1
+
+                # Collect combining on the RIGHT base (excluding any stray tie bars)
+                right_comb = ""
+                while k < len(chars) and _is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
+                    right_comb += chars[k]
+                    k += 1
+
+                seg = left_base + left_comb + TIE_ABOVE + right_base + right_comb  # normalize tie below -> above earlier
                 # cluster-level combining after the right base (rare but legal)
-                while i2 < len(chars) and _is_combining(chars[i2]):
-                    seg += chars[i2]
-                    i2 += 1
+                while k < len(chars) and _is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
+                    seg += chars[k]
+                    k += 1
                 # spacing modifiers (length, aspiration, ʷ, ʲ, etc.)
-                while i2 < len(chars) and _is_spacing_modifier(chars[i2]):
-                    seg += chars[i2]
-                    i2 += 1
+                while k < len(chars) and _is_spacing_modifier(chars[k]):
+                    seg += chars[k]
+                    k += 1
+
                 segments.append(seg)
-                i = i2
+                i = k
                 continue
 
-            # Default: single base + trailing combining marks + spacing modifiers.
-            segment = left
-            i = i1
+            # No tie bar: default single segment (left base + any remaining combining/modifiers)
+            segment = left_base + left_comb
+            i = j
             while i < len(chars) and _is_combining(chars[i]):
                 segment += chars[i]; i += 1
             while i < len(chars) and _is_spacing_modifier(chars[i]):
@@ -197,19 +209,12 @@ class IPAProcessorV2:
         return [seg for seg in segments if seg]
 
     def phoneme_matches(self, target: str, segment: str) -> bool:
-        """Check if target matches segment using intelligent phonetic matching."""
-
-        # Normalize both
-        target_norm = self.normalize_nfc(target)
-        segment_norm = self.normalize_nfc(segment)
-
+        target_norm  = _normalize_tiebar(self.normalize_nfc(target))
+        segment_norm = _normalize_tiebar(self.normalize_nfc(segment))
         if self.config.match_mode == "narrow":
             return target_norm == segment_norm
-
-        # Strip diacritics for broad matching
-        target_base = _strip_all_nonbase(target_norm)
+        target_base  = _strip_all_nonbase(target_norm)
         segment_base = _strip_all_nonbase(segment_norm)
-
         return target_base == segment_base
 
     def get_segment_info(self, segment: str) -> Dict[str, Any]:
@@ -305,14 +310,12 @@ class PhoneticAnalyzer:
                 f.write(f"{char}\n")
 
     def _prepare_word(self, word: str) -> str:
-        """Prepare word for analysis."""
         processed = word
         for special in self._special_characters:
             processed = processed.replace(special, f"({special})")
-
         if self.use_ipa_processing and self.ipa_processor_v2:
             processed = self.ipa_processor_v2.normalize_nfc(processed)
-
+            processed = _normalize_tiebar(processed)  # ← add this
         return processed
 
     @staticmethod
@@ -426,10 +429,10 @@ class PhoneticAnalyzer:
         return left, target_display, right
 
     def _target_for_display(self, raw_query: str) -> str:
-        """Format target for display."""
         q = raw_query
         if self.use_ipa_processing and self.ipa_processor_v2:
             q = self.ipa_processor_v2.normalize_nfc(q)
+        q = _normalize_tiebar(q)   # <- add this
         return f"[{q}]"
 
     @staticmethod
@@ -483,7 +486,7 @@ class PhoneticAnalyzer:
         q = character
         if self.use_ipa_processing and self.ipa_processor_v2:
             q = self.ipa_processor_v2.normalize_nfc(q)
-
+            q = _normalize_tiebar(q)  # ← add this
         target = f"({q})" if q in self._special_characters else q
         env2words: Dict[str, List[str]] = defaultdict(list)
 
@@ -506,9 +509,11 @@ class PhoneticAnalyzer:
         grouped: Dict[str, OrderedDictType[str, List[str]]] = {k: OrderedDict() for k in self._ORDER}
 
         partitioned: Dict[str, List[Tuple[str, List[str]]]] = defaultdict(list)
-        for env, lst in env2words.items():
+        for env, lst in list(env2words.items()):
+            dedup = list(dict.fromkeys(lst))
+            env2words[env] = dedup
             macro = self._classify_env(env)
-            partitioned[macro].append((env, lst))
+            partitioned[macro].append((env, dedup))
 
         for macro in self._ORDER:
             items = partitioned.get(macro, [])
@@ -636,11 +641,11 @@ class PhoneticAnalyzer:
             console.print(Rule(f"[bold]Phonetic environments for '{rich_escape(character)}'[/bold]"))
 
             table = Table(box=box.SIMPLE_HEAVY, show_lines=False, expand=True, pad_edge=False)
-            table.add_column("Group", justify="left", no_wrap=True, width=group_w)
-            table.add_column("Left", justify="right", no_wrap=True, style="cyan", width=left_w)
-            table.add_column("Target", justify="center", no_wrap=True, style="bold", width=targ_w)
-            table.add_column("Right", justify="left", no_wrap=True, style="cyan", width=right_w)
-            table.add_column("Count", justify="right", no_wrap=True, style="magenta", width=count_w)
+            table.add_column("Group",  justify="left",  no_wrap=True,  width=group_w)
+            table.add_column("Left",   justify="right", no_wrap=False, style="cyan",    width=left_w)   # changed
+            table.add_column("Target", justify="center",no_wrap=True,  style="bold",    width=targ_w)
+            table.add_column("Right",  justify="left",  no_wrap=False, style="cyan",    width=right_w)  # changed
+            table.add_column("Count",  justify="right", no_wrap=True,  style="magenta", width=count_w)
             table.add_column("Examples", overflow="fold")
 
             examples_width = max(24, term_w - (group_w + left_w + targ_w + right_w + count_w + 14))

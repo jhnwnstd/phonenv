@@ -274,7 +274,14 @@ class InteractivePhonenvCLI:
         print(ch * self._terminal_width)
 
     def _clear(self) -> None:
-        os.system("cls" if os.name == "nt" else "clear")
+        """Clear terminal screen safely."""
+        try:
+            if os.name == "nt":
+                os.system("cls")  # Windows
+            else:
+                print("\033[2J\033[H", end="")  # ANSI escape sequence for Unix/Linux
+        except Exception:
+            pass  # Graceful fallback if clearing fails
 
     def _banner(self, title: str, *, clear: bool = True, subtitle: str | None = None) -> None:
         if clear:
@@ -313,8 +320,11 @@ class InteractivePhonenvCLI:
             n = int(choice)
             if 1 <= n <= len(options):
                 return n
+            else:
+                print(f"Please enter a number between 1 and {len(options)}.\n")
+        else:
+            print("Please enter a valid number.\n")
 
-        print("Please enter a valid option.\n")
         return self._menu(options, back_label, prompt)  # re-prompt
 
     def _status(self) -> None:
@@ -530,14 +540,29 @@ class InteractivePhonenvCLI:
             return base
 
         try:
-            indices = [int(x) - 1 for x in selected_indices.split()]
+            # Validate that all parts are valid integers
+            parts = selected_indices.split()
+            indices = []
+            for x in parts:
+                if not x.isdigit():
+                    print(f"Invalid input '{x}'. Please enter numbers only.")
+                    return base
+                indices.append(int(x) - 1)
 
             # Preserve user order and enforce mutual exclusion by group
             selected_order: List[str] = []
-            for idx in indices:
+            invalid_numbers = []
+            for i, idx in enumerate(indices):
                 if 0 <= idx < len(diacritic_list):
                     name = diacritic_list[idx]
                     selected_order = _apply_mutex_list(selected_order, name, COMMON_DIACRITICS)
+                else:
+                    invalid_numbers.append(parts[i])
+
+            if invalid_numbers:
+                print(f"Invalid selection(s): {', '.join(invalid_numbers)}. Valid range: 1-{len(diacritic_list)}")
+                if not selected_order:  # If no valid selections, return base
+                    return base
 
             result = _compose(base, selected_order, COMMON_DIACRITICS)
             print(f"Result: {result}")

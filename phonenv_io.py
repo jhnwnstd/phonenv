@@ -8,6 +8,12 @@ This module consolidates all input/output functionality including:
 
 from __future__ import annotations
 
+# Output formatting constants
+REPORT_SEPARATOR_WIDTH = 60
+NARROW_SEPARATOR_WIDTH = 40
+DEFAULT_CACHE_MAX_AGE_DAYS = 30.0
+MAX_SLUG_LENGTH = 80
+
 import csv
 import enum
 import hashlib
@@ -231,7 +237,7 @@ class ResultCache:
             "memory_cache_size": len(self._memory_cache),
         }
 
-    def cleanup_old_entries(self, max_age_days: float = 30.0) -> int:
+    def cleanup_old_entries(self, max_age_days: float = DEFAULT_CACHE_MAX_AGE_DAYS) -> int:
         cutoff = time.time() - (max_age_days * 24 * 60 * 60)
         to_remove = [k for k, e in self._memory_cache.items() if e.timestamp < cutoff]
         for k in to_remove:
@@ -260,7 +266,7 @@ def _get_target_name(result: Any) -> str:
     return str(result)
 
 
-def _slug(s: str, max_len: int = 80) -> str:
+def _slug(s: str, max_len: int = MAX_SLUG_LENGTH) -> str:
     # keep IPA/Unicode letters and digits; strip path separators and whitespace
     s = s.replace("/", "_").replace("\\", "_").replace(" ", "")
     s = "".join(ch for ch in s if ch.isalnum() or ch in "._-")
@@ -484,7 +490,7 @@ class OutputWriter:
         with output_file.open("w", encoding="utf-8") as f:
             # Header
             f.write("PHONETIC ENVIRONMENT ANALYSIS REPORT\n")
-            f.write("=" * 60 + "\n")
+            f.write("=" * REPORT_SEPARATOR_WIDTH + "\n")
             f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"Total targets analyzed: {len(payload)}\n")
 
@@ -497,9 +503,9 @@ class OutputWriter:
 
             # Summary
             f.write("SUMMARY\n")
-            f.write("-" * 40 + "\n")
+            f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
             f.write(f"{'Target':<10} {'Occurrences':<12} {'Environments'}\n")
-            f.write("-" * 40 + "\n")
+            f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
 
             def _env_count(res: Dict[str, Any]) -> int:
                 envs = res.get("environments", {})
@@ -512,14 +518,14 @@ class OutputWriter:
                 env_count = _env_count(res)
                 f.write(f"{target:<10} {res.get('total_occurrences', 0):<12} {env_count}\n")
 
-            f.write("\n" + "=" * 60 + "\n\n")
+            f.write("\n" + "=" * REPORT_SEPARATOR_WIDTH + "\n\n")
 
             # Details
             for i, res in enumerate(payload, 1):
                 target = res.get("target", _get_target_name(res))
                 envs = res.get("environments", {}) if isinstance(res.get("environments", {}), dict) else {}
                 f.write(f"TARGET {i}: '{target}'\n")
-                f.write("-" * 40 + "\n")
+                f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
                 f.write(f"Total occurrences: {res.get('total_occurrences', 0)}\n\n")
 
                 if not envs:
@@ -555,7 +561,7 @@ class OutputWriter:
                         f.write("\n")
 
                 if i < len(payload):
-                    f.write("-" * 60 + "\n\n")
+                    f.write("-" * REPORT_SEPARATOR_WIDTH + "\n\n")
 
         return str(output_file)
 

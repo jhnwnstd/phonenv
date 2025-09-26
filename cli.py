@@ -118,6 +118,40 @@ def _apply_mutex_list(toggled: List[str], newly: str, catalog: Mapping[str, Mapp
 class InteractivePhonenvCLI:
     """Interactive command line interface for phonetic environment analysis."""
 
+    # UI Constants
+    DEFAULT_TERMINAL_WIDTH = 100
+    DEFAULT_TERMINAL_HEIGHT = 20
+    PREVIEW_TRUNCATE_LENGTH = 25
+    REPORT_SEPARATOR_WIDTH = 60
+    NARROW_SEPARATOR_WIDTH = 40
+
+    # File paths
+    DEFAULT_DATASET_PATH = "data/dataset.txt"
+    DEFAULT_TARGETS_PATH = "data/targets.txt"
+    DEFAULT_OUTPUT_DIR = "data/output"
+
+    # Transcription modes
+    class TranscriptionMode:
+        NARROW = "narrow"
+        BROAD = "broad"
+
+    @staticmethod
+    def _format_error(operation: str, error: Exception) -> str:
+        """Standardized error message formatting."""
+        return f"Error {operation}: {error}"
+
+    @staticmethod
+    def _normalize_user_input(text: str) -> str:
+        """Normalize user input: strip whitespace and convert to lowercase."""
+        return text.strip().lower()
+
+    @property
+    def _terminal_width(self) -> int:
+        """Cached terminal width to avoid repeated system calls."""
+        if not hasattr(self, '_term_width_cache'):
+            self._term_width_cache = shutil.get_terminal_size((self.DEFAULT_TERMINAL_WIDTH, self.DEFAULT_TERMINAL_HEIGHT)).columns
+        return self._term_width_cache
+
     # IPA consonant categories with common symbols
     CONSONANT_CATEGORIES = {
         "Stops/Plosives": {
@@ -237,7 +271,7 @@ class InteractivePhonenvCLI:
     }
 
     def _hr(self, ch: str = "─") -> None:
-        print(ch * shutil.get_terminal_size((80, 20)).columns)
+        print(ch * self._terminal_width)
 
     def _clear(self) -> None:
         os.system("cls" if os.name == "nt" else "clear")
@@ -245,13 +279,12 @@ class InteractivePhonenvCLI:
     def _banner(self, title: str, *, clear: bool = True, subtitle: str | None = None) -> None:
         if clear:
             self._clear()
-        term_w = shutil.get_terminal_size((100, 20)).columns
-        line = f" {title} ".center(term_w, "═")
+        line = f" {title} ".center(self._terminal_width, "═")
         print(line)
         status = f"[ Mode: {self.transcription_mode} | Dataset: {Path(self.file_path).name} ]"
-        print(status.center(term_w))
+        print(status.center(self._terminal_width))
         if subtitle:
-            print(subtitle.center(term_w))
+            print(subtitle.center(self._terminal_width))
         print()  # spacer
 
     def _menu(self, options: list[str], back_label: str | None = None, prompt: str | None = None) -> int | None:
@@ -267,7 +300,7 @@ class InteractivePhonenvCLI:
             print(f"  {total:>{width}}. {back_label}")
         print()
         prompt = prompt or f"Choose (1–{total}) › "
-        choice = input(prompt).strip().lower()
+        choice = self._normalize_user_input(input(prompt))
 
         # Empty Enter serves as back/exit
         if not choice:
@@ -288,12 +321,12 @@ class InteractivePhonenvCLI:
         """One-line status bar shown under banners."""
         print(f"[ Mode: {self.transcription_mode} | Dataset: {Path(self.file_path).name} ]\n")
 
-    def __init__(self, file_path: str = "data/dataset.txt"):
+    def __init__(self, file_path: str = None):
         """Initialize the interactive CLI."""
-        self.file_path = file_path
+        self.file_path = file_path or self.DEFAULT_DATASET_PATH
         self.transcription_mode = "broad"
         self.analyzer: Optional[PhoneticAnalyzer] = None
-        self.dict_processor = DictionaryProcessor(file_path)
+        self.dict_processor = DictionaryProcessor(self.file_path)
         self._create_analyzer()
 
     def _create_analyzer(self):
@@ -324,7 +357,7 @@ class InteractivePhonenvCLI:
                     print(f"\nAnalyzing phonetic environments for '{character}' ({self.transcription_mode} transcription)...\n")
                     self.analyzer.print_analysis(character, self.file_path, show_unicode_info=False)
                 else:
-                    print("\nError: Analyzer could not be initialized. Please check the configuration.")
+                    print(f"\n{self._format_error('initializing analyzer', 'Please check the configuration.')}")
 
                 self._hr()
                 if not self._continue_prompt():
@@ -335,7 +368,7 @@ class InteractivePhonenvCLI:
                 print("\n\nGoodbye!")
                 break
             except Exception as e:
-                print(f"\nError: {e}")
+                print(f"\n{self._format_error('during analysis', e)}")
                 print("Please try again.\n")
 
     def _set_transcription_mode(self, allow_back: bool = False) -> None:
@@ -357,7 +390,7 @@ class InteractivePhonenvCLI:
                 print("  3. ← Back\n")
 
             prompt = "Select mode (1-2): " if not allow_back else "Select mode (1-2) or '3'/'b' to go back: "
-            choice = input(prompt).strip().lower()
+            choice = self._normalize_user_input(input(prompt))
 
             if allow_back and choice in {"3", "b", "back"}:
                 return
@@ -417,35 +450,33 @@ class InteractivePhonenvCLI:
             if idx == 7:
                 return None
 
-    def _select_consonant(self) -> Optional[str]:
-        self._banner("CONSONANTS")
-        categories = list(self.CONSONANT_CATEGORIES.keys())
+    def _select_character_category(self, categories_dict: dict, category_type: str) -> Optional[str]:
+        """Generic character category selection for consonants or vowels."""
+        self._banner(category_type.upper())
+        categories = list(categories_dict.keys())  # Keep list for indexing
         idx = self._menu(categories, back_label="← Back")
         if idx is None:
             return None
         category = categories[idx - 1]
-        return self._select_from_subcategory(category, self.CONSONANT_CATEGORIES[category], "consonant")
+        return self._select_from_subcategory(category, categories_dict[category], category_type.rstrip('s'))
+
+    def _select_consonant(self) -> Optional[str]:
+        return self._select_character_category(self.CONSONANT_CATEGORIES, "consonants")
 
     def _select_vowel(self) -> Optional[str]:
-        self._banner("VOWELS")
-        categories = list(self.VOWEL_CATEGORIES.keys())
-        idx = self._menu(categories, back_label="← Back")
-        if idx is None:
-            return None
-        category = categories[idx - 1]
-        return self._select_from_subcategory(category, self.VOWEL_CATEGORIES[category], "vowel")
+        return self._select_character_category(self.VOWEL_CATEGORIES, "vowels")
 
     def _select_from_subcategory(
         self, main_category: str, subcategories: Dict[str, List[str]], sound_type: str
     ) -> Optional[str]:
         self._banner(main_category.upper(), subtitle=sound_type.capitalize())
-        sub_names = list(subcategories.keys())
+        sub_names = list(subcategories.keys())  # Keep list for indexing
         # show each with preview of sounds on same line (truncate if too long)
         options = []
         for name in sub_names:
             preview = ' '.join(subcategories[name])
-            if len(preview) > 25:  # truncate long lists
-                preview = preview[:22] + "..."
+            if len(preview) > self.PREVIEW_TRUNCATE_LENGTH:  # truncate long lists
+                preview = preview[:self.PREVIEW_TRUNCATE_LENGTH-3] + "..."
             options.append(f"{name}: {preview}")
         idx = self._menu(options, back_label="← Back")
         if idx is None:
@@ -486,7 +517,7 @@ class InteractivePhonenvCLI:
             if spec["scope"] == "any" or spec["scope"] == scope
         }
 
-        diacritic_list = list(available.keys())
+        diacritic_list = list(available.keys())  # Keep list for indexing
         for i, name in enumerate(diacritic_list, 1):
             spec = available[name]
             glyph = spec["glyph"]
@@ -519,7 +550,7 @@ class InteractivePhonenvCLI:
     def _continue_prompt(self) -> bool:
         """Ask user if they want to continue."""
         while True:
-            choice = input("\nAnalyze another character? (y/n): ").strip().lower()
+            choice = self._normalize_user_input(input("\nAnalyze another character? (y/n): "))
             if choice in ["y", "yes"]:
                 return True
             elif choice in ["n", "no"]:
@@ -537,7 +568,7 @@ class InteractivePhonenvCLI:
                     print(f"Range: {stats.get('shortest_word','')} to {stats.get('longest_word','')}")
                 print()
             except Exception as e:
-                print(f"Error reading dictionary: {e}\n")
+                print(f"{self._format_error('reading dictionary', e)}\n")
 
             idx = self._menu([
                 "Show all words",
@@ -565,7 +596,7 @@ class InteractivePhonenvCLI:
                         removed = self.dict_processor.remove_words_containing(substring)
                         print(f"Removed {removed} words containing '{substring}'")
                 elif idx == 4:
-                    confirm = input("Clear entire dictionary? (y/N): ").strip().lower()
+                    confirm = self._normalize_user_input(input("Clear entire dictionary? (y/N): "))
                     if confirm in {"y", "yes"}:
                         self.dict_processor.clear_dictionary()
                         print("Dictionary cleared")
@@ -579,7 +610,7 @@ class InteractivePhonenvCLI:
                     print(f"   Longest: {stats.get('longest_word','')}")
                     print(f"   Shortest: {stats.get('shortest_word','')}")
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"{self._format_error('in dictionary operation', e)}")
 
     def _batch_processing_menu(self) -> None:
         while True:
@@ -591,7 +622,7 @@ class InteractivePhonenvCLI:
                     total    = summary.get("total_targets", 0)
                     ds_file  = summary.get("dataset_file", self.file_path)
                     ds_exist = bool(summary.get("dataset_exists", False))
-                    print(f"Targets file: data/targets.txt ({total} targets)")
+                    print(f"Targets file: {self.DEFAULT_TARGETS_PATH} ({total} targets)")
                     print(f"Dataset: {ds_file} ({'exists' if ds_exist else 'missing'})")
 
                     seen, uniq = set(), []

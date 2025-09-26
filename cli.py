@@ -122,15 +122,44 @@ class InteractivePhonenvCLI:
     CONSONANT_CATEGORIES = {
         "Stops/Plosives": {
             "Bilabial": ["p", "b"],
-            "Dental/Alveolar": ["t", "d", "t̪", "d̪"],
-            "Retroflex": ["ɖ", "ʈ"],
+            "Dental": ["t̪", "d̪"],
+            "Alveolar": ["t", "d"],
+            "Retroflex": ["ʈ", "ɖ"],
             "Palatal": ["c", "ɟ"],
-            "Velar": ["k", "ɡ"],
+            "Velar": ["k", "g"],
             "Uvular": ["q", "ɢ"],
             "Glottal": ["ʔ"],
         },
+        "Affricates": {
+            "Bilabial": ["p͡ɸ", "b͡β"],
+            "Labiodental": ["p͡f", "b͡v"],
+            "Alveolar": ["t͡s", "d͡z"],
+            "Postalveolar": ["t͡ʃ", "d͡ʒ"],
+            "Retroflex": ["ʈ͡ʂ", "ɖ͡ʐ"],
+            "Alveolo-palatal": ["t͡ɕ", "d͡ʑ"],
+            "Palatal": ["c͡ç", "ɟ͡ʝ"],
+            "Velar": ["k͡x", "g͡ɣ"],
+            "Uvular": ["q͡χ", "ɢ͡ʁ"],
+        },
+        "Nasals": {
+            "Bilabial": ["m"],
+            "Labiodental": ["ɱ"],
+            "Alveolar": ["n"],
+            "Retroflex": ["ɳ"],
+            "Palatal": ["ɲ"],
+            "Velar": ["ŋ"],
+            "Uvular": ["ɴ"],
+        },
+        "Trills": {
+            "Bilabial": ["ʙ"],
+            "Alveolar": ["r"],
+            "Uvular": ["ʀ"],
+        },
+        "Taps/Flaps": {
+            "Alveolar": ["ɾ"],
+            "Retroflex": ["ɽ"],
+        },
         "Fricatives": {
-            # FIX: use IPA ɸ (U+0278), not Greek φ
             "Bilabial": ["ɸ", "β"],
             "Labiodental": ["f", "v"],
             "Dental": ["θ", "ð"],
@@ -143,37 +172,22 @@ class InteractivePhonenvCLI:
             "Pharyngeal": ["ħ", "ʕ"],
             "Glottal": ["h", "ɦ"],
         },
-        "Affricates": {
-            "Bilabial": ["p͡ɸ", "b͡β"],
-            "Labiodental": ["p͡f", "b͡v"],
-            "Alveolar": ["t͡s", "d͡z"],
-            "Postalveolar": ["t͡ʃ", "d͡ʒ"],
-            "Retroflex": ["ʈ͡ʂ", "ɖ͡ʐ"],
-            # RENAME: Palatoalveolar -> Alveolo-palatal (for t͡ɕ, d͡ʑ)
-            "Alveolo-palatal": ["t͡ɕ", "d͡ʑ"],
-            "Palatal": ["c͡ç", "ɟ͡ʝ"],
-            "Velar": ["k͡x", "ɡ͡ɣ"],
-            "Uvular": ["q͡χ", "ɢ͡ʁ"],
+        "Lateral Fricatives": {
+            "Alveolar": ["ɬ", "ɮ"],
         },
-        "Nasals": {
-            # Keep bases; narrow variants can be added via diacritic panel if desired.
-            "Bilabial": ["m"],
-            "Dental/Alveolar": ["n", "n̪"],
-            "Retroflex": ["ɳ"],
-            "Palatal": ["ɲ"],
-            "Velar": ["ŋ"],
-            "Uvular": ["ɴ"],
+        "Approximants": {
+            "Labiovelar": ["w"],
+            "Bilabial": ["ʋ"],
+            "Alveolar": ["ɹ"],
+            "Retroflex": ["ɻ"],
+            "Palatal": ["j"],
+            "Velar": ["ɰ"],
         },
-        "Liquids": {
-            # Keep base laterals only (diacritic variants removed for cleaner menu)
-            "Lateral": ["l", "ɭ", "ʎ", "ʟ"],
-            "Rhotic": ["r", "ɾ", "ɹ", "ɻ", "ʀ", "ʁ", "ɽ"],
-        },
-        "Glides/Approximants": {
-            "Palatal": ["j", "ɥ"],
-            "Velar": ["w", "ɰ"],
-            # Remove duplicate ɻ (already under Liquids→Rhotic) and narrow ɹ-variants
-            "Other": ["ʋ"],
+        "Lateral Approximants": {
+            "Alveolar": ["l"],
+            "Retroflex": ["ɭ"],
+            "Palatal": ["ʎ"],
+            "Velar": ["ʟ"],
         },
     }
 
@@ -254,6 +268,10 @@ class InteractivePhonenvCLI:
         print()
         prompt = prompt or f"Choose (1–{total}) › "
         choice = input(prompt).strip().lower()
+
+        # Empty Enter serves as back/exit
+        if not choice:
+            return None
 
         if back_label and choice in {str(total), "b", "back"}:
             return None
@@ -365,12 +383,15 @@ class InteractivePhonenvCLI:
             idx = self._menu([
                 "Consonants",
                 "Vowels",
-                "Change transcription mode",
                 "Advanced: paste IPA segment",
                 "Batch processing (targets.txt)",
+                "Change transcription mode",
                 "Dictionary management",
                 "Exit",
             ])
+            # Handle empty Enter as exit for main menu
+            if idx is None:
+                return None
             if idx == 1:
                 res = self._select_consonant()
                 if res is not None:
@@ -382,13 +403,13 @@ class InteractivePhonenvCLI:
                     return res
                 continue
             if idx == 3:
-                self._set_transcription_mode(allow_back=True)
-                continue
-            if idx == 4:
                 pasted = input("Paste IPA segment (NFC recommended): ").strip()
                 return ud.normalize("NFC", pasted) if pasted else None
-            if idx == 5:
+            if idx == 4:
                 self._batch_processing_menu()
+                continue
+            if idx == 5:
+                self._set_transcription_mode(allow_back=True)
                 continue
             if idx == 6:
                 self._dictionary_menu()
@@ -419,8 +440,13 @@ class InteractivePhonenvCLI:
     ) -> Optional[str]:
         self._banner(main_category.upper(), subtitle=sound_type.capitalize())
         sub_names = list(subcategories.keys())
-        # show each with preview of sounds on same line
-        options = [f"{name}: {' '.join(subcategories[name])}" for name in sub_names]
+        # show each with preview of sounds on same line (truncate if too long)
+        options = []
+        for name in sub_names:
+            preview = ' '.join(subcategories[name])
+            if len(preview) > 25:  # truncate long lists
+                preview = preview[:22] + "..."
+            options.append(f"{name}: {preview}")
         idx = self._menu(options, back_label="← Back")
         if idx is None:
             return None
@@ -440,7 +466,7 @@ class InteractivePhonenvCLI:
         # Apply diacritics flow
         if idx == len(options):
             self._banner("APPLY DIACRITICS", subtitle=f"Base: choose a {sound_type}")
-            base_idx = self._menu(sounds, back_label="← Cancel")
+            base_idx = self._menu(sounds, back_label="← Back")
             if base_idx is None:
                 return None
             base_sound = sounds[base_idx - 1]
@@ -452,7 +478,7 @@ class InteractivePhonenvCLI:
     def _diacritic_quick_panel(self, base: str, scope: str) -> str:
         """Quick diacritic selection panel."""
         print(f"\nApplying diacritics to: {base}")
-        print("Available diacritics (enter numbers separated by spaces, or press Enter when done):")
+        print("Available diacritics (enter numbers like '1 3 5', or press Enter for none):")
 
         # Filter diacritics by scope
         available = {
@@ -467,7 +493,7 @@ class InteractivePhonenvCLI:
             print(f"{i}. {name}: {base}{glyph}")
 
         print()
-        selected_indices = input("Select diacritic numbers (space-separated): ").strip()
+        selected_indices = input("Choose diacritics › ").strip()
 
         if not selected_indices:
             return base
@@ -588,7 +614,7 @@ class InteractivePhonenvCLI:
                 "Create sample targets.txt",
                 "View targets summary",
                 "Cache management",
-            ], back_label="← Back to main menu")
+            ], back_label="← Back")
 
             if idx is None:
                 break

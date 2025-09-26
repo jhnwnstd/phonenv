@@ -486,13 +486,20 @@ class OutputWriter:
             f.write("PHONETIC ENVIRONMENT ANALYSIS REPORT\n")
             f.write("=" * 60 + "\n")
             f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Total targets analyzed: {len(payload)}\n\n")
+            f.write(f"Total targets analyzed: {len(payload)}\n")
+
+            # Add source file information to header
+            if payload:
+                source_file = payload[0].get("source_file", "")
+                if source_file:
+                    f.write(f"Source dataset: {source_file}\n")
+            f.write("\n")
 
             # Summary
             f.write("SUMMARY\n")
-            f.write("-" * 60 + "\n")
-            f.write(f"{'Target':<10} {'Occurrences':<12} {'Environments':<15} {'Source'}\n")
-            f.write("-" * 60 + "\n")
+            f.write("-" * 40 + "\n")
+            f.write(f"{'Target':<10} {'Occurrences':<12} {'Environments'}\n")
+            f.write("-" * 40 + "\n")
 
             def _env_count(res: Dict[str, Any]) -> int:
                 envs = res.get("environments", {})
@@ -503,8 +510,7 @@ class OutputWriter:
             for res in payload:
                 target = res.get("target", _get_target_name(res))
                 env_count = _env_count(res)
-                source_name = Path(res.get("source_file", "")).name
-                f.write(f"{target:<10} {res.get('total_occurrences', 0):<12} {env_count:<15} {source_name}\n")
+                f.write(f"{target:<10} {res.get('total_occurrences', 0):<12} {env_count}\n")
 
             f.write("\n" + "=" * 60 + "\n\n")
 
@@ -514,8 +520,7 @@ class OutputWriter:
                 envs = res.get("environments", {}) if isinstance(res.get("environments", {}), dict) else {}
                 f.write(f"TARGET {i}: '{target}'\n")
                 f.write("-" * 40 + "\n")
-                f.write(f"Total occurrences: {res.get('total_occurrences', 0)}\n")
-                f.write(f"Source file: {res.get('source_file', '')}\n\n")
+                f.write(f"Total occurrences: {res.get('total_occurrences', 0)}\n\n")
 
                 if not envs:
                     f.write("No environments found.\n\n")

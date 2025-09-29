@@ -331,7 +331,7 @@ class InteractivePhonenvCLI:
         """One-line status bar shown under banners."""
         print(f"[ Mode: {self.transcription_mode} | Dataset: {Path(self.file_path).name} ]\n")
 
-    def __init__(self, file_path: str = None):
+    def __init__(self, file_path: str | None = None):
         """Initialize the interactive CLI."""
         self.file_path = file_path or self.DEFAULT_DATASET_PATH
         self.transcription_mode = "broad"
@@ -367,7 +367,7 @@ class InteractivePhonenvCLI:
                     print(f"\nAnalyzing phonetic environments for '{character}' ({self.transcription_mode} transcription)...\n")
                     self.analyzer.print_analysis(character, self.file_path, show_unicode_info=False)
                 else:
-                    print(f"\n{self._format_error('initializing analyzer', 'Please check the configuration.')}")
+                    print(f"\n{self._format_error('initializing analyzer', Exception('Please check the configuration.'))}")
 
                 self._hr()
                 if not self._continue_prompt():

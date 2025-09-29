@@ -1,5 +1,27 @@
-m
+# Lhasa Tibetan - Phonemes to investigate
+# Based on the pedagogical dataset from Odden 2005
+
+# Stops (underlying voiceless)
+p
+t
+k
+
+# Fricatives (derived from lenition)
+β
+ɣ
+ʁ
+
+# Uvular stops (derived allophones)
+q
+ɢ
+
+# Nasals (for place assimilation analysis)
 n
 ŋ
-j̃
-w̃
+ɴ
+
+# Note: These targets test:
+# - Intervocalic lenition (p→β, k→ɣ)
+# - Uvularization (k→q, ɣ→ʁ before low/back vowels)
+# - Post-nasal voicing (k→ɡ/ɢ after nasals)
+# - Nasal place assimilation (n→ŋ/_k, n→ɴ/_q)

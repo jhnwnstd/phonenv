@@ -1,46 +1,54 @@
-mi # body
-me # eye
-ma # interval
-muʃi # neglect
-matte # wait
-mo # also
-ni # two
-na # name
-no # field
-nuʃi # owner
-hema # blunder
-ʃima # island
-ɕimo # string
-zama # state
-jomu # read-nonpast
-oːkami # wolf
-samui # cold
-oneːsaŋ # older sister
-katana # sword
-tanuki # raccoon dog
-hoŋ # book
-paŋ # bread
-ʃizuŋ # season
-supeiŋ # Spain
-deŋ # palace
-nihomppoi # Japanesey
-zambuɾi # with a splash
-ʃimmiɾi # quiet sympathy
-hommo # book-too
-arimasentte # that there isn't
-kentoː # examination
-honda # brand of automobile
-jonda # read-past
-onna # woman
-kaːɾendaː # calendar
-hoj̃ja # bookstore
-boj̃jaɾi # vacantly
-zaŋki # remaining time
-ɾondoŋkko # Londoner
-nippoŋgiŋkoː # Bank of Japan
-oŋgaku # music
-geŋgogaku # linguistics
-jaw̃waɾi # softly
-how̃wa # book-topic
-ikebana # flower arranging
-ɸud͡ʒijama # Mount Fuji
+# Lhasa Tibetan (adapted from Odden 2005)
+[lang=bo; mode=narrow; profile=tibetan; tag=pedagogical]
+
+aŋgu        # pigeon
+aŋʈãã       # a number
+aŋba        # duck
+apsoo       # shaggy dog
+amt͡ʃɔɔ      # ear
+tukʈyy      # poison snake
+amto        # a province
+ɨɣu         # uncle
+ɨmt͡ʃi      # doctor
+uʈɨ         # hair
+uβu         # forehead
+eʁa         # bells
+embo        # deserted
+ʋʋtsi       # oh-oh
+qa          # saddle
+qɑʁɑ        # alphabet
+qaŋba       # foot
+qamba       # pliers
+qam         # to dry
+qamtoo      # overland
+sarβo       # steep
+kɨkʈi       # belch
+kɨβu        # crawl
+kɨɨŋguu     # trip
+kik         # rubber
+kɨʈuu       # student
+kucuu       # translator
+kurii       # roll over
+kiiɣuu      # window
+ku          # nine
+kupt͡ʃɨ      # 900
+kupt͡ʃaa     # chair
+kɛɲt͡ʃa     # contract
+kɛmbo       # headman
+keyøø       # head monk
+kerβa       # aristocrat
+qo          # head
+qomba       # monastery
+qɔr         # coat
+qɔɔʁɔɔ      # round
+t͡ʃʰeʁa      # half
+t͡ʃʰuɣum     # cheese
+topcaa      # stairs
+tʰoʁõõ      # tonight
+ʈaaʁãã      # post office
+ʈuɣɨ        # harbor
+ʈuɴɢo       # China
+nɛɴɢaa      # important
+paɴɢɔɔ      # chest
+pɛɛβãã      # frog
+simɢãã      # build a house

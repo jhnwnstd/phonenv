@@ -345,7 +345,7 @@ class InteractivePhonenvCLI:
         self.analyzer = PhoneticAnalyzer(
             use_ipa_processing=True,
             use_professional_ipa=True,
-            transcription_mode=self.transcription_mode,  # ← add this
+            transcription_mode=self.transcription_mode,
         )
         if getattr(self.analyzer, "ipa_processor_v2", None) is not None:
             self.analyzer.ipa_processor_v2 = IPAProcessorV2(config)

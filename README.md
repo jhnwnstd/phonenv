@@ -1,6 +1,6 @@
 # Phonenv
 
-**Phonenv** is a Python library and CLI for **phonetic environment analysis**. It scans IPA word lists and reports where a target segment occurs—**INITIAL** (`# _ X`), **FINAL** (`X _ #`), and **MEDIAL** with context classes `V_V`, `V_C`, `C_V`, `C_C`—using **Unicode-correct** IPA processing. It’s **language-agnostic**, fast, and offers multiple output formats with caching.
+**Phonenv** is a Python library and CLI for **phonetic environment analysis**. It scans IPA word lists and reports where a target segment occurs—**INITIAL** (`# _ X`), **FINAL** (`X _ #`), and **MEDIAL** with context classes `V_V`, `V_C`, `C_V`, `C_C`—using **Unicode-correct** IPA processing. It's **language-agnostic**, fast, and offers multiple output formats with SHA256-based caching.
 
 ---
 
@@ -112,6 +112,17 @@ If installed as a console script:
 phonenv
 ```
 
+### Command Line Options
+
+```bash
+phonenv                           # Interactive mode
+phonenv --batch                   # Batch process targets.txt
+phonenv --create-targets          # Create sample targets.txt
+phonenv --targets path/targets.txt --output results.txt
+phonenv --clear-cache             # Clear analysis cache
+phonenv --cache-stats             # Show cache statistics
+```
+
 **What you can do interactively:**
 
 * Pick targets from consonant/vowel menus
@@ -125,6 +136,11 @@ phonenv
 Process multiple targets from a file:
 
 ```bash
+# Using command line
+phonenv --batch --format txt
+phonenv --targets custom_targets.txt --dataset custom_dataset.txt --format json
+
+# Using Python API
 python3 -c "
 from data import TargetsProcessor
 from phonenv_io import AutoOutputWriter
@@ -176,12 +192,15 @@ from data import TargetsProcessor, DictionaryProcessor, load_words_list, iter_wo
 from phonenv_io import AutoOutputWriter
 
 # Basic phonetic environment analysis
-analyzer = PhoneticAnalyzer(use_ipa_processing=True)
+analyzer = PhoneticAnalyzer(
+    use_ipa_processing=True,
+    transcription_mode='narrow'  # or 'broad'
+)
 envs = analyzer.analyze_character('ɪ', 'data/dataset.txt')  # dict grouped by environments
 
-# Transcription mode configuration
-config = get_config_for_transcription_mode('narrow')  # or 'broad'
+# Alternative: explicit configuration
 analyzer = PhoneticAnalyzer(use_ipa_processing=True)
+config = get_config_for_transcription_mode('narrow')  # or 'broad'
 analyzer.ipa_processor_v2 = IPAProcessorV2(config)
 analyzer.transcription_mode = 'narrow'
 envs = analyzer.analyze_character('ɪ', 'data/dataset.txt')
@@ -244,11 +263,11 @@ Segment {
 
 ### Narrow vs Broad Matching
 
-* **Narrow (phonetic; default in the interactive UI)**
+* **Narrow (phonetic)**
   Diacritics/length are **contrastive**
   Examples: `[p] ≠ [pʰ]`, `[a] ≠ [ã]`, `[i] ≠ [iː]`
 
-* **Broad (phonemic)**
+* **Broad (phonemic; default for batch processing)**
   Diacritics/length **folded away** (language-agnostic folding)
   Examples: `[p] = [pʰ]`, `[a] = [ã]`, `[i] = [iː]`
   (Profiles could refine this per language if desired.)
@@ -384,11 +403,15 @@ phonenv/
 ├── data.py                   # Dataset parsing, target validation, batch helpers
 ├── phonenv_io.py             # Output formatting, caching, file I/O
 ├── validate.py               # Unicode/IPA validation helpers
+├── utils.py                  # Unicode utilities and IPA processing helpers
 ├── setup.py                  # Packaging
 └── data/
     ├── dataset.txt           # Example IPA word list with metadata
-    ├── targets.txt           # Comprehensive target list (incl. affricates)
-    └── output/               # Generated analysis reports
+    ├── targets.txt           # Target list for batch analysis
+    ├── output/               # Generated analysis reports
+    ├── .cache/               # Analysis result cache
+    ├── archive/              # Archived datasets
+    └── test/                 # Test datasets
 ```
 
 ---

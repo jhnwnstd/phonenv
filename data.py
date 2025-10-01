@@ -103,7 +103,9 @@ def iter_word_entries(path: str | Path) -> Iterator[WordEntry]:
 
     # Security: Validate path is within project directory
     if not is_safe_path(p):
-        raise ValueError(f"Access denied: path '{p}' is outside allowed directory")
+        raise ValueError(
+            f"Access denied: path '{p}' is outside allowed directory"
+        )
 
     section = dict(_DEFAULT_SECTION)
 
@@ -160,7 +162,9 @@ def load_words_list(path: str = "data/dataset.txt") -> List[str]:
 class DictionaryProcessor:
     """Processes and manages word dictionaries."""
 
-    def __init__(self, input_file: str = "data/dataset.txt", encoding: str = "utf-8"):
+    def __init__(
+        self, input_file: str = "data/dataset.txt", encoding: str = "utf-8"
+    ):
         """Initialize the dictionary processor.
 
         Args:
@@ -205,7 +209,9 @@ class DictionaryProcessor:
                 for word in sorted(words):
                     f.write(f"{word}\n")
         except (IOError, OSError) as e:
-            raise IOError(f"Cannot write to file {self.input_file}: {e}") from e
+            raise IOError(
+                f"Cannot write to file {self.input_file}: {e}"
+            ) from e
 
     def add_word(self, word: str) -> bool:
         """Add a word to the dictionary.
@@ -312,9 +318,13 @@ class DictionaryProcessor:
             # Remove words containing substring
             if delete_substring:
                 original_count = len(words)
-                words = {word for word in words if delete_substring not in word}
+                words = {
+                    word for word in words if delete_substring not in word
+                }
                 removed_count = original_count - len(words)
-                print(f"Removed {removed_count} words containing '{delete_substring}'")
+                print(
+                    f"Removed {removed_count} words containing '{delete_substring}'"
+                )
 
             # Save changes
             self.save_words(words)
@@ -379,7 +389,9 @@ class TargetsProcessor:
         are accepted as targets.
         """
         if not self.targets_path.exists():
-            raise FileNotFoundError(f"Targets file not found: {self.targets_path}")
+            raise FileNotFoundError(
+                f"Targets file not found: {self.targets_path}"
+            )
 
         try:
             # Lazy import to avoid circular dependency
@@ -412,7 +424,9 @@ class TargetsProcessor:
                             continue
 
                     for tok in _split_targets_line(line):
-                        tok = tok.strip().strip("[]")  # Remove brackets and whitespace
+                        tok = tok.strip().strip(
+                            "[]"
+                        )  # Remove brackets and whitespace
                         if not tok:
                             continue
 
@@ -427,7 +441,9 @@ class TargetsProcessor:
             return out
 
         except (IOError, OSError) as e:
-            raise IOError(f"Cannot read targets file {self.targets_path}: {e}") from e
+            raise IOError(
+                f"Cannot read targets file {self.targets_path}: {e}"
+            ) from e
 
     def save_targets(self, targets: List[str]) -> None:
         """Save targets to targets.txt file.
@@ -448,7 +464,9 @@ class TargetsProcessor:
                 f.write("# Lines starting with # are comments\n\n")
 
                 for target in targets:
-                    f.write(f"{normalize_tiebar(ud.normalize('NFC', target))}\n")
+                    f.write(
+                        f"{normalize_tiebar(ud.normalize('NFC', target))}\n"
+                    )
 
         except (IOError, OSError) as e:
             raise IOError(
@@ -471,7 +489,9 @@ class TargetsProcessor:
 
             self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
 
-        environments = self.analyzer.analyze_character(target, str(self.dataset_path))
+        environments = self.analyzer.analyze_character(
+            target, str(self.dataset_path)
+        )
 
         # Count total occurrences
         total_occurrences = 0
@@ -496,7 +516,9 @@ class TargetsProcessor:
             FileNotFoundError: If targets.txt or dataset doesn't exist
         """
         if not self.dataset_path.exists():
-            raise FileNotFoundError(f"Dataset file not found: {self.dataset_path}")
+            raise FileNotFoundError(
+                f"Dataset file not found: {self.dataset_path}"
+            )
 
         targets = self.load_targets()
 
@@ -619,5 +641,7 @@ def process_all_targets(
     Returns:
         List of TargetResult objects
     """
-    processor = TargetsProcessor(dataset_path=dataset_path, targets_path=targets_path)
+    processor = TargetsProcessor(
+        dataset_path=dataset_path, targets_path=targets_path
+    )
     return processor.process_targets_to_list()

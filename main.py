@@ -32,8 +32,18 @@ from phonenv_io import (
 
 COMMON_DIACRITICS: Dict[str, Dict[str, str | bool | None]] = {
     # Length (spacing, mutually exclusive)
-    "long": {"glyph": "ː", "kind": "spacing", "scope": "any", "group": "length"},
-    "half-long": {"glyph": "ˑ", "kind": "spacing", "scope": "any", "group": "length"},
+    "long": {
+        "glyph": "ː",
+        "kind": "spacing",
+        "scope": "any",
+        "group": "length",
+    },
+    "half-long": {
+        "glyph": "ˑ",
+        "kind": "spacing",
+        "scope": "any",
+        "group": "length",
+    },
     # Added: extra-short (spacing, same group)
     "extra-short": {
         "glyph": "˘",
@@ -88,7 +98,12 @@ COMMON_DIACRITICS: Dict[str, Dict[str, str | bool | None]] = {
         "group": None,
     },  # ◌̚
     # Secondary articulations (spacing)
-    "aspirated": {"glyph": "ʰ", "kind": "spacing", "scope": "consonant", "group": None},
+    "aspirated": {
+        "glyph": "ʰ",
+        "kind": "spacing",
+        "scope": "consonant",
+        "group": None,
+    },
     "palatalized": {
         "glyph": "ʲ",
         "kind": "spacing",
@@ -101,7 +116,12 @@ COMMON_DIACRITICS: Dict[str, Dict[str, str | bool | None]] = {
         "scope": "consonant",
         "group": None,
     },
-    "velarized": {"glyph": "ˠ", "kind": "spacing", "scope": "consonant", "group": None},
+    "velarized": {
+        "glyph": "ˠ",
+        "kind": "spacing",
+        "scope": "consonant",
+        "group": None,
+    },
     "pharyngealized": {
         "glyph": "ˤ",
         "kind": "spacing",
@@ -439,7 +459,9 @@ class InteractivePhonenvCLI:
             if os.name == "nt":
                 os.system("cls")  # Windows
             else:
-                print("\033[2J\033[H", end="")  # ANSI escape sequence for Unix/Linux
+                print(
+                    "\033[2J\033[H", end=""
+                )  # ANSI escape sequence for Unix/Linux
         except Exception:
             pass  # Graceful fallback if clearing fails
 
@@ -666,13 +688,18 @@ class InteractivePhonenvCLI:
         )
 
     def _select_consonant(self) -> Optional[str]:
-        return self._select_character_category(self.CONSONANT_CATEGORIES, "consonants")
+        return self._select_character_category(
+            self.CONSONANT_CATEGORIES, "consonants"
+        )
 
     def _select_vowel(self) -> Optional[str]:
         return self._select_character_category(self.VOWEL_CATEGORIES, "vowels")
 
     def _select_from_subcategory(
-        self, main_category: str, subcategories: Dict[str, List[str]], sound_type: str
+        self,
+        main_category: str,
+        subcategories: Dict[str, List[str]],
+        sound_type: str,
     ) -> Optional[str]:
         self._banner(main_category.upper(), subtitle=sound_type.capitalize())
         sub_names = list(subcategories.keys())  # Keep list for indexing
@@ -680,7 +707,9 @@ class InteractivePhonenvCLI:
         options = []
         for name in sub_names:
             preview = " ".join(subcategories[name])
-            if len(preview) > self.PREVIEW_TRUNCATE_LENGTH:  # truncate long lists
+            if (
+                len(preview) > self.PREVIEW_TRUNCATE_LENGTH
+            ):  # truncate long lists
                 preview = preview[: self.PREVIEW_TRUNCATE_LENGTH - 3] + "..."
             options.append(f"{name}: {preview}")
         idx = self._menu(options, back_label="← Back")
@@ -693,7 +722,9 @@ class InteractivePhonenvCLI:
     def _select_specific_sound(
         self, sounds: List[str], subcategory: str, sound_type: str
     ) -> Optional[str]:
-        self._banner(subcategory.upper(), subtitle=f"{sound_type.capitalize()}s")
+        self._banner(
+            subcategory.upper(), subtitle=f"{sound_type.capitalize()}s"
+        )
         options = sounds + ["Apply diacritics"]
         idx = self._menu(options, back_label="← Back")
         if idx is None:
@@ -701,7 +732,9 @@ class InteractivePhonenvCLI:
 
         # Apply diacritics flow
         if idx == len(options):
-            self._banner("APPLY DIACRITICS", subtitle=f"Base: choose a {sound_type}")
+            self._banner(
+                "APPLY DIACRITICS", subtitle=f"Base: choose a {sound_type}"
+            )
             base_idx = self._menu(sounds, back_label="← Back")
             if base_idx is None:
                 return None
@@ -828,8 +861,12 @@ class InteractivePhonenvCLI:
                 elif idx == 3:
                     substring = input("Remove words containing: ").strip()
                     if substring:
-                        removed = self.dict_processor.remove_words_containing(substring)
-                        print(f"Removed {removed} words containing '{substring}'")
+                        removed = self.dict_processor.remove_words_containing(
+                            substring
+                        )
+                        print(
+                            f"Removed {removed} words containing '{substring}'"
+                        )
                 elif idx == 4:
                     confirm = self._normalize_user_input(
                         input("Clear entire dictionary? (y/N): ")
@@ -841,7 +878,9 @@ class InteractivePhonenvCLI:
                     stats = self.dict_processor.get_stats()
                     print("\nDictionary Statistics:")
                     print(f"   Total words: {stats.get('total_words', 0)}")
-                    print(f"   Unique letters: {stats.get('unique_letters', 0)}")
+                    print(
+                        f"   Unique letters: {stats.get('unique_letters', 0)}"
+                    )
                     avg_len = stats.get("avg_word_length", 0.0)
                     print(f"   Average length: {avg_len:.2f}")
                     print(f"   Longest: {stats.get('longest_word', '')}")
@@ -864,7 +903,9 @@ class InteractivePhonenvCLI:
                     print(
                         f"Targets file: {self.DEFAULT_TARGETS_PATH} ({total} targets)"
                     )
-                    print(f"Dataset: {ds_file} ({'exists' if ds_exist else 'missing'})")
+                    print(
+                        f"Dataset: {ds_file} ({'exists' if ds_exist else 'missing'})"
+                    )
 
                     seen, uniq = set(), []
                     for t in summary.get("targets") or []:
@@ -947,8 +988,12 @@ class InteractivePhonenvCLI:
 
             results = []
             for i, target in enumerate(targets, 1):
-                print(f"  [{i}/{len(targets)}] Analyzing '{target}'...", end=" ")
-                cached_result = cache.get(target, self.file_path, self.analyzer)
+                print(
+                    f"  [{i}/{len(targets)}] Analyzing '{target}'...", end=" "
+                )
+                cached_result = cache.get(
+                    target, self.file_path, self.analyzer
+                )
                 if cached_result:
                     print("(cached)")
                     results.append(cached_result)
@@ -959,7 +1004,9 @@ class InteractivePhonenvCLI:
                     results.append(result)
 
             fmt_in = (
-                input("\nOutput format (jsonl/json/csv/txt) [txt]: ").strip().lower()
+                input("\nOutput format (jsonl/json/csv/txt) [txt]: ")
+                .strip()
+                .lower()
             )
             fmt = _normalize_format(fmt_in) or "txt"
             if fmt_in and not _normalize_format(fmt_in):
@@ -973,7 +1020,9 @@ class InteractivePhonenvCLI:
             print(f"Analyzed {len(results)} targets")
             # If your TargetResult has total_occurrences per target:
             try:
-                total_occ = sum(getattr(r, "total_occurrences", 0) for r in results)
+                total_occ = sum(
+                    getattr(r, "total_occurrences", 0) for r in results
+                )
                 print(f"Total occurrences: {total_occ}")
             except Exception:
                 pass
@@ -1005,7 +1054,9 @@ class InteractivePhonenvCLI:
             summary = processor.get_targets_summary()
 
             print("\nTargets Summary:")
-            print(f"   File: {summary.get('targets_file', 'data/targets.txt')}")
+            print(
+                f"   File: {summary.get('targets_file', 'data/targets.txt')}"
+            )
             print(f"   Dataset: {summary.get('dataset_file', self.file_path)}")
             print(f"   Total targets: {summary.get('total_targets', 0)}")
             print(f"   Unique targets: {summary.get('unique_targets', 0)}")
@@ -1065,7 +1116,9 @@ class InteractivePhonenvCLI:
                         else:
                             print(f"   {key}: {value}")
                 elif idx == 2:
-                    confirm = input("Clear entire cache? (y/N): ").strip().lower()
+                    confirm = (
+                        input("Clear entire cache? (y/N): ").strip().lower()
+                    )
                     if confirm in {"y", "yes"}:
                         clear_cache()
                         print("Cache cleared")
@@ -1139,11 +1192,15 @@ Examples:
     )
 
     parser.add_argument(
-        "--clear-cache", action="store_true", help="Clear analysis cache and exit"
+        "--clear-cache",
+        action="store_true",
+        help="Clear analysis cache and exit",
     )
 
     parser.add_argument(
-        "--cache-stats", action="store_true", help="Show cache statistics and exit"
+        "--cache-stats",
+        action="store_true",
+        help="Show cache statistics and exit",
     )
 
     parser.add_argument(
@@ -1174,7 +1231,11 @@ Examples:
                 if key == "targets" and isinstance(value, list):
                     print(
                         f"   {key}: {', '.join(value[:10])}"
-                        + (f" (+{len(value)-10} more)" if len(value) > 10 else "")
+                        + (
+                            f" (+{len(value)-10} more)"
+                            if len(value) > 10
+                            else ""
+                        )
                     )
                 else:
                     print(f"   {key}: {value}")
@@ -1250,12 +1311,16 @@ def run_batch_cli(args):
                 results, args.format, args.output
             )
         else:
-            output_paths = output_writer.write_batch_results(results, args.format)
+            output_paths = output_writer.write_batch_results(
+                results, args.format
+            )
 
         print("\nBatch analysis complete!")
         print(f"Results written to: {list(output_paths.values())[0]}")
         print(f"Analyzed {len(results)} targets")
-        print(f"Total occurrences: {sum(r.total_occurrences for r in results)}")
+        print(
+            f"Total occurrences: {sum(r.total_occurrences for r in results)}"
+        )
 
         cache.save()
 

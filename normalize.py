@@ -43,7 +43,9 @@ CONFUSABLE_HINTS: Mapping[str, str] = {
     # Punctuation used as IPA (context-dependent)
     ";": "ˑ",  # U+003B → U+02D1 (semicolon → half-long)
     "'": "ˈ",  # U+0027 → U+02C8 (ASCII apostrophe → primary stress)
-    "\u2019": ("ˈ"),  # U+2019 RIGHT SINGLE QUOTATION MARK → U+02C8 primary stress
+    "\u2019": (
+        "ˈ"
+    ),  # U+2019 RIGHT SINGLE QUOTATION MARK → U+02C8 primary stress
     ",": "ˌ",  # U+002C → U+02CC (comma → secondary stress)
     "?": "ʔ",  # U+003F → U+0294 (question mark → glottal stop)
     # Cyrillic homoglyphs (Latin/IPA look-alikes)

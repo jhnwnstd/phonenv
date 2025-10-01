@@ -91,7 +91,9 @@ class ResultCache:
             temp_file = self.cache_file.with_suffix(".tmp")
             with temp_file.open("w", encoding="utf-8") as f:
                 for entry in self._memory_cache.values():
-                    f.write(json.dumps(entry.to_dict(), ensure_ascii=False) + "\n")
+                    f.write(
+                        json.dumps(entry.to_dict(), ensure_ascii=False) + "\n"
+                    )
             temp_file.replace(self.cache_file)
         except (IOError, OSError) as e:
             print(f"Warning: Could not save cache: {e}")
@@ -117,14 +119,20 @@ class ResultCache:
             "dataset_path": str(Path(dataset_path).resolve()),
             "config": config,
         }
-        key_string = json.dumps(key_data, sort_keys=True, separators=(",", ":"))
+        key_string = json.dumps(
+            key_data, sort_keys=True, separators=(",", ":")
+        )
         return hashlib.sha256(key_string.encode("utf-8")).hexdigest()
 
     def get_analysis_config(self, analyzer) -> Dict[str, Any]:
         """Extract relevant configuration from analyzer for cache key."""
         config = {
-            "use_ipa_processing": getattr(analyzer, "use_ipa_processing", False),
-            "transcription_mode": getattr(analyzer, "transcription_mode", "narrow"),
+            "use_ipa_processing": getattr(
+                analyzer, "use_ipa_processing", False
+            ),
+            "transcription_mode": getattr(
+                analyzer, "transcription_mode", "narrow"
+            ),
             "no_color": getattr(analyzer, "no_color", False),
         }
 
@@ -136,14 +144,18 @@ class ResultCache:
             match_mode = getattr(processor.config, "match_mode", None)
             config["ipa_processor"] = {
                 "use_panphon": getattr(processor.config, "use_panphon", False),
-                "tie_bar_clusters": getattr(processor.config, "tie_bar_clusters", []),
+                "tie_bar_clusters": getattr(
+                    processor.config, "tie_bar_clusters", []
+                ),
                 "diphthong_patterns": getattr(
                     processor.config, "diphthong_patterns", []
                 ),
                 "normalization_mode": getattr(
                     processor.config, "normalization_mode", "NFC"
                 ),
-                "match_mode": match_mode if match_mode is not None else "broad",
+                "match_mode": (
+                    match_mode if match_mode is not None else "broad"
+                ),
             }
 
         return config
@@ -215,7 +227,9 @@ class ResultCache:
             pass
 
     def clear_target(self, target: str) -> int:
-        to_remove = [k for k, e in self._memory_cache.items() if e.target == target]
+        to_remove = [
+            k for k, e in self._memory_cache.items() if e.target == target
+        ]
         for k in to_remove:
             self._memory_cache.pop(k, None)
         return len(to_remove)
@@ -223,7 +237,9 @@ class ResultCache:
     def clear_dataset(self, dataset_path: str) -> int:
         resolved = str(Path(dataset_path).resolve())
         to_remove = [
-            k for k, e in self._memory_cache.items() if e.dataset_path == resolved
+            k
+            for k, e in self._memory_cache.items()
+            if e.dataset_path == resolved
         ]
         for k in to_remove:
             self._memory_cache.pop(k, None)
@@ -260,7 +276,9 @@ class ResultCache:
         self, max_age_days: float = DEFAULT_CACHE_MAX_AGE_DAYS
     ) -> int:
         cutoff = time.time() - (max_age_days * 24 * 60 * 60)
-        to_remove = [k for k, e in self._memory_cache.items() if e.timestamp < cutoff]
+        to_remove = [
+            k for k, e in self._memory_cache.items() if e.timestamp < cutoff
+        ]
         for k in to_remove:
             self._memory_cache.pop(k, None)
         return len(to_remove)
@@ -325,13 +343,19 @@ def _to_plain(obj: Any) -> Any:
 
     if isinstance(obj, dict):
         return {
-            str(k): _to_plain(v) for k, v in obj.items() if not str(k).startswith("_")
+            str(k): _to_plain(v)
+            for k, v in obj.items()
+            if not str(k).startswith("_")
         }
     if isinstance(obj, (list, tuple, set)):
         return [_to_plain(v) for v in obj]
 
     if hasattr(obj, "__dict__"):
-        return {k: _to_plain(v) for k, v in vars(obj).items() if not k.startswith("_")}
+        return {
+            k: _to_plain(v)
+            for k, v in vars(obj).items()
+            if not k.startswith("_")
+        }
 
     return str(obj)
 
@@ -362,7 +386,9 @@ class OutputWriter:
 
         if output_path is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = self.output_dir / f"analysis_results_{timestamp}.jsonl"
+            output_file = (
+                self.output_dir / f"analysis_results_{timestamp}.jsonl"
+            )
         else:
             output_file = Path(output_path)
             _ensure_parent(output_file)
@@ -396,7 +422,9 @@ class OutputWriter:
 
         if output_path is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = self.output_dir / f"analysis_results_{timestamp}.json"
+            output_file = (
+                self.output_dir / f"analysis_results_{timestamp}.json"
+            )
         else:
             output_file = Path(output_path)
             _ensure_parent(output_file)
@@ -493,7 +521,9 @@ class OutputWriter:
                                     "left_context": left,
                                     "right_context": right,
                                     "count": len(deduped_examples),
-                                    "examples": "; ".join(deduped_examples[:5]),
+                                    "examples": "; ".join(
+                                        deduped_examples[:5]
+                                    ),
                                     "source_file": source_file,
                                     "total_occurrences": total_occ,
                                 }
@@ -512,7 +542,9 @@ class OutputWriter:
                     writer.writerow(
                         {
                             "target": res.get("target", _get_target_name(res)),
-                            "total_occurrences": res.get("total_occurrences", 0),
+                            "total_occurrences": res.get(
+                                "total_occurrences", 0
+                            ),
                             "environments_json": json.dumps(
                                 res.get("environments", {}), ensure_ascii=False
                             ),
@@ -543,7 +575,9 @@ class OutputWriter:
             # Header
             f.write("PHONETIC ENVIRONMENT ANALYSIS REPORT\n")
             f.write("=" * REPORT_SEPARATOR_WIDTH + "\n")
-            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(
+                f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            )
             f.write(f"Total targets analyzed: {len(payload)}\n")
 
             # Add source file information to header
@@ -562,7 +596,9 @@ class OutputWriter:
             def _env_count(res: Dict[str, Any]) -> int:
                 envs = res.get("environments", {})
                 if isinstance(envs, dict):
-                    return sum(len(v) for v in envs.values() if isinstance(v, dict))
+                    return sum(
+                        len(v) for v in envs.values() if isinstance(v, dict)
+                    )
                 return 0
 
             for res in payload:
@@ -584,7 +620,9 @@ class OutputWriter:
                 )
                 f.write(f"TARGET {i}: '{target}'\n")
                 f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
-                f.write(f"Total occurrences: {res.get('total_occurrences', 0)}\n\n")
+                f.write(
+                    f"Total occurrences: {res.get('total_occurrences', 0)}\n\n"
+                )
 
                 if not envs:
                     f.write("No environments found.\n\n")
@@ -615,13 +653,19 @@ class OutputWriter:
 
                             # Use singular/plural correctly for occurrence count
                             count = len(deduped_examples)
-                            occ_text = "occurrence" if count == 1 else "occurrences"
-                            f.write(f"    {left} _ {right} ({count} {occ_text})")
+                            occ_text = (
+                                "occurrence" if count == 1 else "occurrences"
+                            )
+                            f.write(
+                                f"    {left} _ {right} ({count} {occ_text})"
+                            )
 
                             if include_examples and deduped_examples:
                                 shown = deduped_examples[:max_examples]
                                 f.write(f": {', '.join(shown)}")
-                                extra = max(0, len(deduped_examples) - max_examples)
+                                extra = max(
+                                    0, len(deduped_examples) - max_examples
+                                )
                                 if extra:
                                     f.write(f" (+{extra} more)")
                             f.write("\n")
@@ -693,7 +737,9 @@ class AutoOutputWriter:
                 else (self.output_dir / f"{base_name}.txt")
             )
             _ensure_parent(path)
-            output_paths["txt"] = self.writer.write_text_report(results, str(path))
+            output_paths["txt"] = self.writer.write_text_report(
+                results, str(path)
+            )
         else:
             path = (
                 Path(custom_path)
@@ -705,7 +751,9 @@ class AutoOutputWriter:
 
         return output_paths
 
-    def write_single_target(self, result: Any, format_preference: str = "txt") -> str:
+    def write_single_target(
+        self, result: Any, format_preference: str = "txt"
+    ) -> str:
         outputs = self.write_batch_results([result], format_preference)
         return list(outputs.values())[0] if outputs else ""
 

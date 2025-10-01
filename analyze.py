@@ -117,7 +117,9 @@ def _skip_right(segments: List[str], i: int) -> int:
 def _strip_all_nonbase(s: str) -> str:
     """Remove all non-base characters (combining marks + spacing modifiers)."""
     nfd = ud.normalize("NFD", s)
-    return "".join(c for c in nfd if not (is_combining(c) or is_spacing_modifier(c)))
+    return "".join(
+        c for c in nfd if not (is_combining(c) or is_spacing_modifier(c))
+    )
 
 
 class IPAProcessorV2:
@@ -159,7 +161,9 @@ class IPAProcessorV2:
         text = normalize_tiebar(text)
 
         # 1) Wrap multi-symbol nuclei (diphthongs/triphthongs) first (longest-first).
-        for pat in sorted(self.config.diphthong_patterns or [], key=len, reverse=True):
+        for pat in sorted(
+            self.config.diphthong_patterns or [], key=len, reverse=True
+        ):
             if pat and pat in text:
                 text = text.replace(pat, f"◊{pat}◊")
 
@@ -177,7 +181,7 @@ class IPAProcessorV2:
                 while j < len(chars) and chars[j] != "◊":
                     j += 1
                 if j < len(chars):
-                    seg = "".join(chars[i + 1 : j])
+                    seg = "".join(chars[i + 1: j])
                     k = j + 1
                     while k < len(chars) and is_combining(chars[k]):
                         seg += chars[k]
@@ -195,7 +199,7 @@ class IPAProcessorV2:
             if ch == "(":
                 j = text.find(")", i + 1)
                 if j != -1:
-                    seg = text[i : j + 1].replace("◊", "")
+                    seg = text[i: j + 1].replace("◊", "")
                     segments.append(seg)
                     i = j + 1
                     continue
@@ -437,7 +441,9 @@ class PhoneticAnalyzer:
             if left_char == ")":
                 left_start = word.rfind("(", 0, left_idx + 1)
                 left = (
-                    word[left_start : left_idx + 1] if left_start != -1 else left_char
+                    word[left_start: left_idx + 1]
+                    if left_start != -1
+                    else left_char
                 )
             else:
                 left = left_char
@@ -463,7 +469,9 @@ class PhoneticAnalyzer:
             if right_char == "(":
                 right_end = word.find(")", right_idx)
                 right = (
-                    word[right_idx : right_end + 1] if right_end != -1 else right_char
+                    word[right_idx: right_end + 1]
+                    if right_end != -1
+                    else right_char
                 )
             else:
                 right = right_char
@@ -482,7 +490,9 @@ class PhoneticAnalyzer:
         return f"MEDIAL {L}_{R}"
 
     @staticmethod
-    def _highlight_character(word: str, character: str, occurrence_index: int) -> str:
+    def _highlight_character(
+        word: str, character: str, occurrence_index: int
+    ) -> str:
         """Highlight specific occurrence of character in word."""
         count = 0
         i = 0
@@ -491,12 +501,14 @@ class PhoneticAnalyzer:
             if j == -1:
                 break
             if count == occurrence_index:
-                return word[:j] + f"[{character}]" + word[j + len(character) :]
+                return word[:j] + f"[{character}]" + word[j + len(character):]
             count += 1
             i = j + len(character)
         return word
 
-    def _split_env(self, env: str, target_display: str) -> Tuple[str, str, str]:
+    def _split_env(
+        self, env: str, target_display: str
+    ) -> Tuple[str, str, str]:
         """Split environment into left, target, right."""
         left, right = env.split("__", 1)
         return left, target_display, right
@@ -643,10 +655,13 @@ class PhoneticAnalyzer:
             idx = found + len(target)
             nth += 1
 
-    def _create_clean_example(self, segments: List[str], match_index: int) -> str:
+    def _create_clean_example(
+        self, segments: List[str], match_index: int
+    ) -> str:
         """Bracket exactly the matched segment (includes any diacritics/modifiers)."""
         return "".join(
-            f"[{s}]" if idx == match_index else s for idx, s in enumerate(segments)
+            f"[{s}]" if idx == match_index else s
+            for idx, s in enumerate(segments)
         )
 
     def print_analysis(
@@ -659,7 +674,11 @@ class PhoneticAnalyzer:
         encoding: str = "utf-8",
     ) -> None:
         """Pretty-print analysis results."""
-        if show_unicode_info and self.use_ipa_processing and self.ipa_processor_v2:
+        if (
+            show_unicode_info
+            and self.use_ipa_processing
+            and self.ipa_processor_v2
+        ):
             info = self.ipa_processor_v2.get_segment_info(character)
             print(f"\nUnicode Information for '{character}':")
             print(f"  Code Point: {info.get('code_point', 'N/A')}")
@@ -675,8 +694,8 @@ class PhoneticAnalyzer:
             return
 
         target_disp = self._target_for_display(character)
-        group_w, left_w, targ_w, right_w, count_w = self._compute_global_widths(
-            grouped, target_disp
+        group_w, left_w, targ_w, right_w, count_w = (
+            self._compute_global_widths(grouped, target_disp)
         )
 
         # Build rows for display
@@ -731,7 +750,9 @@ class PhoneticAnalyzer:
                 expand=True,
                 pad_edge=False,
             )
-            table.add_column("Group", justify="left", no_wrap=True, width=group_w)
+            table.add_column(
+                "Group", justify="left", no_wrap=True, width=group_w
+            )
             table.add_column(
                 "Left",
                 justify="right",
@@ -814,7 +835,8 @@ class PhoneticAnalyzer:
             else:
                 ex_width = max(
                     20,
-                    term_w - (group_w + left_w + targ_w + right_w + count_w + 16),
+                    term_w
+                    - (group_w + left_w + targ_w + right_w + count_w + 16),
                 )
                 ex_str = self._format_examples(
                     examples.split(", "), max_examples_per_env, ex_width

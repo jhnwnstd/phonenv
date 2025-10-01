@@ -102,7 +102,9 @@ def _load_words_dataset(path: Path) -> List[str]:
 
     words: List[str] = []
     tag_pattern = re.compile(r"\[[^\]]*\]")  # remove inline [tags]
-    header_pattern = re.compile(r"^\s*\[[^#\]]*\]\s*(#.*)?$")  # section headers
+    header_pattern = re.compile(
+        r"^\s*\[[^#\]]*\]\s*(#.*)?$"
+    )  # section headers
 
     with path.open("r", encoding="utf-8") as f:
         for raw in f:
@@ -178,7 +180,9 @@ class WarningItem:
     source: str  # "dataset" or "target"
 
 
-def _scan_line(line: str, line_no: int) -> Tuple[List[Offense], List[WarningItem]]:
+def _scan_line(
+    line: str, line_no: int
+) -> Tuple[List[Offense], List[WarningItem]]:
     offs: List[Offense] = []
     warns: List[WarningItem] = []
 
@@ -191,7 +195,12 @@ def _scan_line(line: str, line_no: int) -> Tuple[List[Offense], List[WarningItem
             name = INVISIBLES.get(ord(ch), ud.name(ch, "UNKNOWN"))
             warns.append(
                 WarningItem(
-                    "invisible", f"Invisible/format char {name}", line_no, idx, line, ""
+                    "invisible",
+                    f"Invisible/format char {name}",
+                    line_no,
+                    idx,
+                    line,
+                    "",
                 )
             )
             continue
@@ -306,7 +315,12 @@ def _collect_issues(words: Iterable[str], targets: Iterable[str]):
         for item in w:
             warnings.append(
                 WarningItem(
-                    item.kind, item.message, item.line_no, item.col_no, wline, "dataset"
+                    item.kind,
+                    item.message,
+                    item.line_no,
+                    item.col_no,
+                    wline,
+                    "dataset",
                 )
             )
         for off in o:
@@ -356,7 +370,11 @@ def _render_warnings(warnings: List[WarningItem]) -> str:
     lines: List[str] = []
     lines.append("Warnings (non-fatal):")
     for w in warnings[:20]:
-        src = "target" if w.source == "target" or "(target)" in w.message else "dataset"
+        src = (
+            "target"
+            if w.source == "target" or "(target)" in w.message
+            else "dataset"
+        )
         lines.append(
             f"  [{src}] L{w.line_no}:{w.col_no} {w.kind}: {w.message}  ⇒  {w.sample}"
         )
@@ -417,7 +435,12 @@ def _print_diff(
     print(f"\nProposed changes for {path}:")
     diff = list(
         difflib.unified_diff(
-            orig, fixed, fromfile=str(path), tofile=f"{path} (fixed)", n=3, lineterm=""
+            orig,
+            fixed,
+            fromfile=str(path),
+            tofile=f"{path} (fixed)",
+            n=3,
+            lineterm="",
         )
     )
     if not diff:
@@ -451,7 +474,9 @@ def _maybe_autofix(
     if not offenders_exist:
         return False
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        print("\nRun in an interactive terminal to be prompted for auto-fixes.")
+        print(
+            "\nRun in an interactive terminal to be prompted for auto-fixes."
+        )
         return False
 
     modified_any = False
@@ -514,7 +539,9 @@ def validate(
             return 2
 
         words = _load_words_dataset(dataset)
-        target_list = _load_targets(targets if targets and targets.exists() else None)
+        target_list = _load_targets(
+            targets if targets and targets.exists() else None
+        )
 
         offenders, offenses, warnings = _collect_issues(words, target_list)
 
@@ -556,7 +583,9 @@ def validate(
                 f"✓ Validation passed. No offending characters found in {dataset} and {targets}."
             )
         else:
-            print(f"✓ Validation passed. No offending characters found in {dataset}.")
+            print(
+                f"✓ Validation passed. No offending characters found in {dataset}."
+            )
         return 0
 
     except KeyboardInterrupt:

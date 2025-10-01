@@ -509,7 +509,7 @@ class InteractivePhonenvCLI:
         self._create_analyzer()
 
     def _create_analyzer(self):
-        from analysis import get_config_for_transcription_mode, IPAProcessorV2
+        from analyze import get_config_for_transcription_mode, IPAProcessorV2
 
         config = get_config_for_transcription_mode(self.transcription_mode)
         self.analyzer = PhoneticAnalyzer(
@@ -1210,7 +1210,7 @@ def run_batch_cli(args):
         print(f"Mode: {args.mode}")
 
         # Wire up analyzer with the chosen transcription mode
-        from analysis import get_config_for_transcription_mode, IPAProcessorV2
+        from analyze import get_config_for_transcription_mode, IPAProcessorV2
 
         analyzer = PhoneticAnalyzer(
             use_ipa_processing=True, transcription_mode=args.mode

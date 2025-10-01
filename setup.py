@@ -2,7 +2,7 @@
 """Setup script for Phonenv."""
 
 from pathlib import Path
-from setuptools import setup, find_packages
+from setuptools import setup
 
 ROOT = Path(__file__).parent
 README_PATH = ROOT / "README.md"
@@ -16,7 +16,12 @@ setup(
     name="phonenv",
     version="2.0.0",
     author="shameedjob",
-    description="A robust Python library for phonetic environment analysis with comprehensive validation and multiple output formats",
+    maintainer="jhnwnstd",
+    description=(
+        "Phonetic environment analysis with Unicode-correct IPA processing, "
+        "automatic normalization, and validation — originally by shameedjob; "
+        "major contributions by jhnwnstd."
+    ),
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/shameedjob/phonenv",
@@ -33,20 +38,24 @@ setup(
         "IPA",
         "unicode",
         "linguistics",
-        "text-processing",
-        "segmentation",
         "transcription",
-        "validation",
         "environment-analysis",
+        "ipa-validation",
+        "normalization",
     ],
-    py_modules=["analysis", "cli", "data", "phonenv_io", "validate", "utils"],
+    py_modules=[
+        "analyze",
+        "main",
+        "data",
+        "phonenv_io",
+        "validate",
+        "utils",
+        "normalize",
+    ],
     classifiers=[
-        "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Education",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Text Processing :: Linguistic",
-        "Topic :: Text Processing :: General",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
@@ -58,12 +67,12 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        "regex>=2021.0",  # Unicode-aware regex/grapheme clustering
+        "regex>=2021.0",
     ],
     extras_require={
         "enhanced": [
-            "panphon>=0.20",  # IPA segmentation and feature analysis
-            "rich>=10.0",     # Enhanced terminal output
+            "panphon>=0.20",
+            "rich>=10.0",
         ],
         "dev": [
             "pytest>=6.0",
@@ -78,7 +87,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "phonenv=cli:main",
+            "phonenv=main:main",
         ],
     },
     include_package_data=True,

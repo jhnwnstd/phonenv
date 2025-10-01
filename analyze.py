@@ -9,16 +9,30 @@ This module consolidates the core analysis capabilities including:
 from __future__ import annotations
 
 import unicodedata as ud
-import regex as re
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Set, Tuple, OrderedDict as OrderedDictType, Optional, Any
+from typing import (
+    Dict,
+    List,
+    Set,
+    Tuple,
+    OrderedDict as OrderedDictType,
+    Optional,
+    Any,
+)
 from collections import defaultdict, OrderedDict
 from shutil import get_terminal_size
-from utils import normalize_tiebar, in_ipa_blocks, is_combining, is_spacing_modifier
-
+from utils import (
+    normalize_tiebar,
+    normalize_ascii_to_ipa,
+    in_ipa_blocks,
+    is_combining,
+    is_spacing_modifier,
+    TIE_ABOVE,
+    TIE_BELOW,
+)
 
 # ========================= IPA PROCESSING =========================
+
 
 @dataclass
 class IPAConfig:
@@ -26,25 +40,72 @@ class IPAConfig:
     tie_bar_clusters: Optional[List[str]] = None
     diphthong_patterns: Optional[List[str]] = None
     normalization_mode: str = "NFC"
-    match_mode: str = "broad"   # "narrow" | "broad"
+    match_mode: str = "broad"  # "narrow" | "broad"
 
     def __post_init__(self):
         if self.tie_bar_clusters is None:
-            self.tie_bar_clusters = ["t͡s", "d͡z", "t͡ʃ", "d͡ʒ", "t͡ɕ", "d͡ʑ", "ʈ͡ʂ", "ɖ͡ʐ"]
+            self.tie_bar_clusters = [
+                "t͡s",
+                "d͡z",
+                "t͡ʃ",
+                "d͡ʒ",
+                "t͡ɕ",
+                "d͡ʑ",
+                "ʈ͡ʂ",
+                "ɖ͡ʐ",
+                "t͡θ",
+                "d͡ð",
+                "p͡f",
+                "b͡v",
+                "c͡ç",
+                "ɟ͡ʝ",
+                "k͡x",
+                "ɡ͡ɣ",
+                "q͡χ",
+                "ɢ͡ʁ",
+                "t͡ɬ",
+                "d͡ɮ",
+                "p͡ɸ",
+                "b͡β",
+            ]
         if self.diphthong_patterns is None:
-            self.diphthong_patterns = ["aɪ", "eɪ", "ɔɪ", "aʊ", "oʊ", "ɪə", "eə", "ʊə"]
+            self.diphthong_patterns = [
+                "aɪ",
+                "eɪ",
+                "ɔɪ",
+                "aʊ",
+                "oʊ",
+                "ou",
+                "ɪə",
+                "eə",
+                "ʊə",
+                "ai",
+                "au",
+                "ei",
+                "eu",
+                "oi",
+                "ou",
+                "iu",
+                "ui",
+                "ie",
+                "uo",
+                "aːɪ",
+                "aːʊ",
+                "eːɪ",
+                "oːʊ",
+            ]
+
 
 # Suprasegmentals to ignore when picking context neighbors
 _SUPRA: Set[str] = {"ˈ", "ˌ", "|", "‖"}
 
-# Import constants from utils instead of duplicating
-from utils import TIE_ABOVE, TIE_BELOW
 
 def _skip_left(segments: List[str], i: int) -> int:
     j = i - 1
     while j >= 0 and segments[j] in _SUPRA:
         j -= 1
     return j
+
 
 def _skip_right(segments: List[str], i: int) -> int:
     j = i + 1
@@ -72,9 +133,12 @@ class IPAProcessorV2:
         if self.config.use_panphon:
             try:
                 import panphon
+
                 self._panphon_ft = panphon.FeatureTable()
             except (ImportError, AttributeError):
-                print("Warning: panphon not available, falling back to basic processing")
+                print(
+                    "Warning: panphon not available, falling back to basic processing"
+                )
                 self.config.use_panphon = False
 
     def normalize_nfc(self, text: str) -> str:
@@ -91,6 +155,7 @@ class IPAProcessorV2:
             return []
 
         text = self.normalize_nfc(text)
+        text = normalize_ascii_to_ipa(text)
         text = normalize_tiebar(text)
 
         # 1) Wrap multi-symbol nuclei (diphthongs/triphthongs) first (longest-first).
@@ -101,23 +166,25 @@ class IPAProcessorV2:
         chars = list(text)
         segments: List[str] = []
         i = 0
-        TIEBARS = ("\u0361", "\u035C")  # ͡ COMBINING DOUBLE INVERTED BREVE, ͜ COMBINING DOUBLE BREVE BELOW
 
         while i < len(chars):
             ch = chars[i]
 
-            # Unwrap sentinel-wrapped nuclei ◊...◊ as atomic segments; attach trailing marks.
+            # Unwrap sentinel-wrapped nuclei ◊...◊ as atomic segments;
+            # attach trailing marks.
             if ch == "◊":
                 j = i + 1
                 while j < len(chars) and chars[j] != "◊":
                     j += 1
                 if j < len(chars):
-                    seg = "".join(chars[i + 1:j])
+                    seg = "".join(chars[i + 1 : j])
                     k = j + 1
                     while k < len(chars) and is_combining(chars[k]):
-                        seg += chars[k]; k += 1
+                        seg += chars[k]
+                        k += 1
                     while k < len(chars) and is_spacing_modifier(chars[k]):
-                        seg += chars[k]; k += 1
+                        seg += chars[k]
+                        k += 1
                     segments.append(seg)
                     i = k
                     continue
@@ -128,7 +195,7 @@ class IPAProcessorV2:
             if ch == "(":
                 j = text.find(")", i + 1)
                 if j != -1:
-                    seg = text[i:j + 1].replace("◊", "")
+                    seg = text[i : j + 1].replace("◊", "")
                     segments.append(seg)
                     i = j + 1
                     continue
@@ -138,7 +205,8 @@ class IPAProcessorV2:
             left_base = chars[i]
             j = i + 1
 
-            # Gather combining on the LEFT base, but stop before a tie bar if we encounter one.
+            # Gather combining on the LEFT base,
+            # but stop before a tie bar if we encounter one.
             left_comb = ""
             tie_pos = None
             while j < len(chars) and is_combining(chars[j]):
@@ -150,20 +218,29 @@ class IPAProcessorV2:
 
             # If we found a tie bar and have a following right base, build the cluster.
             if tie_pos is not None and (tie_pos + 1) < len(chars):
-                tie = chars[tie_pos]
                 k = tie_pos + 1
                 right_base = chars[k]
                 k += 1
 
                 # Collect combining on the RIGHT base (excluding any stray tie bars)
                 right_comb = ""
-                while k < len(chars) and is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
+                while (
+                    k < len(chars)
+                    and is_combining(chars[k])
+                    and chars[k] not in (TIE_ABOVE, TIE_BELOW)
+                ):
                     right_comb += chars[k]
                     k += 1
 
-                seg = left_base + left_comb + TIE_ABOVE + right_base + right_comb  # normalize tie below -> above earlier
+                seg = (
+                    left_base + left_comb + TIE_ABOVE + right_base + right_comb
+                )  # normalize tie below -> above earlier
                 # cluster-level combining after the right base (rare but legal)
-                while k < len(chars) and is_combining(chars[k]) and chars[k] not in (TIE_ABOVE, TIE_BELOW):
+                while (
+                    k < len(chars)
+                    and is_combining(chars[k])
+                    and chars[k] not in (TIE_ABOVE, TIE_BELOW)
+                ):
                     seg += chars[k]
                     k += 1
                 # spacing modifiers (length, aspiration, ʷ, ʲ, etc.)
@@ -175,23 +252,26 @@ class IPAProcessorV2:
                 i = k
                 continue
 
-            # No tie bar: default single segment (left base + any remaining combining/modifiers)
+            # No tie bar: default single segment
+            # (left base + any remaining combining/modifiers)
             segment = left_base + left_comb
             i = j
             while i < len(chars) and is_combining(chars[i]):
-                segment += chars[i]; i += 1
+                segment += chars[i]
+                i += 1
             while i < len(chars) and is_spacing_modifier(chars[i]):
-                segment += chars[i]; i += 1
+                segment += chars[i]
+                i += 1
             segments.append(segment)
 
         return [seg for seg in segments if seg]
 
     def phoneme_matches(self, target: str, segment: str) -> bool:
-        target_norm  = normalize_tiebar(self.normalize_nfc(target))
+        target_norm = normalize_tiebar(self.normalize_nfc(target))
         segment_norm = normalize_tiebar(self.normalize_nfc(segment))
         if self.config.match_mode == "narrow":
             return target_norm == segment_norm
-        target_base  = _strip_all_nonbase(target_norm)
+        target_base = _strip_all_nonbase(target_norm)
         segment_base = _strip_all_nonbase(segment_norm)
         return target_base == segment_base
 
@@ -224,6 +304,7 @@ def get_config_for_transcription_mode(mode: str) -> IPAConfig:
 
 # ========================= PHONETIC ANALYSIS =========================
 
+
 class PhoneticAnalyzer:
     """
     Analyzes phonetic environments in word lists and reports occurrences grouped by:
@@ -242,9 +323,37 @@ class PhoneticAnalyzer:
     ]
 
     _IPA_VOWEL_BASES: Set[str] = {
-        "i", "y", "ɨ", "ʉ", "ɯ", "u", "ɪ", "ʏ", "ʊ",
-        "e", "ø", "ɘ", "ɵ", "ɤ", "o", "ə", "ɚ", "ɜ", "ɞ", "ʌ", "ɔ", "ɛ", "œ",
-        "æ", "ɐ", "a", "ɶ", "ɑ", "ɒ", "ᵻ", "ᵿ",
+        "i",
+        "y",
+        "ɨ",
+        "ʉ",
+        "ɯ",
+        "u",
+        "ɪ",
+        "ʏ",
+        "ʊ",
+        "e",
+        "ø",
+        "ɘ",
+        "ɵ",
+        "ɤ",
+        "o",
+        "ə",
+        "ɚ",
+        "ɜ",
+        "ɞ",
+        "ʌ",
+        "ɔ",
+        "ɛ",
+        "œ",
+        "æ",
+        "ɐ",
+        "a",
+        "ɶ",
+        "ɑ",
+        "ɒ",
+        "ᵻ",
+        "ᵿ",
     }
 
     def __init__(
@@ -264,14 +373,12 @@ class PhoneticAnalyzer:
         else:
             self.ipa_processor_v2 = None
 
-
     def _prepare_word(self, word: str) -> str:
         processed = word
         if self.use_ipa_processing and self.ipa_processor_v2:
             processed = self.ipa_processor_v2.normalize_nfc(processed)
             processed = normalize_tiebar(processed)
         return processed
-
 
     def _segment_base_char(self, token: str) -> str:
         """Get base character from token."""
@@ -291,10 +398,14 @@ class PhoneticAnalyzer:
 
     def _is_vowel_segment(self, token: str) -> bool:
         s = token
-        nfd = self.ipa_processor_v2.normalize_nfd(s) if (self.use_ipa_processing and self.ipa_processor_v2) else ud.normalize("NFD", s)
-        if "\u0329" in nfd:   # syllabic
+        nfd = (
+            self.ipa_processor_v2.normalize_nfd(s)
+            if (self.use_ipa_processing and self.ipa_processor_v2)
+            else ud.normalize("NFD", s)
+        )
+        if "\u0329" in nfd:  # syllabic
             return True
-        if "\u032F" in nfd:   # non-syllabic
+        if "\u032f" in nfd:  # non-syllabic
             return False
         return self._segment_base_char(token) in self._IPA_VOWEL_BASES
 
@@ -310,7 +421,11 @@ class PhoneticAnalyzer:
         left_idx = index - 1
         while left_idx >= 0:
             left_char = word[left_idx]
-            if self.use_ipa_processing and self.ipa_processor_v2 and left_char in "ˈˌ‖|":
+            if (
+                self.use_ipa_processing
+                and self.ipa_processor_v2
+                and left_char in "ˈˌ‖|"
+            ):
                 left_idx -= 1
                 continue
             break
@@ -321,7 +436,9 @@ class PhoneticAnalyzer:
             left_char = word[left_idx]
             if left_char == ")":
                 left_start = word.rfind("(", 0, left_idx + 1)
-                left = word[left_start:left_idx + 1] if left_start != -1 else left_char
+                left = (
+                    word[left_start : left_idx + 1] if left_start != -1 else left_char
+                )
             else:
                 left = left_char
 
@@ -330,7 +447,11 @@ class PhoneticAnalyzer:
         right_idx = right_start
         while right_idx < len(word):
             right_char = word[right_idx]
-            if self.use_ipa_processing and self.ipa_processor_v2 and right_char in "ˈˌ‖|":
+            if (
+                self.use_ipa_processing
+                and self.ipa_processor_v2
+                and right_char in "ˈˌ‖|"
+            ):
                 right_idx += 1
                 continue
             break
@@ -341,7 +462,9 @@ class PhoneticAnalyzer:
             right_char = word[right_idx]
             if right_char == "(":
                 right_end = word.find(")", right_idx)
-                right = word[right_idx : right_end + 1] if right_end != -1 else right_char
+                right = (
+                    word[right_idx : right_end + 1] if right_end != -1 else right_char
+                )
             else:
                 right = right_char
 
@@ -382,11 +505,13 @@ class PhoneticAnalyzer:
         q = raw_query
         if self.use_ipa_processing and self.ipa_processor_v2:
             q = self.ipa_processor_v2.normalize_nfc(q)
-        q = normalize_tiebar(q)   # <- add this
+        q = normalize_tiebar(q)  # <- add this
         return f"[{q}]"
 
     @staticmethod
-    def _format_examples(words: List[str], max_samples: int = 5, max_width: int = 60) -> str:
+    def _format_examples(
+        words: List[str], max_samples: int = 5, max_width: int = 60
+    ) -> str:
         """Format example words for display."""
         shown = words[:max_samples]
         rest = len(words) - len(shown)
@@ -428,6 +553,7 @@ class PhoneticAnalyzer:
         """Analyze phonetic environments for a character."""
         try:
             from data import load_words_list
+
             words = load_words_list(file_path)
         except (IOError, OSError) as e:
             print(f"Error reading file {file_path}: {e}")
@@ -456,7 +582,9 @@ class PhoneticAnalyzer:
             else:
                 self._analyze_characters(processed, target, env2words)
 
-        grouped: Dict[str, OrderedDictType[str, List[str]]] = {k: OrderedDict() for k in self._ORDER}
+        grouped: Dict[str, OrderedDictType[str, List[str]]] = {
+            k: OrderedDict() for k in self._ORDER
+        }
 
         partitioned: Dict[str, List[Tuple[str, List[str]]]] = defaultdict(list)
         for env, lst in list(env2words.items()):
@@ -475,10 +603,7 @@ class PhoneticAnalyzer:
         return {k: v for k, v in grouped.items() if v}
 
     def _analyze_segments(
-        self,
-        segments: List[str],
-        target: str,
-        env2words: Dict[str, List[str]]
+        self, segments: List[str], target: str, env2words: Dict[str, List[str]]
     ) -> None:
         """Analyze target in IPA segments using phonetic matching."""
         for i, seg in enumerate(segments):
@@ -493,14 +618,16 @@ class PhoneticAnalyzer:
             li = _skip_left(segments, i)
             ri = _skip_right(segments, i)
 
-            left  = "#" if li < 0 else segments[li]
+            left = "#" if li < 0 else segments[li]
             right = "#" if ri >= len(segments) else segments[ri]
             env = f"{left}__{right}"
 
             example = self._create_clean_example(segments, i)
             env2words[env].append(example)
 
-    def _analyze_characters(self, processed: str, target: str, env2words: Dict[str, List[str]]) -> None:
+    def _analyze_characters(
+        self, processed: str, target: str, env2words: Dict[str, List[str]]
+    ) -> None:
         """Character-by-character analysis fallback."""
         idx = 0
         nth = 0
@@ -509,7 +636,6 @@ class PhoneticAnalyzer:
             if found == -1:
                 break
 
-
             env = self._get_environment(processed, target, found)
             highlighted = self._highlight_character(processed, target, nth)
             env2words[env].append(highlighted)
@@ -517,13 +643,11 @@ class PhoneticAnalyzer:
             idx = found + len(target)
             nth += 1
 
-    def _create_clean_example(
-        self,
-        segments: List[str],
-        match_index: int) -> str:
+    def _create_clean_example(self, segments: List[str], match_index: int) -> str:
         """Bracket exactly the matched segment (includes any diacritics/modifiers)."""
-        return "".join(f"[{s}]" if idx == match_index else s
-                    for idx, s in enumerate(segments))
+        return "".join(
+            f"[{s}]" if idx == match_index else s for idx, s in enumerate(segments)
+        )
 
     def print_analysis(
         self,
@@ -551,7 +675,9 @@ class PhoneticAnalyzer:
             return
 
         target_disp = self._target_for_display(character)
-        group_w, left_w, targ_w, right_w, count_w = self._compute_global_widths(grouped, target_disp)
+        group_w, left_w, targ_w, right_w, count_w = self._compute_global_widths(
+            grouped, target_disp
+        )
 
         # Build rows for display
         rows: List[Tuple[str, str, str, str, int, str, bool]] = []
@@ -568,7 +694,17 @@ class PhoneticAnalyzer:
             for env, words in env_map.items():
                 left, tgt, right = self._split_env(env, target_disp)
                 cnt = len(words)
-                rows.append((macro_group if (first or not compact_groups) else "", left, target_disp, right, cnt, ", ".join(words), False))
+                rows.append(
+                    (
+                        macro_group if (first or not compact_groups) else "",
+                        left,
+                        target_disp,
+                        right,
+                        cnt,
+                        ", ".join(words),
+                        False,
+                    )
+                )
                 first = False
             group_count += 1
 
@@ -583,17 +719,53 @@ class PhoneticAnalyzer:
             console = Console()
             term_w = get_terminal_size((100, 20)).columns
 
-            console.print(Rule(f"[bold]Phonetic environments for '{rich_escape(character)}'[/bold]"))
+            console.print(
+                Rule(
+                    f"[bold]Phonetic environments for '{rich_escape(character)}'[/bold]"
+                )
+            )
 
-            table = Table(box=box.SIMPLE_HEAVY, show_lines=False, expand=True, pad_edge=False)
-            table.add_column("Group",  justify="left",  no_wrap=True,  width=group_w)
-            table.add_column("Left",   justify="right", no_wrap=False, style="cyan",    width=left_w)   # changed
-            table.add_column("Target", justify="center",no_wrap=True,  style="bold",    width=targ_w)
-            table.add_column("Right",  justify="left",  no_wrap=False, style="cyan",    width=right_w)  # changed
-            table.add_column("Count",  justify="right", no_wrap=True,  style="magenta", width=count_w)
+            table = Table(
+                box=box.SIMPLE_HEAVY,
+                show_lines=False,
+                expand=True,
+                pad_edge=False,
+            )
+            table.add_column("Group", justify="left", no_wrap=True, width=group_w)
+            table.add_column(
+                "Left",
+                justify="right",
+                no_wrap=False,
+                style="cyan",
+                width=left_w,
+            )  # changed
+            table.add_column(
+                "Target",
+                justify="center",
+                no_wrap=True,
+                style="bold",
+                width=targ_w,
+            )
+            table.add_column(
+                "Right",
+                justify="left",
+                no_wrap=False,
+                style="cyan",
+                width=right_w,
+            )  # changed
+            table.add_column(
+                "Count",
+                justify="right",
+                no_wrap=True,
+                style="magenta",
+                width=count_w,
+            )
             table.add_column("Examples", overflow="fold")
 
-            examples_width = max(24, term_w - (group_w + left_w + targ_w + right_w + count_w + 14))
+            examples_width = max(
+                24,
+                term_w - (group_w + left_w + targ_w + right_w + count_w + 14),
+            )
 
             for group, left, tgt, right, cnt, examples, is_separator in rows:
                 if is_separator:
@@ -605,7 +777,13 @@ class PhoneticAnalyzer:
                         rich_escape(tgt),
                         rich_escape(right),
                         str(cnt) if cnt > 0 else "",
-                        rich_escape(self._format_examples(examples.split(", "), max_examples_per_env, examples_width)),
+                        rich_escape(
+                            self._format_examples(
+                                examples.split(", "),
+                                max_examples_per_env,
+                                examples_width,
+                            )
+                        ),
                     )
 
             console.print(table)
@@ -616,7 +794,9 @@ class PhoneticAnalyzer:
 
         # Plain text fallback
         term_w = get_terminal_size((100, 20)).columns
-        examples_header_w = max(8, term_w - (group_w + left_w + targ_w + right_w + count_w + 16))
+        examples_header_w = max(
+            8, term_w - (group_w + left_w + targ_w + right_w + count_w + 16)
+        )
         print("=" * term_w)
         print(
             f"{'Group':<{group_w}}  "
@@ -632,8 +812,13 @@ class PhoneticAnalyzer:
             if is_separator:
                 print("─" * term_w)
             else:
-                ex_width = max(20, term_w - (group_w + left_w + targ_w + right_w + count_w + 16))
-                ex_str = self._format_examples(examples.split(", "), max_examples_per_env, ex_width)
+                ex_width = max(
+                    20,
+                    term_w - (group_w + left_w + targ_w + right_w + count_w + 16),
+                )
+                ex_str = self._format_examples(
+                    examples.split(", "), max_examples_per_env, ex_width
+                )
                 count_str = str(cnt) if cnt > 0 else ""
                 print(
                     f"{group:<{group_w}}  "
@@ -643,14 +828,3 @@ class PhoneticAnalyzer:
                     f"{count_str:>{count_w}}  "
                     f"{ex_str}"
                 )
-
-
-
-# ========================= CONVENIENCE FUNCTIONS =========================
-# Legacy functions removed to eliminate code duplication.
-# Use the class-based API instead:
-# - PhoneticAnalyzer.analyze_character() instead of analyze_character()
-# - PhoneticAnalyzer.print_analysis() instead of analyze_character_print()
-# - IPAProcessorV2.ipa_segments() instead of ipa_segments()
-# - IPAProcessorV2.normalize_nfc() instead of normalize_ipa()
-# - Use segmentation-based validation instead of validate_ipa()

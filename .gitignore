@@ -206,3 +206,15 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .claude
+
+# Phonenv-specific
+# Keep output directory but ignore all its contents
+data/output/*
+!data/output/.gitkeep
+
+# Archive and test directories
+data/archive/
+data/test/
+
+# Cache directory
+data/.cache/

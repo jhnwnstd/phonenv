@@ -1,11 +1,21 @@
+# Documentation
 include README.md
 include LICENSE
-include data/*.txt
+
+# Core modules
 include *.py
 exclude test_*.py
-exclude comprehensive_test_report.md
-recursive-exclude data/output *
+
+# Data files
+include data/dataset.txt
+include data/targets.txt
+recursive-include data/output .gitkeep
+
+# Exclude generated/cache files
+recursive-exclude data/output *.txt *.csv *.json *.jsonl
+recursive-exclude data/.cache *
 global-exclude __pycache__
 global-exclude *.pyc
 global-exclude *.pyo
+global-exclude *.bak
 global-exclude .DS_Store

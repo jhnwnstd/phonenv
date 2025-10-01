@@ -1,69 +1,26 @@
-# Phonenv
-
-**Phonenv** is a Python library and CLI for **phonetic environment analysis**. It scans IPA word lists and reports where a target segment occurs—**INITIAL** (`# _ X`), **FINAL** (`X _ #`), and **MEDIAL** with context classes `V_V`, `V_C`, `C_V`, `C_C`—using **Unicode-correct** IPA processing. It's **language-agnostic**, fast, and offers multiple output formats with SHA256-based caching.
+Yep, got it. Here’s your README rewritten to describe everything in the present tense and to reflect the current scripts/modules (e.g., `analyze.py`). I’ve kept the same level of detail and also clarified that normalization/validation operate only on transcriptions, not comments or tags.
 
 ---
 
-## Table of Contents
+# Phonenv
 
-1. [Features](#features)
-2. [Installation](#installation)
-3. [Quick Start](#quick-start)
-
-   * [Interactive Mode](#interactive-mode)
-   * [Batch Processing](#batch-processing)
-4. [Interactive Capabilities](#interactive-capabilities)
-5. [Python API](#python-api)
-6. [How Phonenv Works](#how-phonenv-works)
-
-   * [Normalization & Text Hygiene](#normalization--text-hygiene)
-   * [Segmentation Model](#segmentation-model)
-   * [Narrow vs Broad Matching](#narrow-vs-broad-matching)
-   * [Environment Classification](#environment-classification)
-   * [Special Handling Rules](#special-handling-rules)
-7. [Dataset Format (v1.1+)](#dataset-format-v11)
-
-   * [Migration Guide](#migration-guide)
-   * [Format Specification](#format-specification)
-   * [Example Enhanced Dataset](#example-enhanced-dataset)
-8. [Example Output](#example-output)
-9. [Project Structure](#project-structure)
-10. [Dependencies](#dependencies)
-11. [Technical Details](#technical-details)
-
-    * [Performance](#performance)
-    * [Output Formats](#output-formats)
-    * [Validation & Error Handling](#validation--error-handling)
-    * [Testing](#testing)
-12. [Known Issues](#known-issues)
-13. [Recent Improvements](#recent-improvements)
-14. [Contributing](#contributing)
-15. [License](#license)
+A Python library and CLI for phonetic environment analysis. Phonenv analyzes IPA transcriptions to identify where target segments occur—word-initially, word-finally, or in various medial contexts—using Unicode-correct IPA processing.
 
 ---
 
 ## Features
 
-* **Environment Analysis**
-  INITIAL / FINAL / MEDIAL classification; MEDIAL split by `V_V`, `V_C`, `C_V`, `C_C`.
-* **Robust Target Validation**
-  **Segmentation-based** validation ensures only valid IPA segments are analyzed.
-* **Dataset Format**
-  Language-aware **section headers**, inline `#` comments, and `[tags]`; fully backwards-compatible with simple “one IPA per line”.
-* **Interactive CLI**
-  Browse IPA categories, apply diacritics, set modes, manage datasets, and analyze from the terminal.
-* **Transcription Modes**
-  **Narrow** (phonetic; diacritics contrastive) and **Broad** (phonemic; diacritics folded).
-* **IPA Processing**
-  Unicode-compliant **NFC/NFD** normalization, tie-bar unification, and robust segmentation.
-* **Atomic Units**
-  Diphthongs/triphthongs and **tie-bar affricates** treated as single segments.
-* **Multiple Output Formats**
-  TXT, CSV, JSON, JSONL with canonical deduplication and correct grammar.
-* **Efficient Caching**
-  SHA256-based result caching that respects configuration (mode, etc.).
-* **Comprehensive Testing**
-  Designed for full coverage; validates both transcription modes.
+* **Environment Classification**: Analyzes INITIAL (`# _ X`), FINAL (`X _ #`), and MEDIAL contexts with sub-classification by neighbor types (`V_V`, `V_C`, `C_V`, `C_C`)
+* **Transcription Modes**: Narrow (phonetic) mode treats diacritics as contrastive; broad (phonemic) mode folds them for pattern analysis
+* **Automatic Normalization**: Applies unambiguous mappings (e.g., ASCII `g`→`ɡ`, `:`→`ː`) during analysis
+* **Data Validation**: Detects 36+ character confusables (ASCII/IPA, Greek, Cyrillic homoglyphs) with interactive auto-fix
+* **Unicode-Correct Processing**: Performs NFC/NFD normalization, tie-bar unification, and proper handling of combining marks
+* **Intelligent Segmentation**: Treats affricates with tie-bars (`t͡ʃ`) and diphthongs as atomic units
+* **Multiple Output Formats**: Writes TXT, CSV, JSON, and JSONL with canonical deduplication
+* **Efficient Caching**: Uses SHA256-based result caching with configurable size limits (10,000 entries / 100MB)
+* **Interactive CLI**: Lets you browse phonemes by place/manner, apply diacritics, and manage datasets
+* **Batch Processing**: Processes multiple targets from files with comprehensive validation
+* **Security Features**: Enforces path validation to restrict file access to the project directory; applies cache size limits to prevent resource exhaustion
 
 ---
 
@@ -74,24 +31,11 @@
 pip install regex
 
 # Optional enhancements
-pip install panphon     # feature vectors & helpers (optional)
-pip install rich        # prettier terminal output (optional)
+pip install panphon     # IPA feature analysis
+pip install rich        # Enhanced terminal output
 
-# Install Phonenv (editable for development)
+# Install Phonenv
 pip install -e .
-```
-
-### Installation Options
-
-```bash
-# Minimal installation (regex only)
-pip install .
-
-# With enhanced IPA processing
-pip install .[enhanced]
-
-# Full development setup
-pip install .[enhanced,dev]
 ```
 
 ---
@@ -100,297 +44,322 @@ pip install .[enhanced,dev]
 
 ### Interactive Mode
 
-Launch the interactive CLI:
-
 ```bash
-python3 cli.py
-```
-
-If installed as a console script:
-
-```bash
+python3 main.py
+# or if installed as a console script:
 phonenv
 ```
 
-### Command Line Options
-
-```bash
-phonenv                           # Interactive mode
-phonenv --batch                   # Batch process targets.txt
-phonenv --create-targets          # Create sample targets.txt
-phonenv --targets path/targets.txt --output results.txt
-phonenv --clear-cache             # Clear analysis cache
-phonenv --cache-stats             # Show cache statistics
-```
-
-**What you can do interactively:**
-
-* Pick targets from consonant/vowel menus
-* Apply diacritics via a quick panel
-* Choose **narrow** or **broad** mode
-* Manage the dataset (view/add/remove/clear/stats)
-* Run batch processing on `data/targets.txt`
+Use the menus to select consonants/vowels by place and manner, apply diacritics, toggle transcription modes, and analyze environments.
 
 ### Batch Processing
 
-Process multiple targets from a file:
-
 ```bash
-# Using command line
+# Process targets from file
 phonenv --batch --format txt
-phonenv --targets custom_targets.txt --dataset custom_dataset.txt --format json
 
-# Using Python API
-python3 -c "
-from data import TargetsProcessor
-from phonenv_io import AutoOutputWriter
+# Custom paths and formats
+phonenv --targets my_targets.txt --dataset my_data.txt --format json
 
-processor = TargetsProcessor('data/dataset.txt', 'data/targets.txt')
-results = []
-for t in processor.load_targets():         # segmentation-based validation
-    results.append(processor.analyze_target(t))
-
-writer = AutoOutputWriter('data/output')
-writer.write_batch_results(results, 'txt')
-"
+# Utility commands
+phonenv --cache-stats      # View cache statistics
+phonenv --clear-cache      # Clear cached results
+phonenv --create-targets   # Generate sample targets file
 ```
 
----
-
-## Interactive Capabilities
-
-### Character Selection
-
-* Consonants by **place/manner**
-* Vowels by **height/backness/rounding**
-* Common **diphthongs** and **triphthongs**
-* **Diacritic panel** to build complex segments
-
-### Analysis Options
-
-* Toggle **narrow** (phonetic) vs **broad** (phonemic)
-* Analyze a character across **INITIAL/FINAL/MEDIAL** contexts
-* View results in organized tables with examples
-
-### Dictionary Management
-
-Access from the interactive UI:
-
-* **View Dictionary**: list all words
-* **Add Words**: append new IPA forms
-* **Remove Words**: delete forms containing a substring
-* **Statistics**: counts, lengths, character usage
-* **Clear Dataset** (with confirmation)
-
----
-
-## Python API
+### Python API
 
 ```python
-from analysis import PhoneticAnalyzer, IPAProcessorV2, get_config_for_transcription_mode
-from data import TargetsProcessor, DictionaryProcessor, load_words_list, iter_word_entries, WordEntry
+from analyze import PhoneticAnalyzer
+from data import TargetsProcessor
 from phonenv_io import AutoOutputWriter
+from normalize import UNAMBIGUOUS_MAPPINGS, CONFUSABLE_HINTS
 
-# Basic phonetic environment analysis
+# Analyze a single phoneme
 analyzer = PhoneticAnalyzer(
     use_ipa_processing=True,
     transcription_mode='narrow'  # or 'broad'
 )
-envs = analyzer.analyze_character('ɪ', 'data/dataset.txt')  # dict grouped by environments
+results = analyzer.analyze_character('ɪ', 'data/dataset.txt')
+analyzer.print_analysis('ɪ', 'data/dataset.txt')
 
-# Alternative: explicit configuration
-analyzer = PhoneticAnalyzer(use_ipa_processing=True)
-config = get_config_for_transcription_mode('narrow')  # or 'broad'
-analyzer.ipa_processor_v2 = IPAProcessorV2(config)
-analyzer.transcription_mode = 'narrow'
-envs = analyzer.analyze_character('ɪ', 'data/dataset.txt')
-
-# Batch processing with validation
+# Batch processing
 processor = TargetsProcessor('data/dataset.txt', 'data/targets.txt')
-targets = processor.load_targets()  # segmentation-based validation
-results = []
-for target in targets[:5]:
-    r = processor.analyze_target(target)
-    results.append(r)
-    print(f"{target}: {r.total_occurrences} occurrences")
+results = processor.process_targets_to_list()
 
-# Multiple output formats
+# Export to multiple formats
 writer = AutoOutputWriter('data/output')
-paths = writer.write_batch_results(results, 'csv')  # or 'txt', 'json', 'jsonl'
+writer.write_batch_results(results, format_preference='csv')
 
-# Direct IPA text processing
-processor = IPAProcessorV2()
-normalized_text = processor.normalize_nfc('tʰãsə')
-segments = processor.ipa_segments(normalized_text)
+# Validation
+from validate import validate
+exit_code = validate('data/dataset.txt', 'data/targets.txt', interactive_autofix=True)
 ```
 
 ---
 
-## How Phonenv Works
+## How It Works
 
-### Normalization & Text Hygiene
+### Automatic Normalization
 
-* **Store/emit** in **NFC**; **analyze** in **NFD**
-* Tie-bar variants unified (`͡` and `͜`) so equivalents compare the same
-* Canonical equivalence guaranteed: e.g., `ã` ≡ `a` + ̃
+Phonenv automatically normalizes input to ensure consistency, operating only on the transcription field (not on `#` comments or bracketed `[tags]`):
 
-**Why:** NFC ensures stable on-disk representation; NFD makes diacritics explicit for correct attachment during segmentation.
+**Unambiguous Transformations** (applied automatically):
+
+* ASCII `g` (U+0067) → IPA `ɡ` (U+0261, script g)
+* ASCII `:` (U+003A) → IPA `ː` (U+02D0, triangular colon / length mark)
+* Colon variants (modifier, ratio, fullwidth) → IPA length mark
+* Tie-bar canonicalization (normalizes U+035C/0361 to a consistent form)
+* Fullwidth characters → standard IPA equivalents
+
+**Unicode Normalization**:
+
+* **Storage/Output**: NFC (composed form)
+* **Analysis**: NFD (decomposed form) for explicit diacritic handling
+* **Canonical equivalence**: `ã` and `a + ̃` behave identically
+
+### Data Validation
+
+Phonenv validates transcriptions before analysis. Validation runs only on IPA transcriptions (not on `#` glosses or bracketed `[tags]`).
+
+**Usage**:
+
+```bash
+# Validate dataset and targets
+python3 -m validate
+
+# Use in Python
+from validate import validate
+exit_code = validate('data/dataset.txt', 'data/targets.txt')
+```
+
+**Three-Tier Detection System**:
+
+1. **Unambiguous Mappings** (applied during analysis):
+
+   * ASCII `g`→`ɡ`, ASCII `:`→`ː`
+   * Colon variants, tie-bars, fullwidth characters
+2. **Confusable Hints** (warns with suggestions):
+
+   * **Greek homoglyphs**: φ→ɸ, γ→ɣ, α→ɑ, λ→ʎ, ρ→p, ν→v, χ→x
+   * **Cyrillic homoglyphs**: а→a, е→e, о→o, р→p, с→c, у→y, х→x, і→i, ј→j, к→k, т→t
+   * **ASCII capitals**: N→ɴ, R→ʀ, G→ɢ, L→ʟ, Y→ʏ
+   * **Punctuation-as-IPA**: '→ˈ, ,→ˌ, ?→ʔ, ;→ˑ
+3. **Orthography Detection** (heuristics):
+
+   * ng→ŋ, th→θ/ð, sh→ʃ, ch→t͡ʃ/ç, zh→ʒ
+   * Invisible characters (zero-width spaces, BOM, soft hyphens)
+   * Morpheme boundary hyphens
+
+**Interactive Auto-fix**:
+The validator shows diffs and applies safe fixes with your confirmation, creating `.bak` backups.
 
 ### Segmentation Model
 
-Each **segment** is treated as an atomic unit with attached marks and modifiers.
+Each segment functions as an atomic unit consisting of:
 
-```python
-Segment {
-  base: codepoint              # e.g., t, a, ɪ, ʃ, ɚ …
-  diacritics: list             # combining marks & spacing modifiers bound to base
-  length: {none, half, long}   # ˑ, ː
-  suprasegmentals: dict        # stress, tone sequence, boundaries (stored separately)
-}
-```
+* **Base**: Single codepoint (e.g., `t`, `a`, `ɪ`, `ʃ`)
+* **Diacritics**: Combining marks and spacing modifiers attached to the base
+* **Length markers**: `ˑ` (half-long), `ː` (long)
+* **Suprasegmentals**: Stress (`ˈ`, `ˌ`), boundaries, tone (tracked separately)
 
-**Attach to the base**
+**Atomic units**:
 
-* Combining marks (U+0300–036F): ̃, ̥, ̬, ̟, ̠, ̝, ̞, ̩, etc.
-* Spacing modifier letters (U+02B0–02FF): ʰ, ʱ, ʷ, ʲ, ˠ, ˤ, ⁿ, ˡ, etc.
-* Length (ː long, ˑ half-long) stored as `length`
+* Affricates with tie-bars: `t͡ʃ`, `d͡ʒ`
+* Diphthongs/triphthongs: `aɪ`, `aʊ`
 
-**Do not attach**
+**Clusters without tie-bars**:
 
-* Stress markers `ˈ`, `ˌ`
-* Tone letters/diacritics
-* Word/foot boundaries, pauses, intonation
+* `tʃ` (two segments: `t` + `ʃ`)
+* `dʒ` (two segments: `d` + `ʒ`)
 
-### Narrow vs Broad Matching
+### Transcription Modes
 
-* **Narrow (phonetic)**
-  Diacritics/length are **contrastive**
-  Examples: `[p] ≠ [pʰ]`, `[a] ≠ [ã]`, `[i] ≠ [iː]`
+**Default: Narrow mode** (use `--mode broad` or toggle in CLI to change)
 
-* **Broad (phonemic; default for batch processing)**
-  Diacritics/length **folded away** (language-agnostic folding)
-  Examples: `[p] = [pʰ]`, `[a] = [ã]`, `[i] = [iː]`
-  (Profiles could refine this per language if desired.)
+**Narrow (Phonetic)** — Default
+
+* Diacritics and length are contrastive
+* `p ≠ pʰ ≠ p̚`
+* `a ≠ ã ≠ aː`
+* Use for phonetic detail and allophonic analysis
+
+**Broad (Phonemic)**
+
+* Diacritics and length fold
+* `p = pʰ = p̚`
+* `a = ã = aː`
+* Use for phonological patterns and general distribution
 
 ### Environment Classification
 
-* **INITIAL**: `# _ X` — first segment after stripping suprasegmentals
-* **FINAL**: `X _ #` — last segment
-* **MEDIAL**: classified by neighbor types: `V_V`, `V_C`, `C_V`, `C_C`
+**INITIAL**: `# _ X`
+The first segment after a word boundary (ignores suprasegmentals)
 
-**Rules & examples:**
+**FINAL**: `X _ #`
+The last segment before a word boundary
 
-* Suprasegmentals (`ˈ`, `ˌ`, `|`, `‖`) are ignored when choosing neighbors.
-* **Syllabic consonants** (`̩`) are treated as **V** for context classification.
-  E.g., `n̩` behaves as a vowel nucleus.
+**MEDIAL**: Classified by neighbor types
 
-### Special Handling Rules
+* `V_V`: Intervocalic (between vowels)
+* `V_C`: Pre-consonantal (vowel followed by consonant)
+* `C_V`: Post-consonantal (consonant followed by vowel)
+* `C_C`: Cluster (between consonants)
 
-* **Diacritics**
-  Never standalone. Always attached to a base (e.g., `[pʰ]`, not `[ʰ]`).
-* **Diphthongs/Triphthongs**
-  Treated as **single nuclei** (atomic).
-  Searching for `a` **does not** match `aɪ` / `aʊ`.
-* **Affricates**
-  **Tie-bar forms** (`t͡ʃ`, `d͜ʒ`, etc.) are **single segments**.
-  Without a tie-bar (`ts`, `dʒ`) they are **clusters** (two segments).
+**Context rules**:
+
+* Ignores suprasegmentals (`ˈ`, `ˌ`, `|`, `‖`) when selecting neighbors
+* Treats syllabic consonants (`n̩`, `l̩`) as vowels for classification
 
 ---
 
-## Dataset Format (v1.1+)
+## Dataset Format
 
-The format is permissive and **backward compatible** with “one IPA per line.”
+The enhanced format supports metadata while maintaining backward compatibility. Normalization and validation run only on the transcription; they ignore `#` comments and bracketed `[tags]`.
+
+### Simple Format
 
 ```
-# English (RP)
-[lang=en-GB; mode=narrow; profile=english; tag=RP]
+kʰæt
+θɪŋk
+t͡ʃɪp
+```
+
+### Enhanced Format (v1.1+)
+
+```
+# English RP
+[lang=en-GB; mode=narrow; profile=english]
 kʰæt                     # cat
-θɪŋk [dental]           # think - dental fricative
+θɪŋk [dental]           # think
 t͡ʃɪp                    # chip
 
-# English (GA)
-[lang=en-US; mode=broad; profile=english; tag=GA]
-spɹɪŋ [GA]              # spring - General American
-kæt                      # cat (broad transcription)
-
-# Spanish (MX)
-[lang=es-MX; mode=broad; profile=spanish]
+# Spanish
+[lang=es-MX; mode=broad]
+gato [cognate]          # cat
 t͡ʃiko                   # chico
-mweɣo [dialect]         # fuego (diphthong nucleus)
 ```
 
-### Migration Guide
+**Format features**:
 
-* **Existing users**: Your current `data/dataset.txt` works unchanged.
-* **Immediate benefits**: Add `#` comments today without affecting analysis.
-* **Advanced**: Add headers like `[lang=…; mode=…; profile=…; tag=…]` to annotate sections.
+* `#` comments (ignored by analysis/validation)
+* `[key=value; ...]` section headers (metadata)
+* `[tag]` inline tags (metadata)
+* One IPA transcription per line
+* Blank lines and whitespace ignored
 
-### Format Specification
+---
 
-**File structure rules**
+## Output Formats
 
-1. Lines beginning with `[...]` are **section headers** (stateful until next header).
-2. Everything after a `#` is a **comment** (ignored by analysis).
-3. Inline `[tag]` tokens are **metadata** (parsed, ignored by analysis).
-4. Blank lines and whitespace are ignored.
-5. One IPA transcription per line (post comment/tag stripping).
-
-**Valid section keys**
-
-* `lang`: Language/locale (e.g., `en`, `en-US`, `es-MX`)
-* `mode`: `narrow` or `broad`
-* `profile`: Arbitrary analyzer profile name
-* `tag`: Optional label for organization
-
-**Parsing behavior**
-
-* Invalid headers revert to plain lines
-* Malformed tags don’t break parsing
-* Extra whitespace tolerated everywhere
-* Unicode normalization preserves data integrity
-
-### Example Enhanced Dataset
+### TXT (Human-Readable)
 
 ```
-# Multi-language phonetic dataset
-# Demonstrates section headers, comments, and tags
+PHONETIC ENVIRONMENT ANALYSIS REPORT
+============================================================
+TARGET 1: 'p'
+----------------------------------------
+Total occurrences: 6
 
-[lang=en-GB; mode=narrow; profile=rp; tag=received_pronunciation]
-kʰæt [basic]                    # cat - basic vocabulary
-θɪŋk [fricative] [dental]      # think - dental fricative
-t͡ʃɪp                          # chip - affricate
+  INITIAL:
+    # _ a (1 occurrence): [p]aɴɢɔɔ
 
-[lang=en-US; mode=broad; profile=ga]
-kæt [basic]                     # cat - General American (broad)
-θɪŋk                           # think - simplified transcription
+  MEDIAL V_C:
+    u _ t͡ʃ (2 occurrences): ku[p]t͡ʃɨ, ku[p]t͡ʃaa
+```
 
-# Spanish Mexican variety
-[lang=es-MX; mode=broad; profile=mexican]
-gato [cognate]                  # cat - Spanish cognate
-t͡ʃiko [native]                 # chico - native vocabulary
+### CSV (Spreadsheet)
 
-# Loan words section
-[tag=loanwords]
-kʰaɾe [loan] [japanese]        # karate - from Japanese
+```csv
+target,group,environment,left_context,right_context,count,examples
+p,INITIAL,#__a,#,a,1,[p]aɴɢɔɔ
+p,MEDIAL V_C,u__t͡ʃ,u,t͡ʃ,2,ku[p]t͡ʃɨ; ku[p]t͡ʃaa
+```
+
+### JSON (Structured)
+
+```json
+{
+  "metadata": {
+    "format": "phonenv-json",
+    "version": "1.0",
+    "timestamp": "2025-10-01T11:23:35"
+  },
+  "results": [
+    {
+      "target": "p",
+      "environments": {...},
+      "total_occurrences": 6
+    }
+  ]
+}
+```
+
+### JSONL (Streaming)
+
+```jsonl
+{"_metadata": {"format": "phonenv-jsonl", "version": "1.0"}}
+{"target": "p", "environments": {...}, "total_occurrences": 6}
+{"target": "t", "environments": {...}, "total_occurrences": 6}
 ```
 
 ---
 
-## Example Output
+## Caching System
 
+Phonenv caches results with SHA256 fingerprints based on:
+
+* Dataset content (file hash)
+* Target phoneme
+* Analysis configuration (mode, IPA processing settings)
+
+**Cache limits** (configurable):
+
+* Maximum entries: 10,000
+* Maximum size: 100 MB
+* Eviction: LRU (Least Recently Used)
+
+**Cache commands**:
+
+```bash
+phonenv --cache-stats
+phonenv --clear-cache
 ```
-──────────────────────── Phonetic environments for 'ɪ' ─────────────────────────
 
- Group               Left    Target     Right       Count   Examples
- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- INITIAL                #      [ɪ]      n               1   [ɪ]nɪʃəl
+**Python API**:
 
- FINAL                  f      [ɪ]      #               1   kʰɔːf[ɪ]
+```python
+from phonenv_io import ResultCache
 
- MEDIAL C_C             ɹ      [ɪ]      ŋ               2   stɹ[ɪ]ŋ, spɹ[ɪ]ŋ
-                        θ      [ɪ]      ŋ               2   θ[ɪ]ŋk, sʌmθ[ɪ]ŋ
-                       tʰ      [ɪ]      p               1   tʰ[ɪ]p
+cache = ResultCache(
+    cache_dir='data/.cache',
+    max_entries=5000,
+    max_size_mb=50
+)
 ```
+
+---
+
+## Security
+
+### Path Validation
+
+Phonenv validates all user-provided file paths to ensure they reside within the project directory.
+
+**Allowed**:
+
+* `data/dataset.txt` ✓
+* `./data/output/results.txt` ✓
+
+**Blocked**:
+
+* `../etc/passwd` ✗
+* `/absolute/path` ✗
+* Symlinks pointing outside the project ✗
+
+### Cache Size Limits
+
+LRU eviction prevents unbounded memory growth when the cache reaches configured limits.
 
 ---
 
@@ -398,123 +367,124 @@ kʰaɾe [loan] [japanese]        # karate - from Japanese
 
 ```
 phonenv/
-├── analysis.py               # Core phonetic analysis & IPA processing
-├── cli.py                    # Interactive CLI with character selection & batch
-├── data.py                   # Dataset parsing, target validation, batch helpers
-├── phonenv_io.py             # Output formatting, caching, file I/O
-├── validate.py               # Unicode/IPA validation helpers
-├── utils.py                  # Unicode utilities and IPA processing helpers
-├── setup.py                  # Packaging
+├── analyze.py          # Core analysis engine & IPA processing
+├── normalize.py        # Character normalization mappings (ASCII→IPA, confusables)
+├── validate.py         # Input validation & auto-fix with interactive mode
+├── main.py             # Interactive CLI & batch processing entry point
+├── data.py             # Dataset parsing & target validation
+├── phonenv_io.py       # Output formatting & caching (TXT/CSV/JSON/JSONL)
+├── utils.py            # Unicode utilities & path validation
+├── setup.py            # Package configuration
 └── data/
-    ├── dataset.txt           # Example IPA word list with metadata
-    ├── targets.txt           # Target list for batch analysis
-    ├── output/               # Generated analysis reports
-    ├── .cache/               # Analysis result cache
-    ├── archive/              # Archived datasets
-    └── test/                 # Test datasets
+    ├── dataset.txt     # Example IPA word list (English RP)
+    ├── targets.txt     # Target phonemes for batch analysis
+    ├── output/         # Generated reports (auto-created)
+    └── .cache/         # Cached analysis results (auto-created)
 ```
 
 ---
 
 ## Dependencies
 
-**Required**
+**Required**:
 
-* `regex` (≥ 2021.0)
+* `regex` (≥ 2021.0) — Unicode-aware pattern matching
 
-**Optional**
+**Optional**:
 
-* `panphon` (≥ 0.20) — feature vectors and helpers
-* `rich` (≥ 10.0) — improved terminal rendering
+* `panphon` (≥ 0.20) — IPA feature analysis
+* `rich` (≥ 10.0) — Enhanced terminal output
 
-**Development**
+**Development**:
 
 * `pytest` (≥ 6.0)
 * `black` (≥ 21.0)
 * `flake8` (≥ 3.9)
-* `mypy` (≥ 0.910)
+* `mypy` (≥ 1.0)
 
 ---
 
-## Technical Details
+## Example Use Cases
 
-### Performance
+### Linguistic Research
 
-* Memory-efficient; supports multiple concurrent analyses.
-* Optimized Unicode processing; **SHA256-based caching** keyed by dataset + configuration.
-* Streamed parsing of datasets; minimal memory footprint.
-* Segmentation-based validation avoids processing invalid targets.
+```python
+# Analyze intervocalic lenition in Lhasa Tibetan
+analyzer = PhoneticAnalyzer(use_ipa_processing=True, transcription_mode='broad')
+for target in ['p', 'β', 'k', 'ɣ']:
+    analyzer.print_analysis(target, 'data/dataset.txt')
+```
 
-### Output Formats
+### Phonological Pattern Discovery
 
-* **TXT, CSV, JSON, JSONL** writers
-* Canonical deduplication (NFC) prevents “look-alike” duplicates
-* Target highlighting with brackets: `[ɪ]`
-* Correct singular/plural grammar in counts
+```bash
+# Find all environments for uvular consonants
+echo -e "q\nɢ\nʁ\nɴ" > uvulars.txt
+phonenv --targets uvulars.txt --format csv
+```
 
-### Validation & Error Handling
+### Dataset Validation
 
-* **Segmentation-based** target validation (rejects malformed tokens)
-* Graceful handling of missing files and malformed input
-* Unicode normalization throughout, with tie-bar unification
-* Helpful, concise error messages
-
-### Testing
-
-* Designed for comprehensive test coverage
-* Validates **narrow** and **broad** modes
-* Affricate processing and end-to-end pipeline tests
+```bash
+# Validate IPA transcriptions
+python3 -m validate
+```
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please ensure:
+Contributions are welcome. Please ensure:
 
+* Code passes `flake8` and `black -l79 .` checks
 * All tests pass
-* Code follows project style (Black, Flake8, type hints)
-* Open an issue to discuss major changes prior to PRs
+* New features include tests
+* Major changes start with an issue for discussion
+
+---
+
+## Contributors
+
+**Original Author**: [shameedjob](https://github.com/shameedjob) — authors Phonenv and maintains the core architecture
+
+**Major Enhancements**: [jhnwnstd](https://github.com/jhnwnstd) — maintains normalization, comprehensive validation (36+ character mappings), security features, caching improvements, and documentation
 
 ---
 
 ## License
 
-**MIT License** — see `LICENSE` for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-### Unicode Block Validation (Reference)
+## Support
 
-Validated against:
+* **Issues**: [github.com/shameedjob/phonenv/issues](https://github.com/shameedjob/phonenv/issues)
+* **Documentation**: See markdown files in the project root
+* **Examples**: See the `data/` directory for sample datasets
+
+---
+
+## Technical Notes
+
+### Unicode Block Coverage
 
 * IPA Extensions (U+0250–02AF)
 * Spacing Modifier Letters (U+02B0–02FF)
 * Combining Diacritical Marks (U+0300–036F)
-* Phonetic Extensions (U+1D00–1D7F)
-* Phonetic Extensions Supplement (U+1D80–1DBF)
+* Phonetic Extensions (U+1D00–1D7F, U+1D80–1DBF)
 * Modifier Tone Letters (U+A700–A71F)
 
----
+### Segmentation Invariants
 
-### Implementation Notes for Developers
+* Normalization: `segment("ã") == segment("a\u0303")`
+* Affricates: `len(segments("t͡ʃ")) == 1`
+* Clusters: `len(segments("tʃ")) == 2`
+* Broad mode: `segment("iː") == segment("i")`
+* Narrow mode: `segment("iː") != segment("i")`
 
-**Test invariants to keep in mind**
+### Vowel/Consonant Classification
 
-* Normalization: `segment("ã")` equals `segment("a\u0303")`
-* Affricates: `len(segment("t͡ʃ")) == 1`; `len(segment("tʃ")) == 2`
-* Length: `iː` (narrow) ≠ `i`; in broad mode they compare equal
-* Stress removal (`ˈ` `ˌ`) must not change C/V neighbor selection
-
-**Vowel vs. consonant classification**
-
-* **Vowels** include canonical vowel bases and **syllabic consonants (`̩`)**, which count as **V** for context.
-* **Consonants** include pulmonic/non-pulmonic consonants and approximants (`j, ɹ, ɻ, ɰ, ʋ`) unless syllabic.
-
-**Affricates**
-
-* **Tie-bar required** to be atomic: `t͡ʃ`, `d͡ʒ`, etc.
-  Without tie-bar (`dʒ`, `ts`) → treat as clusters.
-
-**Diphthongs/Triphthongs**
-
-* Treated as **single vocalic nuclei**; searching `a` does **not** match `aɪ`/`aʊ`.
+* **Vowels**: Canonical vowel bases + syllabic consonants (`n̩`, `l̩`)
+* **Consonants**: All other segments unless marked syllabic
+* **Approximants**: `j`, `w`, `ɹ`, `ɻ`, `ɰ`, `ʋ` count as consonants (unless syllabic)

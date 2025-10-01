@@ -1,27 +1,221 @@
-# Lhasa Tibetan - Phonemes to investigate
-# Based on the pedagogical dataset from Odden 2005
+# Comprehensive IPA targets for phonetic environment analysis
 
-# Stops (underlying voiceless)
+# ===================== Vowels (core) =====================
+i
+ɪ
+e
+ɛ
+æ
+a
+ɑ
+ɒ
+ɔ
+o
+ʊ
+u
+ə
+ʌ
+ɜ
+ɚ
+ɝ
+ɨ
+ʉ
+ɯ
+ø
+œ
+ɶ
+ɤ
+ɞ
+ɐ
+y
+ʏ
+
+# ===================== Diphthongs =====================
+aɪ
+eɪ
+ɔɪ
+aʊ
+oʊ
+ɪə
+eə
+ʊə
+i̯a
+i̯e
+i̯o
+u̯a
+u̯o
+
+# ===================== Consonants (pulmonic plosives) =====================
 p
 t
 k
-
-# Fricatives (derived from lenition)
-β
-ɣ
-ʁ
-
-# Uvular stops (derived allophones)
+b
+d
+ɡ
 q
 ɢ
+ʔ
+c
+ɟ
+ʈ
+ɖ
 
-# Nasals (for place assimilation analysis)
+# ===================== Implosives =====================
+ɓ
+ɗ
+ᶑ
+ʄ
+ɠ
+ʛ
+
+# ===================== Ejectives =====================
+pʼ
+tʼ
+kʼ
+qʼ
+tsʼ
+t͡ʃʼ
+t͡ɬʼ
+ɬʼ
+
+# ===================== Affricates =====================
+t͡s
+d͡z
+t͡ʃ
+d͡ʒ
+t͡ɕ
+d͡ʑ
+ʈ͡ʂ
+ɖ͡ʐ
+t͡ɬ
+d͡ɮ
+
+# ===================== Fricatives =====================
+f
+v
+θ
+ð
+s
+z
+ʃ
+ʒ
+ɸ
+β
+ç
+ʝ
+x
+ɣ
+χ
+ʁ
+ħ
+ʕ
+ʜ
+ʢ
+h
+ɦ
+ɕ
+ʑ
+ʂ
+ʐ
+
+# ===================== Nasals =====================
+m
 n
+ɲ
 ŋ
+ɳ
 ɴ
 
-# Note: These targets test:
-# - Intervocalic lenition (p→β, k→ɣ)
-# - Uvularization (k→q, ɣ→ʁ before low/back vowels)
-# - Post-nasal voicing (k→ɡ/ɢ after nasals)
-# - Nasal place assimilation (n→ŋ/_k, n→ɴ/_q)
+# ===================== Liquids, rhotics, taps =====================
+l
+ɫ
+ɭ
+ʎ
+ʟ
+r
+ɹ
+ɾ
+ɽ
+ɺ
+ʀ
+ʙ
+
+# ===================== Approximants / glides =====================
+j
+w
+ɥ
+ʋ
+ɰ
+
+# ===================== Lateral fricatives =====================
+ɬ
+ɮ
+
+# ===================== Labial-velar and labial-palatal =====================
+ʍ
+w
+kp
+ɡb
+ŋm
+ɥ
+
+# ===================== Secondary articulations & diacritics =====================
+pʰ
+tʰ
+kʰ
+p̚
+t̚
+k̚
+t̪
+d̪
+n̪
+m̥
+n̥
+l̥
+r̥
+ʐ̥
+s̬
+z̥
+b̥
+ʱ   # breathy voiced
+ː   # long
+ˑ   # half-long
+ˈ   # primary stress
+ˌ   # secondary stress
+̃   # nasalization
+ˠ   # velarization
+ʲ   # palatalization
+ʷ   # labialization
+
+# ===================== Syllabic consonants =====================
+l̩
+n̩
+m̩
+r̩
+ŋ̩
+
+# ===================== Clicks =====================
+ʘ
+ǀ
+ǁ
+ǃ
+ǂ
+
+# ===================== Pharyngeal & Epiglottal =====================
+ʡ
+ʢ
+ʜ
+ʢ
+
+# ===================== Suprasegmentals =====================
+ː
+ˑ
+ˈ
+ˌ
+˥
+˦
+˧
+˨
+˩
+˥˩
+˩˥

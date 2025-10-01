@@ -8,12 +8,6 @@ This module consolidates all input/output functionality including:
 
 from __future__ import annotations
 
-# Output formatting constants
-REPORT_SEPARATOR_WIDTH = 60
-NARROW_SEPARATOR_WIDTH = 40
-DEFAULT_CACHE_MAX_AGE_DAYS = 30.0
-MAX_SLUG_LENGTH = 80
-
 import csv
 import enum
 import hashlib
@@ -22,13 +16,21 @@ import time
 from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
+
+# Output formatting constants
+REPORT_SEPARATOR_WIDTH = 60
+NARROW_SEPARATOR_WIDTH = 40
+DEFAULT_CACHE_MAX_AGE_DAYS = 30.0
+MAX_SLUG_LENGTH = 80
 
 # ========================= RESULT CACHING =========================
+
 
 @dataclass
 class CacheEntry:
     """Represents a cached analysis result."""
+
     key: str
     target: str
     dataset_hash: str
@@ -44,9 +46,13 @@ class CacheEntry:
     def from_dict(cls, data: Dict[str, Any]) -> "CacheEntry":
         return cls(**data)
 
-    def is_valid(self, current_dataset_hash: str, current_config: Dict[str, Any]) -> bool:
-        return (self.dataset_hash == current_dataset_hash
-                and self.analysis_config == current_config)
+    def is_valid(
+        self, current_dataset_hash: str, current_config: Dict[str, Any]
+    ) -> bool:
+        return (
+            self.dataset_hash == current_dataset_hash
+            and self.analysis_config == current_config
+        )
 
 
 class ResultCache:
@@ -103,7 +109,9 @@ class ResultCache:
         except (IOError, OSError):
             return ""
 
-    def _compute_cache_key(self, target: str, dataset_path: str, config: Dict[str, Any]) -> str:
+    def _compute_cache_key(
+        self, target: str, dataset_path: str, config: Dict[str, Any]
+    ) -> str:
         key_data = {
             "target": target,
             "dataset_path": str(Path(dataset_path).resolve()),
@@ -120,15 +128,21 @@ class ResultCache:
             "no_color": getattr(analyzer, "no_color", False),
         }
 
-        if hasattr(analyzer, "ipa_processor_v2") and getattr(analyzer, "ipa_processor_v2"):
+        if hasattr(analyzer, "ipa_processor_v2") and getattr(
+            analyzer, "ipa_processor_v2"
+        ):
             processor = analyzer.ipa_processor_v2
             # include match_mode to distinguish broad vs narrow semantic matching
             match_mode = getattr(processor.config, "match_mode", None)
             config["ipa_processor"] = {
                 "use_panphon": getattr(processor.config, "use_panphon", False),
                 "tie_bar_clusters": getattr(processor.config, "tie_bar_clusters", []),
-                "diphthong_patterns": getattr(processor.config, "diphthong_patterns", []),
-                "normalization_mode": getattr(processor.config, "normalization_mode", "NFC"),
+                "diphthong_patterns": getattr(
+                    processor.config, "diphthong_patterns", []
+                ),
+                "normalization_mode": getattr(
+                    processor.config, "normalization_mode", "NFC"
+                ),
                 "match_mode": match_mode if match_mode is not None else "broad",
             }
 
@@ -151,6 +165,7 @@ class ResultCache:
         # Convert cached result back to TargetResult (or dict if class unavailable)
         try:
             from .data import TargetResult  # type: ignore
+
             return TargetResult(
                 target=entry.result["target"],
                 environments=entry.result["environments"],
@@ -173,7 +188,9 @@ class ResultCache:
             result_payload = {
                 "target": _get_target_name(result),
                 "payload": result_payload,
-                "source_file": getattr(result, "source_file", str(Path(dataset_path).resolve())),
+                "source_file": getattr(
+                    result, "source_file", str(Path(dataset_path).resolve())
+                ),
                 "total_occurrences": getattr(result, "total_occurrences", 0),
                 "environments": getattr(result, "environments", {}),
             }
@@ -205,7 +222,9 @@ class ResultCache:
 
     def clear_dataset(self, dataset_path: str) -> int:
         resolved = str(Path(dataset_path).resolve())
-        to_remove = [k for k, e in self._memory_cache.items() if e.dataset_path == resolved]
+        to_remove = [
+            k for k, e in self._memory_cache.items() if e.dataset_path == resolved
+        ]
         for k in to_remove:
             self._memory_cache.pop(k, None)
         return len(to_remove)
@@ -237,7 +256,9 @@ class ResultCache:
             "memory_cache_size": len(self._memory_cache),
         }
 
-    def cleanup_old_entries(self, max_age_days: float = DEFAULT_CACHE_MAX_AGE_DAYS) -> int:
+    def cleanup_old_entries(
+        self, max_age_days: float = DEFAULT_CACHE_MAX_AGE_DAYS
+    ) -> int:
         cutoff = time.time() - (max_age_days * 24 * 60 * 60)
         to_remove = [k for k, e in self._memory_cache.items() if e.timestamp < cutoff]
         for k in to_remove:
@@ -255,6 +276,7 @@ class ResultCache:
 
 
 # ========================= CONVERSION & NAMING HELPERS =========================
+
 
 def _get_target_name(result: Any) -> str:
     if isinstance(result, dict) and "target" in result:
@@ -302,7 +324,9 @@ def _to_plain(obj: Any) -> Any:
             obj = getattr(obj, "__dict__", obj)
 
     if isinstance(obj, dict):
-        return {str(k): _to_plain(v) for k, v in obj.items() if not str(k).startswith("_")}
+        return {
+            str(k): _to_plain(v) for k, v in obj.items() if not str(k).startswith("_")
+        }
     if isinstance(obj, (list, tuple, set)):
         return [_to_plain(v) for v in obj]
 
@@ -317,6 +341,7 @@ def _ensure_parent(p: Path) -> None:
 
 
 # ========================= OUTPUT FILE WRITING =========================
+
 
 class OutputWriter:
     """Handles writing analysis results to various output formats."""
@@ -419,8 +444,15 @@ class OutputWriter:
         with output_file.open("w", newline="", encoding="utf-8") as f:
             if flatten_environments:
                 fieldnames = [
-                    "target", "group", "environment", "left_context", "right_context",
-                    "count", "examples", "source_file", "total_occurrences",
+                    "target",
+                    "group",
+                    "environment",
+                    "left_context",
+                    "right_context",
+                    "count",
+                    "examples",
+                    "source_file",
+                    "total_occurrences",
                 ]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
@@ -439,34 +471,54 @@ class OutputWriter:
 
                             # Deduplicate examples and normalize to NFC to handle canonical equivalents
                             import unicodedata as ud
-                            deduped_examples = list(dict.fromkeys(ud.normalize("NFC", ex) for ex in examples))
+
+                            deduped_examples = list(
+                                dict.fromkeys(
+                                    ud.normalize("NFC", ex) for ex in examples
+                                )
+                            )
 
                             # Parse environment key - use full tokens, don't truncate affricates
-                            left, right = (env.split("__", 1) + [""])[:2] if "__" in env else (env, "")
+                            left, right = (
+                                (env.split("__", 1) + [""])[:2]
+                                if "__" in env
+                                else (env, "")
+                            )
 
-                            writer.writerow({
-                                "target": target,
-                                "group": group_name,
-                                "environment": env,
-                                "left_context": left,
-                                "right_context": right,
-                                "count": len(deduped_examples),
-                                "examples": "; ".join(deduped_examples[:5]),
-                                "source_file": source_file,
-                                "total_occurrences": total_occ,
-                            })
+                            writer.writerow(
+                                {
+                                    "target": target,
+                                    "group": group_name,
+                                    "environment": env,
+                                    "left_context": left,
+                                    "right_context": right,
+                                    "count": len(deduped_examples),
+                                    "examples": "; ".join(deduped_examples[:5]),
+                                    "source_file": source_file,
+                                    "total_occurrences": total_occ,
+                                }
+                            )
             else:
-                fieldnames = ["target", "total_occurrences", "environments_json", "source_file"]
+                fieldnames = [
+                    "target",
+                    "total_occurrences",
+                    "environments_json",
+                    "source_file",
+                ]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
 
                 for res in payload:
-                    writer.writerow({
-                        "target": res.get("target", _get_target_name(res)),
-                        "total_occurrences": res.get("total_occurrences", 0),
-                        "environments_json": json.dumps(res.get("environments", {}), ensure_ascii=False),
-                        "source_file": res.get("source_file", ""),
-                    })
+                    writer.writerow(
+                        {
+                            "target": res.get("target", _get_target_name(res)),
+                            "total_occurrences": res.get("total_occurrences", 0),
+                            "environments_json": json.dumps(
+                                res.get("environments", {}), ensure_ascii=False
+                            ),
+                            "source_file": res.get("source_file", ""),
+                        }
+                    )
 
         return str(output_file)
 
@@ -516,14 +568,20 @@ class OutputWriter:
             for res in payload:
                 target = res.get("target", _get_target_name(res))
                 env_count = _env_count(res)
-                f.write(f"{target:<10} {res.get('total_occurrences', 0):<12} {env_count}\n")
+                f.write(
+                    f"{target:<10} {res.get('total_occurrences', 0):<12} {env_count}\n"
+                )
 
             f.write("\n" + "=" * REPORT_SEPARATOR_WIDTH + "\n\n")
 
             # Details
             for i, res in enumerate(payload, 1):
                 target = res.get("target", _get_target_name(res))
-                envs = res.get("environments", {}) if isinstance(res.get("environments", {}), dict) else {}
+                envs = (
+                    res.get("environments", {})
+                    if isinstance(res.get("environments", {}), dict)
+                    else {}
+                )
                 f.write(f"TARGET {i}: '{target}'\n")
                 f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
                 f.write(f"Total occurrences: {res.get('total_occurrences', 0)}\n\n")
@@ -541,10 +599,19 @@ class OutputWriter:
 
                             # Deduplicate examples and normalize to NFC to handle canonical equivalents
                             import unicodedata as ud
-                            deduped_examples = list(dict.fromkeys(ud.normalize("NFC", ex) for ex in examples))
+
+                            deduped_examples = list(
+                                dict.fromkeys(
+                                    ud.normalize("NFC", ex) for ex in examples
+                                )
+                            )
 
                             # Parse environment key - use full tokens, don't truncate affricates
-                            left, right = (env.split('__', 1) + [''])[:2] if '__' in env else (env, "")
+                            left, right = (
+                                (env.split("__", 1) + [""])[:2]
+                                if "__" in env
+                                else (env, "")
+                            )
 
                             # Use singular/plural correctly for occurrence count
                             count = len(deduped_examples)
@@ -596,23 +663,43 @@ class AutoOutputWriter:
         output_paths: Dict[str, str] = {}
 
         if fmt == "jsonl":
-            path = Path(custom_path) if custom_path else (self.output_dir / f"{base_name}.jsonl")
+            path = (
+                Path(custom_path)
+                if custom_path
+                else (self.output_dir / f"{base_name}.jsonl")
+            )
             _ensure_parent(path)
             output_paths["jsonl"] = self.writer.write_jsonl(results, str(path))
         elif fmt == "json":
-            path = Path(custom_path) if custom_path else (self.output_dir / f"{base_name}.json")
+            path = (
+                Path(custom_path)
+                if custom_path
+                else (self.output_dir / f"{base_name}.json")
+            )
             _ensure_parent(path)
             output_paths["json"] = self.writer.write_json(results, str(path))
         elif fmt == "csv":
-            path = Path(custom_path) if custom_path else (self.output_dir / f"{base_name}.csv")
+            path = (
+                Path(custom_path)
+                if custom_path
+                else (self.output_dir / f"{base_name}.csv")
+            )
             _ensure_parent(path)
             output_paths["csv"] = self.writer.write_csv(results, str(path))
         elif fmt == "txt":
-            path = Path(custom_path) if custom_path else (self.output_dir / f"{base_name}.txt")
+            path = (
+                Path(custom_path)
+                if custom_path
+                else (self.output_dir / f"{base_name}.txt")
+            )
             _ensure_parent(path)
             output_paths["txt"] = self.writer.write_text_report(results, str(path))
         else:
-            path = Path(custom_path) if custom_path else (self.output_dir / f"{base_name}.jsonl")
+            path = (
+                Path(custom_path)
+                if custom_path
+                else (self.output_dir / f"{base_name}.jsonl")
+            )
             _ensure_parent(path)
             output_paths["jsonl"] = self.writer.write_jsonl(results, str(path))
 
@@ -647,6 +734,7 @@ def get_cache_stats() -> Dict[str, Any]:
 
 
 # ========================= CONVENIENCE FUNCTIONS =========================
+
 
 def write_results(
     results: List[Any],

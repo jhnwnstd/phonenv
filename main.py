@@ -7,89 +7,240 @@ phonetic environment analysis, including batch processing capabilities.
 from __future__ import annotations
 
 from pathlib import Path
-import os, shutil
+import os
+import shutil
 import sys
 import argparse
 import unicodedata as ud
 from typing import Dict, List, Optional, Mapping
 
-from analysis import PhoneticAnalyzer
-from data import DictionaryProcessor, TargetsProcessor, create_sample_targets_file, targets_exist
-from phonenv_io import get_cache, clear_cache, get_cache_stats, AutoOutputWriter
+from analyze import PhoneticAnalyzer
+from data import (
+    DictionaryProcessor,
+    TargetsProcessor,
+    create_sample_targets_file,
+    targets_exist,
+)
+from phonenv_io import (
+    get_cache,
+    clear_cache,
+    get_cache_stats,
+    AutoOutputWriter,
+)
 
 # ========================= DIACRITIC PANEL =========================
 
 COMMON_DIACRITICS: Dict[str, Dict[str, str | bool | None]] = {
     # Length (spacing, mutually exclusive)
-    "long":        {"glyph": "ː",   "kind": "spacing",   "scope": "any",       "group": "length"},
-    "half-long":   {"glyph": "ˑ",   "kind": "spacing",   "scope": "any",       "group": "length"},
+    "long": {"glyph": "ː", "kind": "spacing", "scope": "any", "group": "length"},
+    "half-long": {"glyph": "ˑ", "kind": "spacing", "scope": "any", "group": "length"},
     # Added: extra-short (spacing, same group)
-    "extra-short": {"glyph": "˘",   "kind": "spacing",   "scope": "any",       "group": "length"},   # U+02D8
-
+    "extra-short": {
+        "glyph": "˘",
+        "kind": "spacing",
+        "scope": "any",
+        "group": "length",
+    },  # U+02D8
     # Voicing (combining, mutually exclusive)
-    "voiceless":       {"glyph": "\u0325", "kind": "combining", "scope": "any", "group": "voice"},    # ◌̥
-    "voiced":          {"glyph": "\u032C", "kind": "combining", "scope": "any", "group": "voice"},    # ◌̬
+    "voiceless": {
+        "glyph": "\u0325",
+        "kind": "combining",
+        "scope": "any",
+        "group": "voice",
+    },  # ◌̥
+    "voiced": {
+        "glyph": "\u032c",
+        "kind": "combining",
+        "scope": "any",
+        "group": "voice",
+    },  # ◌̬
     # Added: ring above variant for voiceless (combining, same group)
-    "voiceless-above": {"glyph": "\u030A", "kind": "combining", "scope": "any", "group": "voice"},    # ◌̊
-
+    "voiceless-above": {
+        "glyph": "\u030a",
+        "kind": "combining",
+        "scope": "any",
+        "group": "voice",
+    },  # ◌̊
     # Syllabicity (mutually exclusive via shared group)
-    "syllabic":  {"glyph": "\u0329", "kind": "combining", "scope": "consonant", "group": "syll"},     # ◌̩
-    "non-syl":   {"glyph": "\u032F", "kind": "combining", "scope": "vowel",     "group": "syll"},     # ◌̯
-
+    "syllabic": {
+        "glyph": "\u0329",
+        "kind": "combining",
+        "scope": "consonant",
+        "group": "syll",
+    },  # ◌̩
+    "non-syl": {
+        "glyph": "\u032f",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "syll",
+    },  # ◌̯
     # Common vowel/consonant effects
-    "nasal":      {"glyph": "\u0303", "kind": "combining", "scope": "any",       "group": None},      # ◌̃
-    "no-release": {"glyph": "\u031A", "kind": "combining", "scope": "consonant", "group": None},      # ◌̚
-
+    "nasal": {
+        "glyph": "\u0303",
+        "kind": "combining",
+        "scope": "any",
+        "group": None,
+    },  # ◌̃
+    "no-release": {
+        "glyph": "\u031a",
+        "kind": "combining",
+        "scope": "consonant",
+        "group": None,
+    },  # ◌̚
     # Secondary articulations (spacing)
     "aspirated": {"glyph": "ʰ", "kind": "spacing", "scope": "consonant", "group": None},
-    "palatalized":   {"glyph": "ʲ", "kind": "spacing", "scope": "consonant", "group": None},
-    "labialized":    {"glyph": "ʷ", "kind": "spacing", "scope": "consonant", "group": None},
+    "palatalized": {
+        "glyph": "ʲ",
+        "kind": "spacing",
+        "scope": "consonant",
+        "group": None,
+    },
+    "labialized": {
+        "glyph": "ʷ",
+        "kind": "spacing",
+        "scope": "consonant",
+        "group": None,
+    },
     "velarized": {"glyph": "ˠ", "kind": "spacing", "scope": "consonant", "group": None},
-    "pharyngealized":   {"glyph": "ˤ", "kind": "spacing", "scope": "consonant", "group": None},
-
+    "pharyngealized": {
+        "glyph": "ˤ",
+        "kind": "spacing",
+        "scope": "consonant",
+        "group": None,
+    },
     # Place tweak (combining)
-    "dental":    {"glyph": "\u032A", "kind": "combining", "scope": "consonant", "group": None},      # ◌̪
-
+    "dental": {
+        "glyph": "\u032a",
+        "kind": "combining",
+        "scope": "consonant",
+        "group": None,
+    },  # ◌̪
     # -------------------- Additional IPA diacritics --------------------
-
     # Phonation / voice quality (combining)
-    "breathy": {"glyph": "\u0324", "kind": "combining", "scope": "any",   "group": None},            # ◌̤
-    "creaky":  {"glyph": "\u0330", "kind": "combining", "scope": "any",   "group": None},            # ◌̰
-
+    "breathy": {
+        "glyph": "\u0324",
+        "kind": "combining",
+        "scope": "any",
+        "group": None,
+    },  # ◌̤
+    "creaky": {
+        "glyph": "\u0330",
+        "kind": "combining",
+        "scope": "any",
+        "group": None,
+    },  # ◌̰
     # Vowel rounding (combining, mutually exclusive)
-    "more-rounded": {"glyph": "\u0339", "kind": "combining", "scope": "vowel", "group": "round"},    # ◌̹
-    "less-rounded": {"glyph": "\u031C", "kind": "combining", "scope": "vowel", "group": "round"},    # ◌̜
-
+    "more-rounded": {
+        "glyph": "\u0339",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "round",
+    },  # ◌̹
+    "less-rounded": {
+        "glyph": "\u031c",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "round",
+    },  # ◌̜
     # Centralization (combining, mutually exclusive)
-    "centralized":     {"glyph": "\u0308", "kind": "combining", "scope": "vowel", "group": "central"},  # ◌̈
-    "mid-centralized": {"glyph": "\u033D", "kind": "combining", "scope": "vowel", "group": "central"},  # ◌̽
-
+    "centralized": {
+        "glyph": "\u0308",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "central",
+    },  # ◌̈
+    "mid-centralized": {
+        "glyph": "\u033d",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "central",
+    },  # ◌̽
     # Height shift (combining, mutually exclusive)
-    "raised":  {"glyph": "\u031D", "kind": "combining", "scope": "vowel", "group": "height"},        # ◌̝
-    "lowered": {"glyph": "\u031E", "kind": "combining", "scope": "vowel", "group": "height"},        # ◌̞
-
+    "raised": {
+        "glyph": "\u031d",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "height",
+    },  # ◌̝
+    "lowered": {
+        "glyph": "\u031e",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "height",
+    },  # ◌̞
     # Front/back advancement (combining, mutually exclusive)
-    "advanced":  {"glyph": "\u031F", "kind": "combining", "scope": "any", "group": "adv"},           # ◌̟
-    "retracted": {"glyph": "\u0320", "kind": "combining", "scope": "any", "group": "adv"},           # ◌̠
-
+    "advanced": {
+        "glyph": "\u031f",
+        "kind": "combining",
+        "scope": "any",
+        "group": "adv",
+    },  # ◌̟
+    "retracted": {
+        "glyph": "\u0320",
+        "kind": "combining",
+        "scope": "any",
+        "group": "adv",
+    },  # ◌̠
     # Tongue-root position (combining, mutually exclusive)
-    "ATR": {"glyph": "\u0318", "kind": "combining", "scope": "vowel", "group": "tongue_root"},       # ◌̘
-    "RTR": {"glyph": "\u0319", "kind": "combining", "scope": "vowel", "group": "tongue_root"},       # ◌̙
-
+    "ATR": {
+        "glyph": "\u0318",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "tongue_root",
+    },  # ◌̘
+    "RTR": {
+        "glyph": "\u0319",
+        "kind": "combining",
+        "scope": "vowel",
+        "group": "tongue_root",
+    },  # ◌̙
     # Coronal articulation detail (combining)
-    "apical":       {"glyph": "\u033A", "kind": "combining", "scope": "consonant", "group": None},   # ◌̺
-    "laminal":      {"glyph": "\u033B", "kind": "combining", "scope": "consonant", "group": None},   # ◌̻
-    "linguolabial": {"glyph": "\u033C", "kind": "combining", "scope": "consonant", "group": None},   # ◌̼
-
+    "apical": {
+        "glyph": "\u033a",
+        "kind": "combining",
+        "scope": "consonant",
+        "group": None,
+    },  # ◌̺
+    "laminal": {
+        "glyph": "\u033b",
+        "kind": "combining",
+        "scope": "consonant",
+        "group": None,
+    },  # ◌̻
+    "linguolabial": {
+        "glyph": "\u033c",
+        "kind": "combining",
+        "scope": "consonant",
+        "group": None,
+    },  # ◌̼
     # Rhoticity (spacing; note: ɚ/ɝ are precomposed alternatives)
-    "rhoticity": {"glyph": "˞", "kind": "spacing", "scope": "vowel", "group": None},                 # U+02DE
-
+    "rhoticity": {
+        "glyph": "˞",
+        "kind": "spacing",
+        "scope": "vowel",
+        "group": None,
+    },  # U+02DE
     # Stop releases / coarticulation (spacing)
-    "nasal-release":   {"glyph": "\u207F", "kind": "spacing", "scope": "consonant", "group": None},  # ⁿ
-    "lateral-release": {"glyph": "ˡ",      "kind": "spacing", "scope": "consonant", "group": None},  # ˡ
+    "nasal-release": {
+        "glyph": "\u207f",
+        "kind": "spacing",
+        "scope": "consonant",
+        "group": None,
+    },  # ⁿ
+    "lateral-release": {
+        "glyph": "ˡ",
+        "kind": "spacing",
+        "scope": "consonant",
+        "group": None,
+    },  # ˡ
 }
 
-def _compose(base: str, toggle_names: List[str], catalog: Mapping[str, Mapping[str, str | bool | None]]) -> str:
+
+def _compose(
+    base: str,
+    toggle_names: List[str],
+    catalog: Mapping[str, Mapping[str, str | bool | None]],
+) -> str:
     """Attach combining marks (Mn) first, then spacing modifiers (Sk); normalize NFC."""
     combining: List[str] = []
     spacing: List[str] = []
@@ -98,10 +249,15 @@ def _compose(base: str, toggle_names: List[str], catalog: Mapping[str, Mapping[s
         if spec["kind"] == "combining":
             combining.append(spec["glyph"])  # type: ignore[arg-type]
         else:
-            spacing.append(spec["glyph"])    # type: ignore[arg-type]
+            spacing.append(spec["glyph"])  # type: ignore[arg-type]
     return ud.normalize("NFC", base + "".join(combining) + "".join(spacing))
 
-def _apply_mutex_list(toggled: List[str], newly: str, catalog: Mapping[str, Mapping[str, str | bool | None]]) -> List[str]:
+
+def _apply_mutex_list(
+    toggled: List[str],
+    newly: str,
+    catalog: Mapping[str, Mapping[str, str | bool | None]],
+) -> List[str]:
     """Like _apply_mutex but preserves order; replaces any prior member of the same group."""
     group = catalog[newly].get("group")
     if not group:
@@ -113,7 +269,9 @@ def _apply_mutex_list(toggled: List[str], newly: str, catalog: Mapping[str, Mapp
         filtered.append(newly)
     return filtered
 
+
 # ========================= INTERACTIVE CLI =========================
+
 
 class InteractivePhonenvCLI:
     """Interactive command line interface for phonetic environment analysis."""
@@ -148,8 +306,10 @@ class InteractivePhonenvCLI:
     @property
     def _terminal_width(self) -> int:
         """Cached terminal width to avoid repeated system calls."""
-        if not hasattr(self, '_term_width_cache'):
-            self._term_width_cache = shutil.get_terminal_size((self.DEFAULT_TERMINAL_WIDTH, self.DEFAULT_TERMINAL_HEIGHT)).columns
+        if not hasattr(self, "_term_width_cache"):
+            self._term_width_cache = shutil.get_terminal_size(
+                (self.DEFAULT_TERMINAL_WIDTH, self.DEFAULT_TERMINAL_HEIGHT)
+            ).columns
         return self._term_width_cache
 
     # IPA consonant categories with common symbols
@@ -283,7 +443,9 @@ class InteractivePhonenvCLI:
         except Exception:
             pass  # Graceful fallback if clearing fails
 
-    def _banner(self, title: str, *, clear: bool = True, subtitle: str | None = None) -> None:
+    def _banner(
+        self, title: str, *, clear: bool = True, subtitle: str | None = None
+    ) -> None:
         if clear:
             self._clear()
         line = f" {title} ".center(self._terminal_width, "═")
@@ -294,7 +456,12 @@ class InteractivePhonenvCLI:
             print(subtitle.center(self._terminal_width))
         print()  # spacer
 
-    def _menu(self, options: list[str], back_label: str | None = None, prompt: str | None = None) -> int | None:
+    def _menu(
+        self,
+        options: list[str],
+        back_label: str | None = None,
+        prompt: str | None = None,
+    ) -> int | None:
         """
         Render a numbered list with aligned numbers.
         Returns: 1-based index, or None if user chose Back.
@@ -329,7 +496,9 @@ class InteractivePhonenvCLI:
 
     def _status(self) -> None:
         """One-line status bar shown under banners."""
-        print(f"[ Mode: {self.transcription_mode} | Dataset: {Path(self.file_path).name} ]\n")
+        print(
+            f"[ Mode: {self.transcription_mode} | Dataset: {Path(self.file_path).name} ]\n"
+        )
 
     def __init__(self, file_path: str | None = None):
         """Initialize the interactive CLI."""
@@ -341,6 +510,7 @@ class InteractivePhonenvCLI:
 
     def _create_analyzer(self):
         from analysis import get_config_for_transcription_mode, IPAProcessorV2
+
         config = get_config_for_transcription_mode(self.transcription_mode)
         self.analyzer = PhoneticAnalyzer(
             use_ipa_processing=True,
@@ -364,10 +534,16 @@ class InteractivePhonenvCLI:
                 if not self.analyzer:
                     self._create_analyzer()
                 if self.analyzer:
-                    print(f"\nAnalyzing phonetic environments for '{character}' ({self.transcription_mode} transcription)...\n")
-                    self.analyzer.print_analysis(character, self.file_path, show_unicode_info=False)
+                    print(
+                        f"\nAnalyzing phonetic environments for '{character}' ({self.transcription_mode} transcription)...\n"
+                    )
+                    self.analyzer.print_analysis(
+                        character, self.file_path, show_unicode_info=False
+                    )
                 else:
-                    print(f"\n{self._format_error('initializing analyzer', Exception('Please check the configuration.'))}")
+                    print(
+                        f"\n{self._format_error('initializing analyzer', Exception('Please check the configuration.'))}"
+                    )
 
                 self._hr()
                 if not self._continue_prompt():
@@ -390,22 +566,35 @@ class InteractivePhonenvCLI:
 
             # Menu (mark current)
             print(f"Current mode: {cur}\n")
-            print(f"  1. Narrow transcription{'   [current]' if cur == 'narrow' else ''}")
+            print(
+                f"  1. Narrow transcription{'   [current]' if cur == 'narrow' else ''}"
+            )
             print("     - Distinguishes diacritic variants (p ≠ pʰ)")
             print("     - Focus on surface phonetic detail\n")
-            print(f"  2. Broad transcription{'    [current]' if cur == 'broad' else ''}")
+            print(
+                f"  2. Broad transcription{'    [current]' if cur == 'broad' else ''}"
+            )
             print("     - Treats diacritic variants as the same (p = pʰ)")
             print("     - Focus on underlying phonological patterns\n")
             if allow_back:
                 print("  3. ← Back\n")
 
-            prompt = "Select mode (1-2): " if not allow_back else "Select mode (1-2) or '3'/'b' to go back: "
+            prompt = (
+                "Select mode (1-2): "
+                if not allow_back
+                else "Select mode (1-2) or '3'/'b' to go back: "
+            )
             choice = self._normalize_user_input(input(prompt))
 
             if allow_back and choice in {"3", "b", "back"}:
                 return
 
-            mapping = {"1": "narrow", "narrow": "narrow", "2": "broad", "broad": "broad"}
+            mapping = {
+                "1": "narrow",
+                "narrow": "narrow",
+                "2": "broad",
+                "broad": "broad",
+            }
             if choice not in mapping:
                 print("Please enter 1 for narrow or 2 for broad.\n")
                 continue
@@ -423,15 +612,17 @@ class InteractivePhonenvCLI:
     def _get_character_choice(self) -> Optional[str]:
         while True:
             self._banner("MAIN MENU")
-            idx = self._menu([
-                "Consonants",
-                "Vowels",
-                "Advanced: paste IPA segment",
-                "Batch processing (targets.txt)",
-                "Change transcription mode",
-                "Dictionary management",
-                "Exit",
-            ])
+            idx = self._menu(
+                [
+                    "Consonants",
+                    "Vowels",
+                    "Advanced: paste IPA segment",
+                    "Batch processing (targets.txt)",
+                    "Change transcription mode",
+                    "Dictionary management",
+                    "Exit",
+                ]
+            )
             # Handle empty Enter as exit for main menu
             if idx is None:
                 return None
@@ -460,7 +651,9 @@ class InteractivePhonenvCLI:
             if idx == 7:
                 return None
 
-    def _select_character_category(self, categories_dict: dict, category_type: str) -> Optional[str]:
+    def _select_character_category(
+        self, categories_dict: dict, category_type: str
+    ) -> Optional[str]:
         """Generic character category selection for consonants or vowels."""
         self._banner(category_type.upper())
         categories = list(categories_dict.keys())  # Keep list for indexing
@@ -468,7 +661,9 @@ class InteractivePhonenvCLI:
         if idx is None:
             return None
         category = categories[idx - 1]
-        return self._select_from_subcategory(category, categories_dict[category], category_type.rstrip('s'))
+        return self._select_from_subcategory(
+            category, categories_dict[category], category_type.rstrip("s")
+        )
 
     def _select_consonant(self) -> Optional[str]:
         return self._select_character_category(self.CONSONANT_CATEGORIES, "consonants")
@@ -484,9 +679,9 @@ class InteractivePhonenvCLI:
         # show each with preview of sounds on same line (truncate if too long)
         options = []
         for name in sub_names:
-            preview = ' '.join(subcategories[name])
+            preview = " ".join(subcategories[name])
             if len(preview) > self.PREVIEW_TRUNCATE_LENGTH:  # truncate long lists
-                preview = preview[:self.PREVIEW_TRUNCATE_LENGTH-3] + "..."
+                preview = preview[: self.PREVIEW_TRUNCATE_LENGTH - 3] + "..."
             options.append(f"{name}: {preview}")
         idx = self._menu(options, back_label="← Back")
         if idx is None:
@@ -519,11 +714,14 @@ class InteractivePhonenvCLI:
     def _diacritic_quick_panel(self, base: str, scope: str) -> str:
         """Quick diacritic selection panel."""
         print(f"\nApplying diacritics to: {base}")
-        print("Available diacritics (enter numbers like '1 3 5', or press Enter for none):")
+        print(
+            "Available diacritics (enter numbers like '1 3 5', or press Enter for none):"
+        )
 
         # Filter diacritics by scope
         available = {
-            name: spec for name, spec in COMMON_DIACRITICS.items()
+            name: spec
+            for name, spec in COMMON_DIACRITICS.items()
             if spec["scope"] == "any" or spec["scope"] == scope
         }
 
@@ -555,12 +753,16 @@ class InteractivePhonenvCLI:
             for i, idx in enumerate(indices):
                 if 0 <= idx < len(diacritic_list):
                     name = diacritic_list[idx]
-                    selected_order = _apply_mutex_list(selected_order, name, COMMON_DIACRITICS)
+                    selected_order = _apply_mutex_list(
+                        selected_order, name, COMMON_DIACRITICS
+                    )
                 else:
                     invalid_numbers.append(parts[i])
 
             if invalid_numbers:
-                print(f"Invalid selection(s): {', '.join(invalid_numbers)}. Valid range: 1-{len(diacritic_list)}")
+                print(
+                    f"Invalid selection(s): {', '.join(invalid_numbers)}. Valid range: 1-{len(diacritic_list)}"
+                )
                 if not selected_order:  # If no valid selections, return base
                     return base
 
@@ -575,7 +777,9 @@ class InteractivePhonenvCLI:
     def _continue_prompt(self) -> bool:
         """Ask user if they want to continue."""
         while True:
-            choice = self._normalize_user_input(input("\nAnalyze another character? (y/n): "))
+            choice = self._normalize_user_input(
+                input("\nAnalyze another character? (y/n): ")
+            )
             if choice in ["y", "yes"]:
                 return True
             elif choice in ["n", "no"]:
@@ -589,19 +793,25 @@ class InteractivePhonenvCLI:
             try:
                 stats = self.dict_processor.get_stats()
                 print(f"Current dataset: {stats.get('total_words', 0)} words")
-                if stats.get('longest_word'):
-                    print(f"Range: {stats.get('shortest_word','')} to {stats.get('longest_word','')}")
+                if stats.get("longest_word"):
+                    print(
+                        f"Range: {stats.get('shortest_word', '')} to "
+                        f"{stats.get('longest_word', '')}"
+                    )
                 print()
             except Exception as e:
                 print(f"{self._format_error('reading dictionary', e)}\n")
 
-            idx = self._menu([
-                "Show all words",
-                "Add word",
-                "Remove words containing…",
-                "Clear dictionary",
-                "Dictionary statistics",
-            ], back_label="← Back")
+            idx = self._menu(
+                [
+                    "Show all words",
+                    "Add word",
+                    "Remove words containing…",
+                    "Clear dictionary",
+                    "Dictionary statistics",
+                ],
+                back_label="← Back",
+            )
 
             if idx is None:
                 break
@@ -621,7 +831,9 @@ class InteractivePhonenvCLI:
                         removed = self.dict_processor.remove_words_containing(substring)
                         print(f"Removed {removed} words containing '{substring}'")
                 elif idx == 4:
-                    confirm = self._normalize_user_input(input("Clear entire dictionary? (y/N): "))
+                    confirm = self._normalize_user_input(
+                        input("Clear entire dictionary? (y/N): ")
+                    )
                     if confirm in {"y", "yes"}:
                         self.dict_processor.clear_dictionary()
                         print("Dictionary cleared")
@@ -630,10 +842,10 @@ class InteractivePhonenvCLI:
                     print("\nDictionary Statistics:")
                     print(f"   Total words: {stats.get('total_words', 0)}")
                     print(f"   Unique letters: {stats.get('unique_letters', 0)}")
-                    avg_len = stats.get('avg_word_length', 0.0)
+                    avg_len = stats.get("avg_word_length", 0.0)
                     print(f"   Average length: {avg_len:.2f}")
-                    print(f"   Longest: {stats.get('longest_word','')}")
-                    print(f"   Shortest: {stats.get('shortest_word','')}")
+                    print(f"   Longest: {stats.get('longest_word', '')}")
+                    print(f"   Shortest: {stats.get('shortest_word', '')}")
             except Exception as e:
                 print(f"{self._format_error('in dictionary operation', e)}")
 
@@ -642,35 +854,45 @@ class InteractivePhonenvCLI:
             self._banner("BATCH PROCESSING (targets.txt)")
             if targets_exist():
                 try:
-                    processor = TargetsProcessor(dataset_path=self.file_path, analyzer=self.analyzer)
+                    processor = TargetsProcessor(
+                        dataset_path=self.file_path, analyzer=self.analyzer
+                    )
                     summary = processor.get_targets_summary()
-                    total    = summary.get("total_targets", 0)
-                    ds_file  = summary.get("dataset_file", self.file_path)
+                    total = summary.get("total_targets", 0)
+                    ds_file = summary.get("dataset_file", self.file_path)
                     ds_exist = bool(summary.get("dataset_exists", False))
-                    print(f"Targets file: {self.DEFAULT_TARGETS_PATH} ({total} targets)")
+                    print(
+                        f"Targets file: {self.DEFAULT_TARGETS_PATH} ({total} targets)"
+                    )
                     print(f"Dataset: {ds_file} ({'exists' if ds_exist else 'missing'})")
 
                     seen, uniq = set(), []
-                    for t in (summary.get("targets") or []):
+                    for t in summary.get("targets") or []:
                         if t not in seen:
                             seen.add(t)
                             uniq.append(t)
                     if uniq:
                         head = ", ".join(uniq[:5])
                         more = len(uniq) - 5
-                        print(f"Targets: {head}" + (f" (+{more} more)" if more > 0 else ""))
+                        print(
+                            f"Targets: {head}"
+                            + (f" (+{more} more)" if more > 0 else "")
+                        )
                 except Exception as e:
                     print(f"Error reading targets: {e}")
             else:
                 print("No targets.txt file found")
             print()
 
-            idx = self._menu([
-                "Run batch analysis",
-                "Create sample targets.txt",
-                "View targets summary",
-                "Cache management",
-            ], back_label="← Back")
+            idx = self._menu(
+                [
+                    "Run batch analysis",
+                    "Create sample targets.txt",
+                    "View targets summary",
+                    "Cache management",
+                ],
+                back_label="← Back",
+            )
 
             if idx is None:
                 break
@@ -694,9 +916,14 @@ class InteractivePhonenvCLI:
 
         def _normalize_format(fmt: str) -> str:
             m = {
-                "txt": "txt", "text": "txt", "plain": "txt", "plaintext": "txt",
+                "txt": "txt",
+                "text": "txt",
+                "plain": "txt",
+                "plaintext": "txt",
                 "json": "json",
-                "jsonl": "jsonl", "jsonlines": "jsonl", "ndjson": "jsonl",
+                "jsonl": "jsonl",
+                "jsonlines": "jsonl",
+                "ndjson": "jsonl",
                 "csv": "csv",
             }
             return m.get(fmt, "")
@@ -705,8 +932,7 @@ class InteractivePhonenvCLI:
             print("\nStarting batch analysis...")
 
             processor = TargetsProcessor(
-                dataset_path=self.file_path,
-                analyzer=self.analyzer
+                dataset_path=self.file_path, analyzer=self.analyzer
             )
 
             cache = get_cache()
@@ -732,7 +958,9 @@ class InteractivePhonenvCLI:
                     print("(analyzed)")
                     results.append(result)
 
-            fmt_in = input("\nOutput format (jsonl/json/csv/txt) [txt]: ").strip().lower()
+            fmt_in = (
+                input("\nOutput format (jsonl/json/csv/txt) [txt]: ").strip().lower()
+            )
             fmt = _normalize_format(fmt_in) or "txt"
             if fmt_in and not _normalize_format(fmt_in):
                 print(f"Unknown format '{fmt_in}', falling back to 'txt'.")
@@ -772,8 +1000,7 @@ class InteractivePhonenvCLI:
 
         try:
             processor = TargetsProcessor(
-                dataset_path=self.file_path,
-                analyzer=self.analyzer
+                dataset_path=self.file_path, analyzer=self.analyzer
             )
             summary = processor.get_targets_summary()
 
@@ -785,7 +1012,7 @@ class InteractivePhonenvCLI:
             print(f"   Targets exist: {summary.get('targets_exist', False)}")
             print(f"   Dataset exists: {summary.get('dataset_exists', False)}")
 
-            targets_list = list(summary.get('targets') or [])
+            targets_list = list(summary.get("targets") or [])
             if targets_list:
                 print("\nTarget list:")
                 # Show in stable order, but don't flood the screen
@@ -806,17 +1033,20 @@ class InteractivePhonenvCLI:
                 print(f"Cache entries:  {stats.get('total_entries', 0)}")
                 print(f"Unique targets: {stats.get('unique_targets', 0)}")
                 print(f"Cache dir:      {stats.get('cache_dir', '')}")
-                if stats.get('total_entries', 0) > 0:
+                if stats.get("total_entries", 0) > 0:
                     print(f"Latest:         {stats.get('newest_entry', '')}")
             except Exception as e:
                 print(f"Error reading cache: {e}")
             print()
 
-            idx = self._menu([
-                "View cache statistics",
-                "Clear entire cache",
-                "Clear cache for current dataset",
-            ], back_label="← Back")
+            idx = self._menu(
+                [
+                    "View cache statistics",
+                    "Clear entire cache",
+                    "Clear cache for current dataset",
+                ],
+                back_label="← Back",
+            )
 
             if idx is None:
                 break
@@ -828,7 +1058,10 @@ class InteractivePhonenvCLI:
                         if key == "targets" and isinstance(value, list):
                             head = ", ".join(value[:10])
                             more = len(value) - 10
-                            print(f"   {key}: {head}" + (f" (+{more} more)" if more > 0 else ""))
+                            print(
+                                f"   {key}: {head}"
+                                + (f" (+{more} more)" if more > 0 else "")
+                            )
                         else:
                             print(f"   {key}: {value}")
                 elif idx == 2:
@@ -843,7 +1076,9 @@ class InteractivePhonenvCLI:
             except Exception as e:
                 print(f"Error: {e}")
 
+
 # ========================= COMMAND LINE INTERFACE =========================
+
 
 def main():
     """Main entry point for CLI."""
@@ -856,65 +1091,66 @@ Examples:
   phonenv --batch                   # Batch process targets.txt
   phonenv --create-targets          # Create sample targets.txt
   phonenv --targets path/targets.txt --output results.txt
-        """
+        """,
     )
 
     parser.add_argument(
-        "--batch", "-b",
+        "--batch",
+        "-b",
         action="store_true",
-        help="Run batch processing on targets.txt file"
+        help="Run batch processing on targets.txt file",
     )
 
     parser.add_argument(
-        "--targets", "-t",
+        "--targets",
+        "-t",
         metavar="PATH",
         default="data/targets.txt",
-        help="Path to targets file (default: data/targets.txt)"
+        help="Path to targets file (default: data/targets.txt)",
     )
 
     parser.add_argument(
-        "--dataset", "-d",
+        "--dataset",
+        "-d",
         metavar="PATH",
         default="data/dataset.txt",
-        help="Path to dataset file (default: data/dataset.txt)"
+        help="Path to dataset file (default: data/dataset.txt)",
     )
 
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         metavar="PATH",
-        help="Output file path (auto-generated if not specified)"
+        help="Output file path (auto-generated if not specified)",
     )
 
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["jsonl", "json", "csv", "txt"],
         default="txt",
-        help="Output format for batch processing (default: txt)"
+        help="Output format for batch processing (default: txt)",
     )
 
     parser.add_argument(
         "--create-targets",
         action="store_true",
-        help="Create sample targets.txt file and exit"
+        help="Create sample targets.txt file and exit",
     )
 
     parser.add_argument(
-        "--clear-cache",
-        action="store_true",
-        help="Clear analysis cache and exit"
+        "--clear-cache", action="store_true", help="Clear analysis cache and exit"
     )
 
     parser.add_argument(
-        "--cache-stats",
-        action="store_true",
-        help="Show cache statistics and exit"
+        "--cache-stats", action="store_true", help="Show cache statistics and exit"
     )
 
     parser.add_argument(
         "--mode",
         choices=["narrow", "broad"],
         default="broad",
-        help="Transcription mode for batch analysis (default: broad)"
+        help="Transcription mode for batch analysis (default: broad)",
     )
 
     args = parser.parse_args()
@@ -935,9 +1171,11 @@ Examples:
             stats = get_cache_stats()
             print("Cache Statistics:")
             for key, value in stats.items():
-                if key == 'targets' and isinstance(value, list):
-                    print(f"   {key}: {', '.join(value[:10])}" +
-                          (f" (+{len(value)-10} more)" if len(value) > 10 else ""))
+                if key == "targets" and isinstance(value, list):
+                    print(
+                        f"   {key}: {', '.join(value[:10])}"
+                        + (f" (+{len(value)-10} more)" if len(value) > 10 else "")
+                    )
                 else:
                     print(f"   {key}: {value}")
             return
@@ -974,8 +1212,12 @@ def run_batch_cli(args):
         # Wire up analyzer with the chosen transcription mode
         from analysis import get_config_for_transcription_mode, IPAProcessorV2
 
-        analyzer = PhoneticAnalyzer(use_ipa_processing=True, transcription_mode=args.mode)
-        analyzer.ipa_processor_v2 = IPAProcessorV2(get_config_for_transcription_mode(args.mode))
+        analyzer = PhoneticAnalyzer(
+            use_ipa_processing=True, transcription_mode=args.mode
+        )
+        analyzer.ipa_processor_v2 = IPAProcessorV2(
+            get_config_for_transcription_mode(args.mode)
+        )
 
         processor = TargetsProcessor(
             dataset_path=args.dataset,

@@ -13,8 +13,7 @@ import unicodedata as ud
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterator, List, Tuple, Optional, Set, Any, Mapping
-from utils import normalize_tiebar
-
+from utils import normalize_tiebar, is_safe_path
 
 # ========================= WORD ENTRY PARSING =========================
 
@@ -24,9 +23,6 @@ _KV = re.compile(r"\s*([a-zA-Z_][\w-]*)\s*=\s*([^;]+)\s*")
 _BRACKETS = re.compile(r"\[(?P<tag>[^\[\]]+)\]")
 
 # ---- Target processing helpers ----
-# Tie-bar constants now imported from utils module
-
-
 
 
 def _split_targets_line(line: str) -> List[str]:
@@ -38,12 +34,10 @@ def _split_targets_line(line: str) -> List[str]:
     return parts
 
 
-# Deprecated: _clean_token removed - now using segmentation-based validation
-
-
 @dataclass(frozen=True)
 class WordEntry:
     """Rich data structure for parsed word entries with metadata."""
+
     ipa: str
     section: Dict[str, str] = field(default_factory=dict)
     tags: Tuple[str, ...] = field(default_factory=tuple)
@@ -78,7 +72,7 @@ def _parse_section(line: str) -> Optional[Dict[str, str]]:
             out[k] = v
         else:
             # Check if it's a valid bare flag
-            if isinstance(part, str) and re.match(r'^[a-zA-Z_][\w-]*$', part):
+            if isinstance(part, str) and re.match(r"^[a-zA-Z_][\w-]*$", part):
                 out[part] = "true"
             else:
                 valid_section = False
@@ -106,6 +100,11 @@ def iter_word_entries(path: str | Path) -> Iterator[WordEntry]:
     backwards compatibility with simple "one IPA per line" format.
     """
     p = Path(path)
+
+    # Security: Validate path is within project directory
+    if not is_safe_path(p):
+        raise ValueError(f"Access denied: path '{p}' is outside allowed directory")
+
     section = dict(_DEFAULT_SECTION)
 
     if not p.exists():
@@ -157,6 +156,7 @@ def load_words_list(path: str = "data/dataset.txt") -> List[str]:
 
 # ========================= DICTIONARY PROCESSOR =========================
 
+
 class DictionaryProcessor:
     """Processes and manages word dictionaries."""
 
@@ -201,7 +201,7 @@ class DictionaryProcessor:
             # Ensure directory exists
             self.input_file.parent.mkdir(parents=True, exist_ok=True)
 
-            with self.input_file.open('w', encoding='utf-8') as f:
+            with self.input_file.open("w", encoding="utf-8") as f:
                 for word in sorted(words):
                     f.write(f"{word}\n")
         except (IOError, OSError) as e:
@@ -266,11 +266,13 @@ class DictionaryProcessor:
         """
         words = self.load_words()
         return {
-            'total_words': len(words),
-            'unique_letters': len(set(''.join(words).lower())),
-            'avg_word_length': sum(len(word) for word in words) / len(words) if words else 0,
-            'longest_word': max(words, key=len) if words else None,
-            'shortest_word': min(words, key=len) if words else None
+            "total_words": len(words),
+            "unique_letters": len(set("".join(words).lower())),
+            "avg_word_length": (
+                sum(len(word) for word in words) / len(words) if words else 0
+            ),
+            "longest_word": max(words, key=len) if words else None,
+            "shortest_word": min(words, key=len) if words else None,
         }
 
     def process_dictionary(
@@ -278,7 +280,7 @@ class DictionaryProcessor:
         append: Optional[str] = None,
         print_dict: bool = False,
         delete_substring: Optional[str] = None,
-        clear_file: bool = False
+        clear_file: bool = False,
     ) -> None:
         """Process dictionary with various operations.
 
@@ -330,9 +332,11 @@ class DictionaryProcessor:
 
 # ========================= TARGETS PROCESSOR =========================
 
+
 @dataclass
 class TargetResult:
     """Result of analyzing a single target character."""
+
     target: str
     environments: Mapping[str, Mapping[str, List[str]]]
     total_occurrences: int
@@ -341,10 +345,10 @@ class TargetResult:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
-            'target': self.target,
-            'environments': self.environments,
-            'total_occurrences': self.total_occurrences,
-            'source_file': self.source_file
+            "target": self.target,
+            "environments": self.environments,
+            "total_occurrences": self.total_occurrences,
+            "source_file": self.source_file,
         }
 
 
@@ -355,7 +359,7 @@ class TargetsProcessor:
         self,
         dataset_path: str = "data/dataset.txt",
         targets_path: str = "data/targets.txt",
-        analyzer=None  # PhoneticAnalyzer instance
+        analyzer=None,  # PhoneticAnalyzer instance
     ):
         """Initialize the targets processor.
 
@@ -379,7 +383,10 @@ class TargetsProcessor:
 
         try:
             # Lazy import to avoid circular dependency
-            from analysis import IPAProcessorV2, get_config_for_transcription_mode
+            from analyze import (
+                IPAProcessorV2,
+                get_config_for_transcription_mode,
+            )
 
             proc = IPAProcessorV2(get_config_for_transcription_mode("broad"))
 
@@ -392,15 +399,15 @@ class TargetsProcessor:
             seen: set[str] = set()
             out: list[str] = []
 
-            with self.targets_path.open('r', encoding='utf-8') as f:
+            with self.targets_path.open("r", encoding="utf-8") as f:
                 for line_num, raw in enumerate(f, 1):
                     line = raw.strip()
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith("#"):
                         continue
 
                     # Allow inline comments: keep content before '#'
-                    if '#' in line:
-                        line = line.split('#', 1)[0].strip()
+                    if "#" in line:
+                        line = line.split("#", 1)[0].strip()
                         if not line:
                             continue
 
@@ -435,7 +442,7 @@ class TargetsProcessor:
             # Ensure directory exists
             self.targets_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with self.targets_path.open('w', encoding='utf-8') as f:
+            with self.targets_path.open("w", encoding="utf-8") as f:
                 f.write("# Phonetic targets for batch analysis\n")
                 f.write("# One target per line, or comma/space separated\n")
                 f.write("# Lines starting with # are comments\n\n")
@@ -444,7 +451,9 @@ class TargetsProcessor:
                     f.write(f"{normalize_tiebar(ud.normalize('NFC', target))}\n")
 
         except (IOError, OSError) as e:
-            raise IOError(f"Cannot write to targets file {self.targets_path}: {e}") from e
+            raise IOError(
+                f"Cannot write to targets file {self.targets_path}: {e}"
+            ) from e
 
     def analyze_target(self, target: str) -> TargetResult:
         """Analyze a single target character.
@@ -456,7 +465,10 @@ class TargetsProcessor:
             TargetResult with analysis data
         """
         if not self.analyzer:
-            from analysis import PhoneticAnalyzer  # avoid package-relative import issues
+            from analyze import (
+                PhoneticAnalyzer,
+            )  # avoid package-relative import issues
+
             self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
 
         environments = self.analyzer.analyze_character(target, str(self.dataset_path))
@@ -471,7 +483,7 @@ class TargetsProcessor:
             target=target,
             environments=environments,
             total_occurrences=total_occurrences,
-            source_file=str(self.dataset_path)
+            source_file=str(self.dataset_path),
         )
 
     def process_targets(self) -> Iterator[TargetResult]:
@@ -507,24 +519,26 @@ class TargetsProcessor:
         """
         try:
             targets = self.load_targets()
-            unique_targets = list(dict.fromkeys(targets))  # Preserve order, remove duplicates
+            unique_targets = list(
+                dict.fromkeys(targets)
+            )  # Preserve order, remove duplicates
 
             return {
-                'targets_file': str(self.targets_path),
-                'dataset_file': str(self.dataset_path),
-                'total_targets': len(targets),
-                'unique_targets': len(unique_targets),
-                'targets': unique_targets,
-                'targets_exist': self.targets_path.exists(),
-                'dataset_exists': self.dataset_path.exists()
+                "targets_file": str(self.targets_path),
+                "dataset_file": str(self.dataset_path),
+                "total_targets": len(targets),
+                "unique_targets": len(unique_targets),
+                "targets": unique_targets,
+                "targets_exist": self.targets_path.exists(),
+                "dataset_exists": self.dataset_path.exists(),
             }
         except Exception as e:
             return {
-                'targets_file': str(self.targets_path),
-                'dataset_file': str(self.dataset_path),
-                'error': str(e),
-                'targets_exist': self.targets_path.exists(),
-                'dataset_exists': self.dataset_path.exists()
+                "targets_file": str(self.targets_path),
+                "dataset_file": str(self.dataset_path),
+                "error": str(e),
+                "targets_exist": self.targets_path.exists(),
+                "dataset_exists": self.dataset_path.exists(),
             }
 
 
@@ -556,7 +570,7 @@ def create_sample_targets_file(targets_path: str = "data/targets.txt") -> None:
     path = Path(targets_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with path.open('w', encoding='utf-8') as f:
+    with path.open("w", encoding="utf-8") as f:
         for line in sample_targets:
             f.write(normalize_tiebar(ud.normalize("NFC", line)) + "\n")
 
@@ -594,7 +608,7 @@ def load_targets(targets_path: str = "data/targets.txt") -> List[str]:
 
 def process_all_targets(
     dataset_path: str = "data/dataset.txt",
-    targets_path: str = "data/targets.txt"
+    targets_path: str = "data/targets.txt",
 ) -> List[TargetResult]:
     """Process all targets (backwards compatible function).
 

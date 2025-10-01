@@ -9,10 +9,11 @@ from __future__ import annotations
 import regex as re
 import unicodedata as ud
 from typing import Set
+from normalize import TRANSLATE_TABLE
 
 # Unicode constants
 TIE_ABOVE = "\u0361"  # ͡
-TIE_BELOW = "\u035C"  # ͜
+TIE_BELOW = "\u035c"  # ͜
 
 # IPA Unicode blocks for validation
 _IPA_BLOCKS = {
@@ -70,3 +71,41 @@ def is_spacing_modifier(ch: str) -> bool:
     """Check if character is a spacing modifier letter (excluding suprasegmentals)."""
     _SUPRA: Set[str] = {"ˈ", "ˌ", "|", "‖"}
     return ud.category(ch) in ("Sk", "Lm") and ch not in _SUPRA
+
+
+def normalize_ascii_to_ipa(text: str) -> str:
+    """Normalize ASCII/confusable chars to IPA using TRANSLATE_TABLE.
+
+    This applies unambiguous automatic transformations only (e.g., ':' → 'ː', 'g' → 'ɡ').
+
+    Args:
+        text: Input string with potential ASCII substitutes
+
+    Returns:
+        String with ASCII chars replaced by IPA equivalents
+    """
+    return text.translate(TRANSLATE_TABLE)
+
+
+def is_safe_path(path) -> bool:
+    """Check if a path is safe (within project directory).
+
+    Args:
+        path: Path to check (Path object or string)
+
+    Returns:
+        True if path is safe, False otherwise
+    """
+    from pathlib import Path
+
+    try:
+        # Convert to Path if needed
+        p = Path(path) if not isinstance(path, Path) else path
+        # Resolve to absolute path
+        abs_path = p.resolve()
+        # Get project root (current working directory)
+        project_root = Path.cwd().resolve()
+        # Check if path is within project root
+        return abs_path.is_relative_to(project_root)
+    except (ValueError, OSError):
+        return False

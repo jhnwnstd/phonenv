@@ -1,7 +1,3 @@
-Yep, got it. Here’s your README rewritten to describe everything in the present tense and to reflect the current scripts/modules (e.g., `analyze.py`). I’ve kept the same level of detail and also clarified that normalization/validation operate only on transcriptions, not comments or tags.
-
----
-
 # Phonenv
 
 A Python library and CLI for phonetic environment analysis. Phonenv analyzes IPA transcriptions to identify where target segments occur—word-initially, word-finally, or in various medial contexts—using Unicode-correct IPA processing.

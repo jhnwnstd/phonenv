@@ -40,7 +40,7 @@ class IPAConfig:
     tie_bar_clusters: Optional[List[str]] = None
     diphthong_patterns: Optional[List[str]] = None
     normalization_mode: str = "NFC"
-    match_mode: str = "broad"  # "narrow" | "broad"
+    match_mode: str = "narrow"  # "narrow" | "broad"
 
     def __post_init__(self):
         if self.tie_bar_clusters is None:

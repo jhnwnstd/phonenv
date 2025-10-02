@@ -109,3 +109,39 @@ def is_safe_path(path) -> bool:
         return abs_path.is_relative_to(project_root)
     except (ValueError, OSError):
         return False
+
+
+def resolve_data_file(path: str) -> str:
+    """Resolve a data file path, checking with and without .txt extension.
+
+    For files like 'dataset' or 'targets', this will check:
+    1. The exact path as given
+    2. The path with .txt appended (if not already present)
+
+    Args:
+        path: File path to resolve
+
+    Returns:
+        Resolved path as string if file exists, otherwise returns original path
+
+    Examples:
+        resolve_data_file("data/dataset") -> "data/dataset.txt" (if exists)
+        resolve_data_file("data/targets") -> "data/targets.txt" (if exists)
+        resolve_data_file("data/dataset.txt") -> "data/dataset.txt" (unchanged)
+    """
+    from pathlib import Path
+
+    p = Path(path)
+
+    # If the exact path exists, use it
+    if p.exists():
+        return str(p)
+
+    # If it doesn't have a .txt extension, try adding it
+    if p.suffix != ".txt":
+        p_with_txt = Path(str(p) + ".txt")
+        if p_with_txt.exists():
+            return str(p_with_txt)
+
+    # Return original path if nothing found
+    return path

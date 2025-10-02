@@ -1,6 +1,5 @@
-# phonenv/validate.py
-"""
-Standalone validator for Phonenv datasets and targets (no CLI arguments).
+#!/usr/bin/env python3
+"""Standalone validator for Phonenv datasets and targets (no CLI arguments).
 
 Usage:
   python -m phonenv.validate

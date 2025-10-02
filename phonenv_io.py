@@ -176,7 +176,7 @@ class ResultCache:
 
         # Convert cached result back to TargetResult (or dict if class unavailable)
         try:
-            from .data import TargetResult  # type: ignore
+            from data import TargetResult  # type: ignore
 
             return TargetResult(
                 target=entry.result["target"],
@@ -561,6 +561,7 @@ class OutputWriter:
         output_path: Optional[str] = None,
         include_examples: bool = True,
         max_examples: int = 5,
+        transcription_mode: str = "narrow",
     ) -> str:
         if output_path is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -578,6 +579,7 @@ class OutputWriter:
             f.write(
                 f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
+            f.write(f"Transcription mode: {transcription_mode}\n")
             f.write(f"Total targets analyzed: {len(payload)}\n")
 
             # Add source file information to header
@@ -590,7 +592,7 @@ class OutputWriter:
             # Summary
             f.write("SUMMARY\n")
             f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
-            f.write(f"{'Target':<10} {'Occurrences':<12} {'Environments'}\n")
+            f.write(f"{'Target':<10} {'Count':<12} Envs\n")
             f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
 
             def _env_count(res: Dict[str, Any]) -> int:
@@ -613,16 +615,14 @@ class OutputWriter:
             # Details
             for i, res in enumerate(payload, 1):
                 target = res.get("target", _get_target_name(res))
+                total = res.get('total_occurrences', 0)
                 envs = (
                     res.get("environments", {})
                     if isinstance(res.get("environments", {}), dict)
                     else {}
                 )
-                f.write(f"TARGET {i}: '{target}'\n")
+                f.write(f"TARGET {i}: '{target}' ({total})\n")
                 f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
-                f.write(
-                    f"Total occurrences: {res.get('total_occurrences', 0)}\n\n"
-                )
 
                 if not envs:
                     f.write("No environments found.\n\n")
@@ -651,18 +651,13 @@ class OutputWriter:
                                 else (env, "")
                             )
 
-                            # Use singular/plural correctly for occurrence count
+                            # Compact format: context ×count : examples
                             count = len(deduped_examples)
-                            occ_text = (
-                                "occurrence" if count == 1 else "occurrences"
-                            )
-                            f.write(
-                                f"    {left} _ {right} ({count} {occ_text})"
-                            )
+                            f.write(f"    {left} _ {right} ×{count}")
 
                             if include_examples and deduped_examples:
                                 shown = deduped_examples[:max_examples]
-                                f.write(f": {', '.join(shown)}")
+                                f.write(f" : {', '.join(shown)}")
                                 extra = max(
                                     0, len(deduped_examples) - max_examples
                                 )
@@ -672,7 +667,7 @@ class OutputWriter:
                         f.write("\n")
 
                 if i < len(payload):
-                    f.write("-" * REPORT_SEPARATOR_WIDTH + "\n\n")
+                    f.write("—\n\n")
 
         return str(output_file)
 
@@ -688,8 +683,9 @@ class AutoOutputWriter:
     def write_batch_results(
         self,
         results: List[Any],
-        format_preference: str = "jsonl",
+        format_preference: str = "txt",
         custom_path: Optional[str] = None,
+        transcription_mode: str = "narrow",
     ) -> Dict[str, str]:
         if not results:
             return {}
@@ -703,7 +699,7 @@ class AutoOutputWriter:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         base_name = f"batch_{target_names}_{timestamp}"
 
-        fmt = (format_preference or "jsonl").lower()
+        fmt = (format_preference or "txt").lower()
         output_paths: Dict[str, str] = {}
 
         if fmt == "jsonl":
@@ -738,16 +734,19 @@ class AutoOutputWriter:
             )
             _ensure_parent(path)
             output_paths["txt"] = self.writer.write_text_report(
-                results, str(path)
+                results, str(path), transcription_mode=transcription_mode
             )
         else:
+            # Default to txt for unknown formats
             path = (
                 Path(custom_path)
                 if custom_path
-                else (self.output_dir / f"{base_name}.jsonl")
+                else (self.output_dir / f"{base_name}.txt")
             )
             _ensure_parent(path)
-            output_paths["jsonl"] = self.writer.write_jsonl(results, str(path))
+            output_paths["txt"] = self.writer.write_text_report(
+                results, str(path), transcription_mode=transcription_mode
+            )
 
         return output_paths
 

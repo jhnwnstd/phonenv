@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Command-line interface for phonetic environment analysis.
 
 This module provides both interactive and command-line interfaces for
@@ -14,6 +15,7 @@ import argparse
 import unicodedata as ud
 from typing import Dict, List, Optional, Mapping
 
+from utils import resolve_data_file
 from analyze import PhoneticAnalyzer
 from data import (
     DictionaryProcessor,
@@ -290,6 +292,21 @@ def _apply_mutex_list(
     return filtered
 
 
+def format_error(operation: str, error: Exception) -> str:
+    """Standardized error message formatting."""
+    return f"Error {operation}: {error}"
+
+
+def normalize_user_input(text: str) -> str:
+    """Normalize user input: strip whitespace and convert to lowercase."""
+    return text.strip().lower()
+
+
+def calculate_total_occurrences(results) -> int:
+    """Safely calculate total occurrences across results."""
+    return sum(getattr(r, "total_occurrences", 0) for r in results)
+
+
 # ========================= INTERACTIVE CLI =========================
 
 
@@ -312,16 +329,6 @@ class InteractivePhonenvCLI:
     class TranscriptionMode:
         NARROW = "narrow"
         BROAD = "broad"
-
-    @staticmethod
-    def _format_error(operation: str, error: Exception) -> str:
-        """Standardized error message formatting."""
-        return f"Error {operation}: {error}"
-
-    @staticmethod
-    def _normalize_user_input(text: str) -> str:
-        """Normalize user input: strip whitespace and convert to lowercase."""
-        return text.strip().lower()
 
     @property
     def _terminal_width(self) -> int:
@@ -442,8 +449,6 @@ class InteractivePhonenvCLI:
             "Closing": ["aɪ", "eɪ", "ɔɪ", "aʊ", "oʊ"],
             # Note: ɪə, eə, ʊə are traditionally "centring" diphthongs; keep naming as in your UI.
             "Opening": ["ɪə", "eə", "ʊə"],
-            # REMOVE: triphthongs from diphthongs
-            # "Centering": ["aɪə", "aʊə"],
         },
         "Triphthongs": {
             "Common": ["aɪə", "aʊə", "eɪə", "oʊə"],
@@ -496,7 +501,7 @@ class InteractivePhonenvCLI:
             print(f"  {total:>{width}}. {back_label}")
         print()
         prompt = prompt or f"Choose (1–{total}) › "
-        choice = self._normalize_user_input(input(prompt))
+        choice = normalize_user_input(input(prompt))
 
         # Empty Enter serves as back/exit
         if not choice:
@@ -524,8 +529,9 @@ class InteractivePhonenvCLI:
 
     def __init__(self, file_path: str | None = None):
         """Initialize the interactive CLI."""
-        self.file_path = file_path or self.DEFAULT_DATASET_PATH
-        self.transcription_mode = "broad"
+        raw_path = file_path or self.DEFAULT_DATASET_PATH
+        self.file_path = resolve_data_file(raw_path)
+        self.transcription_mode = "narrow"
         self.analyzer: Optional[PhoneticAnalyzer] = None
         self.dict_processor = DictionaryProcessor(self.file_path)
         self._create_analyzer()
@@ -564,7 +570,7 @@ class InteractivePhonenvCLI:
                     )
                 else:
                     print(
-                        f"\n{self._format_error('initializing analyzer', Exception('Please check the configuration.'))}"
+                        f"\n{format_error('initializing analyzer', Exception('Please check the configuration.'))}"
                     )
 
                 self._hr()
@@ -576,7 +582,7 @@ class InteractivePhonenvCLI:
                 print("\n\nGoodbye!")
                 break
             except Exception as e:
-                print(f"\n{self._format_error('during analysis', e)}")
+                print(f"\n{format_error('during analysis', e)}")
                 print("Please try again.\n")
 
     def _set_transcription_mode(self, allow_back: bool = False) -> None:
@@ -606,7 +612,7 @@ class InteractivePhonenvCLI:
                 if not allow_back
                 else "Select mode (1-2) or '3'/'b' to go back: "
             )
-            choice = self._normalize_user_input(input(prompt))
+            choice = normalize_user_input(input(prompt))
 
             if allow_back and choice in {"3", "b", "back"}:
                 return
@@ -810,7 +816,7 @@ class InteractivePhonenvCLI:
     def _continue_prompt(self) -> bool:
         """Ask user if they want to continue."""
         while True:
-            choice = self._normalize_user_input(
+            choice = normalize_user_input(
                 input("\nAnalyze another character? (y/n): ")
             )
             if choice in ["y", "yes"]:
@@ -833,7 +839,7 @@ class InteractivePhonenvCLI:
                     )
                 print()
             except Exception as e:
-                print(f"{self._format_error('reading dictionary', e)}\n")
+                print(f"{format_error('reading dictionary', e)}\n")
 
             idx = self._menu(
                 [
@@ -868,7 +874,7 @@ class InteractivePhonenvCLI:
                             f"Removed {removed} words containing '{substring}'"
                         )
                 elif idx == 4:
-                    confirm = self._normalize_user_input(
+                    confirm = normalize_user_input(
                         input("Clear entire dictionary? (y/N): ")
                     )
                     if confirm in {"y", "yes"}:
@@ -886,7 +892,7 @@ class InteractivePhonenvCLI:
                     print(f"   Longest: {stats.get('longest_word', '')}")
                     print(f"   Shortest: {stats.get('shortest_word', '')}")
             except Exception as e:
-                print(f"{self._format_error('in dictionary operation', e)}")
+                print(f"{format_error('in dictionary operation', e)}")
 
     def _batch_processing_menu(self) -> None:
         while True:
@@ -949,6 +955,16 @@ class InteractivePhonenvCLI:
             except Exception as e:
                 print(f"Error: {e}")
 
+    def _process_targets_with_cache(
+        self, targets, processor, cache, dataset_path, analyzer
+    ):
+        """Delegate to module-level function."""
+        return process_targets_with_cache(targets, processor, cache, dataset_path, analyzer)
+
+    def _print_batch_summary(self, results, output_paths):
+        """Delegate to module-level function."""
+        print_batch_summary(results, output_paths)
+
     def _run_batch_analysis(self) -> None:
         """Run batch analysis on all targets."""
         if not targets_exist():
@@ -986,46 +1002,26 @@ class InteractivePhonenvCLI:
 
             print(f"Processing {len(targets)} targets...")
 
-            results = []
-            for i, target in enumerate(targets, 1):
-                print(
-                    f"  [{i}/{len(targets)}] Analyzing '{target}'...", end=" "
-                )
-                cached_result = cache.get(
-                    target, self.file_path, self.analyzer
-                )
-                if cached_result:
-                    print("(cached)")
-                    results.append(cached_result)
-                else:
-                    result = processor.analyze_target(target)
-                    cache.put(target, self.file_path, self.analyzer, result)
-                    print("(analyzed)")
-                    results.append(result)
+            results = self._process_targets_with_cache(
+                targets, processor, cache, self.file_path, self.analyzer
+            )
 
             fmt_in = (
                 input("\nOutput format (jsonl/json/csv/txt) [txt]: ")
                 .strip()
                 .lower()
             )
-            fmt = _normalize_format(fmt_in) or "txt"
-            if fmt_in and not _normalize_format(fmt_in):
+            fmt = _normalize_format(fmt_in)
+            if fmt_in and not fmt:
                 print(f"Unknown format '{fmt_in}', falling back to 'txt'.")
+                fmt = "txt"
 
-            output_paths = output_writer.write_batch_results(results, fmt)
+            mode = self.analyzer.transcription_mode if self.analyzer else self.transcription_mode
+            output_paths = output_writer.write_batch_results(
+                results, fmt, transcription_mode=mode
+            )
 
-            # Summary
-            print("\nBatch analysis complete!")
-            print(f"Results written to: {list(output_paths.values())[0]}")
-            print(f"Analyzed {len(results)} targets")
-            # If your TargetResult has total_occurrences per target:
-            try:
-                total_occ = sum(
-                    getattr(r, "total_occurrences", 0) for r in results
-                )
-                print(f"Total occurrences: {total_occ}")
-            except Exception:
-                pass
+            self._print_batch_summary(results, output_paths)
 
             cache.save()
 
@@ -1206,8 +1202,8 @@ Examples:
     parser.add_argument(
         "--mode",
         choices=["narrow", "broad"],
-        default="broad",
-        help="Transcription mode for batch analysis (default: broad)",
+        default="narrow",
+        help="Transcription mode for batch analysis (default: narrow)",
     )
 
     args = parser.parse_args()
@@ -1257,17 +1253,50 @@ Examples:
         sys.exit(1)
 
 
+def process_targets_with_cache(targets, processor, cache, dataset_path, analyzer):
+    """Shared batch processing logic with caching (module-level version)."""
+    results = []
+    for i, target in enumerate(targets, 1):
+        print(f"  [{i}/{len(targets)}] Analyzing '{target}'...", end=" ")
+        cached_result = cache.get(target, dataset_path, analyzer)
+        if cached_result:
+            print("(cached)")
+            results.append(cached_result)
+        else:
+            result = processor.analyze_target(target)
+            cache.put(target, dataset_path, analyzer, result)
+            print("(analyzed)")
+            results.append(result)
+    return results
+
+
+def print_batch_summary(results, output_paths):
+    """Print standardized batch processing summary."""
+    print("\nBatch analysis complete!")
+    print(f"Results written to: {list(output_paths.values())[0]}")
+    print(f"Analyzed {len(results)} targets")
+    total = calculate_total_occurrences(results)
+    if total > 0:
+        print(f"Total occurrences: {total}")
+
+
 def run_batch_cli(args):
     """Run batch processing from command line."""
-    if not targets_exist(args.targets):
+    # Resolve file paths with optional .txt extension
+    targets_path = resolve_data_file(args.targets)
+    dataset_path = resolve_data_file(args.dataset)
+
+    if not targets_exist(targets_path):
         print(f"Targets file not found: {args.targets}")
+        if targets_path != args.targets:
+            print(f"  (also tried: {targets_path})")
         print("Use --create-targets to create a sample file")
         sys.exit(1)
 
     try:
         print("Starting batch analysis...")
-        print(f"Targets: {args.targets}")
-        print(f"Dataset: {args.dataset}")
+        print(f"Targets: {targets_path}")
+        print(f"Dataset: {dataset_path}")
         print(f"Mode: {args.mode}")
 
         # Wire up analyzer with the chosen transcription mode
@@ -1281,8 +1310,8 @@ def run_batch_cli(args):
         )
 
         processor = TargetsProcessor(
-            dataset_path=args.dataset,
-            targets_path=args.targets,
+            dataset_path=dataset_path,
+            targets_path=targets_path,
             analyzer=analyzer,
         )
 
@@ -1292,35 +1321,18 @@ def run_batch_cli(args):
         targets = processor.load_targets()
         print(f"Processing {len(targets)} targets...")
 
-        results = []
-        for i, target in enumerate(targets, 1):
-            print(f"  [{i}/{len(targets)}] Analyzing '{target}'...", end=" ")
-
-            cached_result = cache.get(target, args.dataset, analyzer)
-            if cached_result:
-                print("(cached)")
-                results.append(cached_result)
-            else:
-                result = processor.analyze_target(target)
-                cache.put(target, args.dataset, analyzer, result)
-                print("(analyzed)")
-                results.append(result)
-
-        if args.output:
-            output_paths = output_writer.write_batch_results(
-                results, args.format, args.output
-            )
-        else:
-            output_paths = output_writer.write_batch_results(
-                results, args.format
-            )
-
-        print("\nBatch analysis complete!")
-        print(f"Results written to: {list(output_paths.values())[0]}")
-        print(f"Analyzed {len(results)} targets")
-        print(
-            f"Total occurrences: {sum(r.total_occurrences for r in results)}"
+        results = process_targets_with_cache(
+            targets, processor, cache, dataset_path, analyzer
         )
+
+        output_paths = output_writer.write_batch_results(
+            results,
+            args.format,
+            custom_path=args.output,
+            transcription_mode=analyzer.transcription_mode
+        )
+
+        print_batch_summary(results, output_paths)
 
         cache.save()
 

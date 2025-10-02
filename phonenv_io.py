@@ -615,7 +615,7 @@ class OutputWriter:
             # Details
             for i, res in enumerate(payload, 1):
                 target = res.get("target", _get_target_name(res))
-                total = res.get('total_occurrences', 0)
+                total = res.get("total_occurrences", 0)
                 envs = (
                     res.get("environments", {})
                     if isinstance(res.get("environments", {}), dict)

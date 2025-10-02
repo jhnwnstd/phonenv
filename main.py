@@ -959,7 +959,9 @@ class InteractivePhonenvCLI:
         self, targets, processor, cache, dataset_path, analyzer
     ):
         """Delegate to module-level function."""
-        return process_targets_with_cache(targets, processor, cache, dataset_path, analyzer)
+        return process_targets_with_cache(
+            targets, processor, cache, dataset_path, analyzer
+        )
 
     def _print_batch_summary(self, results, output_paths):
         """Delegate to module-level function."""
@@ -1016,7 +1018,11 @@ class InteractivePhonenvCLI:
                 print(f"Unknown format '{fmt_in}', falling back to 'txt'.")
                 fmt = "txt"
 
-            mode = self.analyzer.transcription_mode if self.analyzer else self.transcription_mode
+            mode = (
+                self.analyzer.transcription_mode
+                if self.analyzer
+                else self.transcription_mode
+            )
             output_paths = output_writer.write_batch_results(
                 results, fmt, transcription_mode=mode
             )
@@ -1253,7 +1259,9 @@ Examples:
         sys.exit(1)
 
 
-def process_targets_with_cache(targets, processor, cache, dataset_path, analyzer):
+def process_targets_with_cache(
+    targets, processor, cache, dataset_path, analyzer
+):
     """Shared batch processing logic with caching (module-level version)."""
     results = []
     for i, target in enumerate(targets, 1):
@@ -1329,7 +1337,7 @@ def run_batch_cli(args):
             results,
             args.format,
             custom_path=args.output,
-            transcription_mode=analyzer.transcription_mode
+            transcription_mode=analyzer.transcription_mode,
         )
 
         print_batch_summary(results, output_paths)

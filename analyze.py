@@ -181,7 +181,7 @@ class IPAProcessorV2:
                 while j < len(chars) and chars[j] != "◊":
                     j += 1
                 if j < len(chars):
-                    seg = "".join(chars[i + 1: j])
+                    seg = "".join(chars[i + 1 : j])
                     k = j + 1
                     while k < len(chars) and is_combining(chars[k]):
                         seg += chars[k]
@@ -199,7 +199,7 @@ class IPAProcessorV2:
             if ch == "(":
                 j = text.find(")", i + 1)
                 if j != -1:
-                    seg = text[i: j + 1].replace("◊", "")
+                    seg = text[i : j + 1].replace("◊", "")
                     segments.append(seg)
                     i = j + 1
                     continue
@@ -441,7 +441,7 @@ class PhoneticAnalyzer:
             if left_char == ")":
                 left_start = word.rfind("(", 0, left_idx + 1)
                 left = (
-                    word[left_start: left_idx + 1]
+                    word[left_start : left_idx + 1]
                     if left_start != -1
                     else left_char
                 )
@@ -469,7 +469,7 @@ class PhoneticAnalyzer:
             if right_char == "(":
                 right_end = word.find(")", right_idx)
                 right = (
-                    word[right_idx: right_end + 1]
+                    word[right_idx : right_end + 1]
                     if right_end != -1
                     else right_char
                 )
@@ -501,7 +501,7 @@ class PhoneticAnalyzer:
             if j == -1:
                 break
             if count == occurrence_index:
-                return word[:j] + f"[{character}]" + word[j + len(character):]
+                return word[:j] + f"[{character}]" + word[j + len(character) :]
             count += 1
             i = j + len(character)
         return word

@@ -417,7 +417,6 @@ class InteractivePhonenvCLI:
         "Close": {
             "Front": ["i", "y"],
             "Central": ["ɨ", "ʉ"],
-            # STANDARDIZE: "Back vowels" -> "Back"
             "Back": ["ɯ", "u"],
         },
         "Near-Close": {
@@ -447,7 +446,6 @@ class InteractivePhonenvCLI:
         },
         "Diphthongs": {
             "Closing": ["aɪ", "eɪ", "ɔɪ", "aʊ", "oʊ"],
-            # Note: ɪə, eə, ʊə are traditionally "centring" diphthongs; keep naming as in your UI.
             "Opening": ["ɪə", "eə", "ʊə"],
         },
         "Triphthongs": {
@@ -997,16 +995,24 @@ class InteractivePhonenvCLI:
             cache = get_cache()
             output_writer = AutoOutputWriter()
 
-            targets = processor.load_targets()
-            if not targets:
-                print("No targets found in data/targets.txt.")
+            targets, alternations = processor.load_targets()
+            if not targets and not alternations:
+                print("No targets or alternations found in data/targets.txt.")
                 return
 
-            print(f"Processing {len(targets)} targets...")
+            print(
+                f"Processing {len(targets)} targets and {len(alternations)} alternations..."
+            )
 
             results = self._process_targets_with_cache(
                 targets, processor, cache, self.file_path, self.analyzer
             )
+
+            # Process alternations
+            for pair in alternations:
+                print(f"Analyzing alternation: {pair}")
+                alt_result = processor.analyze_alternation(pair)
+                results.append(alt_result)
 
             fmt_in = (
                 input("\nOutput format (jsonl/json/csv/txt) [txt]: ")
@@ -1326,12 +1332,20 @@ def run_batch_cli(args):
         cache = get_cache()
         output_writer = AutoOutputWriter()
 
-        targets = processor.load_targets()
-        print(f"Processing {len(targets)} targets...")
+        targets, alternations = processor.load_targets()
+        print(
+            f"Processing {len(targets)} targets and {len(alternations)} alternations..."
+        )
 
         results = process_targets_with_cache(
             targets, processor, cache, dataset_path, analyzer
         )
+
+        # Process alternations
+        for pair in alternations:
+            print(f"Analyzing alternation: {pair}")
+            alt_result = processor.analyze_alternation(pair)
+            results.append(alt_result)
 
         output_paths = output_writer.write_batch_results(
             results,

@@ -16,6 +16,7 @@ A Python library and CLI for phonetic environment analysis. Phonenv analyzes IPA
 * **Efficient Caching**: Uses SHA256-based result caching with configurable size limits (10,000 entries / 100MB)
 * **Interactive CLI**: Lets you browse phonemes by place/manner, apply diacritics, and manage datasets
 * **Batch Processing**: Processes multiple targets from files with comprehensive validation
+* **Alternation Analysis**: Analyzes phonological alternations between segment pairs to determine distributional relationships (complementary, contrastive, free variation, neutralization, etc.)
 * **Security Features**: Enforces path validation to restrict file access to the project directory; applies cache size limits to prevent resource exhaustion
 
 ---
@@ -67,7 +68,7 @@ phonenv --create-targets   # Generate sample targets file
 
 ```python
 from analyze import PhoneticAnalyzer
-from data import TargetsProcessor
+from data import TargetsProcessor, AlternationPair
 from phonenv_io import AutoOutputWriter
 from normalize import UNAMBIGUOUS_MAPPINGS, CONFUSABLE_HINTS
 
@@ -82,6 +83,13 @@ analyzer.print_analysis('ɪ', 'data/dataset.txt')
 # Batch processing
 processor = TargetsProcessor('data/dataset.txt', 'data/targets.txt')
 results = processor.process_targets_to_list()
+
+# Alternation analysis
+targets, alternations = processor.load_targets()
+pair = AlternationPair('p', 'b', 'voicing alternation')
+result = processor.analyze_alternation(pair)
+print(f"Pattern: {result.pattern}")
+print(f"Analysis: {result.analysis}")
 
 # Export to multiple formats
 writer = AutoOutputWriter('data/output')
@@ -206,6 +214,142 @@ The last segment before a word boundary
 
 * Ignores suprasegmentals (`ˈ`, `ˌ`, `|`, `‖`) when selecting neighbors
 * Treats syllabic consonants (`n̩`, `l̩`) as vowels for classification
+
+---
+
+## Alternation Analysis
+
+Phonenv supports **phonological alternation analysis** to determine distributional relationships between segment pairs (e.g., `p ~ b`, `s ~ z`).
+
+### Quick Start
+
+Add alternation pairs to `targets.txt` using the tilde (`~`) separator:
+
+```
+# Regular single-segment analysis
+s
+z
+
+# Alternation analysis (segments separated by ~)
+s ~ z  # voicing alternation
+θ ~ ð  # dental fricative voicing
+p ~ b  # stop voicing
+
+# You can mix both formats in the same file!
+```
+
+Run analysis as usual:
+
+```bash
+phonenv --batch --format txt
+```
+
+### Distribution Patterns
+
+Phonenv automatically detects **six distribution patterns**:
+
+#### 1. Complementary Distribution (Allophones)
+**Linguistic Meaning**: Sounds are **allophones** of the same phoneme
+**Detection**: Segments **never** share contexts
+**Example**: ʊ ~ uː in English (complementary by position)
+
+#### 2. Contrastive (Distinct Phonemes)
+**Linguistic Meaning**: Sounds are **separate phonemes**
+**Detection**: Appear in shared contexts (creates minimal pairs)
+**Example**: s ~ z, p ~ b (*seal* vs *zeal*)
+
+#### 3. Free Variation (Interchangeable)
+**Linguistic Meaning**: **Interchangeable allophones**
+**Detection**: Appear in **identical** contexts
+**Example**: English final /t/ → [t] or [ʔ] in *cat*
+
+#### 4. Neutralization (Context-Dependent Merger)
+**Linguistic Meaning**: **Contrast lost** in specific positions
+**Detection**: Asymmetric distribution (one broad, one restricted)
+**Example**: German /t/ ~ /d/ (final devoicing)
+
+#### 5. Partial Overlap (Gradience/Variation)
+**Linguistic Meaning**: **Transitional** or **dialectal variation**
+**Detection**: Substantial overlap (>40%) + unique contexts
+**Example**: /r/ realizations across dialects
+
+#### 6. Unknown
+Insufficient data or segments not found in dataset.
+
+### Detection Algorithm
+
+**Analysis metrics**:
+- **Shared contexts**: Where both segments appear
+- **Exclusive contexts**: Unique to each segment
+- **Overlap ratio**: `shared_contexts / total_contexts`
+- **Distribution asymmetry**: Restricted vs. broad
+
+**Decision rules**:
+```
+if no_shared_contexts:
+    → COMPLEMENTARY
+
+elif all_contexts_identical:
+    → FREE_VARIATION
+
+elif one_segment <30% coverage AND other >70%:
+    → NEUTRALIZATION
+
+elif overlap_ratio > 40%:
+    → PARTIAL_OVERLAP
+
+else:
+    → CONTRASTIVE
+```
+
+### Output Format
+
+Alternation results appear in the report with pattern classification:
+
+```
+ALTERNATION 3: 's ~ z'
+----------------------------------------
+Pattern: CONTRASTIVE (distinct phonemes)
+s: 53 occurrences | z: 15 occurrences
+Analysis: s and z are contrastive (distinct phonemes). They contrast in 1 shared contexts, with 26 contexts exclusive to s and 11 exclusive to z
+
+  s appears in:
+    INITIAL:
+      # _ k ×10 : [s]kaɪ, [s]kuːl...
+
+  z appears in:
+    FINAL:
+      ɡ _ # ×3 : bæɡ[z], dɔɡ[z]...
+```
+
+### Use Cases
+
+**Phonological Analysis**:
+```
+# Voicing alternations
+p ~ b
+t ~ d
+s ~ z
+
+# Place assimilation
+n ~ m
+n ~ ŋ
+```
+
+**Historical Linguistics**:
+```
+# Sound changes
+θ ~ t  # theta > t merger
+x ~ h  # velar > glottal fricative
+```
+
+**Language Learning**:
+```
+# Difficult contrasts
+l ~ r
+b ~ v
+θ ~ s
+```
 
 ---
 

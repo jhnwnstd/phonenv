@@ -297,6 +297,12 @@ class ResultCache:
 
 
 def _get_target_name(result: Any) -> str:
+    # Check for alternation results first
+    if isinstance(result, dict) and "alternation" in result:
+        return str(result["alternation"])
+    if hasattr(result, "pair"):
+        return str(getattr(result, "pair"))
+    # Regular target results
     if isinstance(result, dict) and "target" in result:
         return str(result["target"])
     if hasattr(result, "target"):
@@ -604,6 +610,9 @@ class OutputWriter:
                 return 0
 
             for res in payload:
+                # Skip alternations in summary (they'll be in details)
+                if "pair" in res or "alternation" in res:
+                    continue
                 target = res.get("target", _get_target_name(res))
                 env_count = _env_count(res)
                 f.write(
@@ -614,62 +623,186 @@ class OutputWriter:
 
             # Details
             for i, res in enumerate(payload, 1):
-                target = res.get("target", _get_target_name(res))
-                total = res.get("total_occurrences", 0)
-                envs = (
-                    res.get("environments", {})
-                    if isinstance(res.get("environments", {}), dict)
-                    else {}
-                )
-                f.write(f"TARGET {i}: '{target}' ({total})\n")
-                f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
-
-                if not envs:
-                    f.write("No environments found.\n\n")
+                # Check if this is an alternation result
+                if "pair" in res or "alternation" in res:
+                    self._write_alternation_detail(
+                        f, i, res, include_examples, max_examples
+                    )
                 else:
-                    for group_name, environments in envs.items():
-                        if not environments:
-                            continue
-                        f.write(f"  {group_name}:\n")
-                        for env, examples in environments.items():
-                            if not isinstance(examples, (list, tuple)):
-                                examples = []
+                    # Regular target result
+                    target = res.get("target", _get_target_name(res))
+                    total = res.get("total_occurrences", 0)
+                    envs = (
+                        res.get("environments", {})
+                        if isinstance(res.get("environments", {}), dict)
+                        else {}
+                    )
+                    f.write(f"TARGET {i}: '{target}' ({total})\n")
+                    f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
 
-                            # Deduplicate examples and normalize to NFC to handle canonical equivalents
-                            import unicodedata as ud
+                    if not envs:
+                        f.write("No environments found.\n\n")
+                    else:
+                        for group_name, environments in envs.items():
+                            if not environments:
+                                continue
+                            f.write(f"  {group_name}:\n")
+                            for env, examples in environments.items():
+                                if not isinstance(examples, (list, tuple)):
+                                    examples = []
 
-                            deduped_examples = list(
-                                dict.fromkeys(
-                                    ud.normalize("NFC", ex) for ex in examples
+                                # Deduplicate examples and normalize to NFC to handle canonical equivalents
+                                import unicodedata as ud
+
+                                deduped_examples = list(
+                                    dict.fromkeys(
+                                        ud.normalize("NFC", ex)
+                                        for ex in examples
+                                    )
                                 )
-                            )
 
-                            # Parse environment key - use full tokens, don't truncate affricates
-                            left, right = (
-                                (env.split("__", 1) + [""])[:2]
-                                if "__" in env
-                                else (env, "")
-                            )
-
-                            # Compact format: context ×count : examples
-                            count = len(deduped_examples)
-                            f.write(f"    {left} _ {right} ×{count}")
-
-                            if include_examples and deduped_examples:
-                                shown = deduped_examples[:max_examples]
-                                f.write(f" : {', '.join(shown)}")
-                                extra = max(
-                                    0, len(deduped_examples) - max_examples
+                                # Parse environment key - use full tokens, don't truncate affricates
+                                left, right = (
+                                    (env.split("__", 1) + [""])[:2]
+                                    if "__" in env
+                                    else (env, "")
                                 )
-                                if extra:
-                                    f.write(f" (+{extra} more)")
+
+                                # Compact format: context ×count : examples
+                                count = len(deduped_examples)
+                                f.write(f"    {left} _ {right} ×{count}")
+
+                                if include_examples and deduped_examples:
+                                    shown = deduped_examples[:max_examples]
+                                    f.write(f" : {', '.join(shown)}")
+                                    extra = max(
+                                        0, len(deduped_examples) - max_examples
+                                    )
+                                    if extra:
+                                        f.write(f" (+{extra} more)")
+                                f.write("\n")
                             f.write("\n")
-                        f.write("\n")
 
                 if i < len(payload):
                     f.write("—\n\n")
 
         return str(output_file)
+
+    def _write_alternation_detail(
+        self,
+        f,
+        index: int,
+        res: Dict[str, Any],
+        include_examples: bool,
+        max_examples: int,
+    ) -> None:
+        """Write alternation result details to report file."""
+        import unicodedata as ud
+
+        # Handle both _to_plain format (pair key) and to_dict format (alternation key)
+        if "pair" in res:
+            pair = res["pair"]
+            alternation = (
+                f"{pair.get('segment1', '')} ~ {pair.get('segment2', '')}"
+            )
+            seg1 = pair.get("segment1", "")
+            seg2 = pair.get("segment2", "")
+        else:
+            alternation = res.get("alternation", "")
+            seg1 = res.get("segment1", "")
+            seg2 = res.get("segment2", "")
+        pattern = res.get("pattern", "unknown")
+        analysis = res.get("analysis", "")
+        total1 = res.get("segment1_total", 0)
+        total2 = res.get("segment2_total", 0)
+
+        f.write(f"ALTERNATION {index}: '{alternation}'\n")
+        f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
+
+        # Format pattern type with descriptive label
+        pattern_labels = {
+            "complementary": "COMPLEMENTARY DISTRIBUTION (likely allophones)",
+            "free_variation": "FREE VARIATION (interchangeable)",
+            "neutralization": "NEUTRALIZATION (contrast lost in context)",
+            "partial_overlap": "PARTIAL OVERLAP (gradience/variation)",
+            "contrastive": "CONTRASTIVE (distinct phonemes)",
+            "overlapping": "OVERLAPPING (partial contrast)",
+            "identical": "IDENTICAL DISTRIBUTION",
+            "unknown": "UNKNOWN PATTERN",
+        }
+        pattern_display = pattern_labels.get(pattern, pattern.upper())
+
+        f.write(f"Pattern: {pattern_display}\n")
+        f.write(
+            f"{seg1}: {total1} occurrences | {seg2}: {total2} occurrences\n"
+        )
+        if analysis:
+            f.write(f"Analysis: {analysis}\n")
+        f.write("\n")
+
+        # Show environments for segment1
+        env1 = res.get("segment1_envs", res.get("segment1_environments", {}))
+        if env1:
+            f.write(f"  {seg1} appears in:\n")
+            for group_name, environments in env1.items():
+                if not environments:
+                    continue
+                f.write(f"    {group_name}:\n")
+                for env, examples in environments.items():
+                    if not isinstance(examples, (list, tuple)):
+                        examples = []
+                    deduped = list(
+                        dict.fromkeys(
+                            ud.normalize("NFC", ex) for ex in examples
+                        )
+                    )
+                    left, right = (
+                        (env.split("__", 1) + [""])[:2]
+                        if "__" in env
+                        else (env, "")
+                    )
+                    count = len(deduped)
+                    f.write(f"      {left} _ {right} ×{count}")
+                    if include_examples and deduped:
+                        shown = deduped[:max_examples]
+                        f.write(f" : {', '.join(shown)}")
+                        extra = max(0, len(deduped) - max_examples)
+                        if extra:
+                            f.write(f" (+{extra} more)")
+                    f.write("\n")
+            f.write("\n")
+
+        # Show environments for segment2
+        env2 = res.get("segment2_envs", res.get("segment2_environments", {}))
+        if env2:
+            f.write(f"  {seg2} appears in:\n")
+            for group_name, environments in env2.items():
+                if not environments:
+                    continue
+                f.write(f"    {group_name}:\n")
+                for env, examples in environments.items():
+                    if not isinstance(examples, (list, tuple)):
+                        examples = []
+                    deduped = list(
+                        dict.fromkeys(
+                            ud.normalize("NFC", ex) for ex in examples
+                        )
+                    )
+                    left, right = (
+                        (env.split("__", 1) + [""])[:2]
+                        if "__" in env
+                        else (env, "")
+                    )
+                    count = len(deduped)
+                    f.write(f"      {left} _ {right} ×{count}")
+                    if include_examples and deduped:
+                        shown = deduped[:max_examples]
+                        f.write(f" : {', '.join(shown)}")
+                        extra = max(0, len(deduped) - max_examples)
+                        if extra:
+                            f.write(f" (+{extra} more)")
+                    f.write("\n")
+            f.write("\n")
 
 
 class AutoOutputWriter:

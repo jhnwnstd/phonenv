@@ -45,6 +45,21 @@ class WordEntry:
     line_no: Optional[int] = None
 
 
+@dataclass(frozen=True)
+class AlternationPair:
+    """Represents a phonological alternation between two segments."""
+
+    segment1: str
+    segment2: str
+    description: Optional[str] = None
+
+    def __str__(self) -> str:
+        return f"{self.segment1} ~ {self.segment2}"
+
+    def __repr__(self) -> str:
+        return f"AlternationPair({self.segment1!r}, {self.segment2!r})"
+
+
 _DEFAULT_SECTION: Dict[str, str] = {
     "lang": "und",
     "mode": "narrow",
@@ -362,6 +377,35 @@ class TargetResult:
         }
 
 
+@dataclass
+class AlternationResult:
+    """Result of analyzing a phonological alternation."""
+
+    pair: AlternationPair
+    segment1_envs: Mapping[str, Mapping[str, List[str]]]
+    segment2_envs: Mapping[str, Mapping[str, List[str]]]
+    segment1_total: int
+    segment2_total: int
+    source_file: str
+    pattern: str = "unknown"  # complementary, overlapping, asymmetric
+    analysis: str = ""  # Human-readable interpretation
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "alternation": str(self.pair),
+            "segment1": self.pair.segment1,
+            "segment2": self.pair.segment2,
+            "segment1_environments": self.segment1_envs,
+            "segment2_environments": self.segment2_envs,
+            "segment1_total": self.segment1_total,
+            "segment2_total": self.segment2_total,
+            "pattern": self.pattern,
+            "analysis": self.analysis,
+            "source_file": self.source_file,
+        }
+
+
 class TargetsProcessor:
     """Processes targets from targets.txt file and runs batch analysis."""
 
@@ -382,11 +426,20 @@ class TargetsProcessor:
         self.targets_path = Path(targets_path)
         self.analyzer = analyzer
 
-    def load_targets(self) -> List[str]:
-        """Load targets from targets.txt file (sanitized, deduped, order-preserving).
+    def load_targets(
+        self,
+    ) -> Tuple[List[str], List[AlternationPair]]:
+        """Load targets and alternation pairs from targets.txt file.
 
-        Uses segmentation-based validation to ensure only valid single IPA segments
-        are accepted as targets.
+        Supports two formats in the same file:
+        - Single segments: p, b, t (one per line or comma/space separated)
+        - Alternation pairs: p ~ b, t ~ d (segments separated by ~)
+
+        Returns:
+            Tuple of (single_targets, alternation_pairs)
+
+        Uses segmentation-based validation to ensure only valid single IPA
+        segments are accepted.
         """
         if not self.targets_path.exists():
             raise FileNotFoundError(
@@ -408,8 +461,10 @@ class TargetsProcessor:
                 segs = proc.ipa_segments(s)
                 return len(segs) == 1
 
-            seen: set[str] = set()
-            out: list[str] = []
+            seen_targets: set[str] = set()
+            seen_pairs: set[Tuple[str, str]] = set()
+            targets: list[str] = []
+            alternations: list[AlternationPair] = []
 
             with self.targets_path.open("r", encoding="utf-8") as f:
                 for line_num, raw in enumerate(f, 1):
@@ -418,27 +473,57 @@ class TargetsProcessor:
                         continue
 
                     # Allow inline comments: keep content before '#'
+                    comment = None
                     if "#" in line:
-                        line = line.split("#", 1)[0].strip()
+                        line, comment = line.split("#", 1)
+                        line = line.strip()
+                        comment = comment.strip()
                         if not line:
                             continue
 
-                    for tok in _split_targets_line(line):
-                        tok = tok.strip().strip(
-                            "[]"
-                        )  # Remove brackets and whitespace
-                        if not tok:
-                            continue
+                    # Check if line contains alternation marker (~)
+                    if "~" in line:
+                        # Parse alternation pair
+                        parts = [
+                            p.strip().strip("[]") for p in line.split("~")
+                        ]
+                        if len(parts) == 2:
+                            seg1 = normalize_tiebar(
+                                ud.normalize("NFC", parts[0])
+                            )
+                            seg2 = normalize_tiebar(
+                                ud.normalize("NFC", parts[1])
+                            )
 
-                        # Normalize and validate as single segment
-                        norm = normalize_tiebar(ud.normalize("NFC", tok))
-                        if _is_single_segment(norm):
-                            if norm not in seen:
-                                seen.add(norm)
-                                out.append(norm)
-                        # Silently drop multi-segment tokens (e.g., English words)
+                            # Validate both segments
+                            if _is_single_segment(seg1) and _is_single_segment(
+                                seg2
+                            ):
+                                pair_key = (seg1, seg2)
+                                if pair_key not in seen_pairs:
+                                    seen_pairs.add(pair_key)
+                                    alternations.append(
+                                        AlternationPair(
+                                            segment1=seg1,
+                                            segment2=seg2,
+                                            description=comment,
+                                        )
+                                    )
+                    else:
+                        # Parse single targets
+                        for tok in _split_targets_line(line):
+                            tok = tok.strip().strip("[]")
+                            if not tok:
+                                continue
 
-            return out
+                            # Normalize and validate as single segment
+                            norm = normalize_tiebar(ud.normalize("NFC", tok))
+                            if _is_single_segment(norm):
+                                if norm not in seen_targets:
+                                    seen_targets.add(norm)
+                                    targets.append(norm)
+
+            return targets, alternations
 
         except (IOError, OSError) as e:
             raise IOError(
@@ -506,7 +591,246 @@ class TargetsProcessor:
             source_file=str(self.dataset_path),
         )
 
-    def process_targets(self) -> Iterator[TargetResult]:
+    def analyze_alternation(self, pair: AlternationPair) -> AlternationResult:
+        """Analyze a phonological alternation pair.
+
+        Args:
+            pair: AlternationPair to analyze
+
+        Returns:
+            AlternationResult with comparative analysis
+        """
+        if not self.analyzer:
+            from analyze import PhoneticAnalyzer
+
+            self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
+
+        # Analyze both segments independently
+        env1 = self.analyzer.analyze_character(
+            pair.segment1, str(self.dataset_path)
+        )
+        env2 = self.analyzer.analyze_character(
+            pair.segment2, str(self.dataset_path)
+        )
+
+        # Count occurrences
+        total1 = sum(
+            len(words)
+            for env_group in env1.values()
+            for words in env_group.values()
+        )
+        total2 = sum(
+            len(words)
+            for env_group in env2.values()
+            for words in env_group.values()
+        )
+
+        # Analyze distribution pattern
+        pattern, analysis = self._analyze_distribution_pattern(
+            pair, env1, env2
+        )
+
+        return AlternationResult(
+            pair=pair,
+            segment1_envs=env1,
+            segment2_envs=env2,
+            segment1_total=total1,
+            segment2_total=total2,
+            source_file=str(self.dataset_path),
+            pattern=pattern,
+            analysis=analysis,
+        )
+
+    def _analyze_distribution_pattern(
+        self,
+        pair: AlternationPair,
+        env1: Mapping[str, Mapping[str, List[str]]],
+        env2: Mapping[str, Mapping[str, List[str]]],
+    ) -> Tuple[str, str]:
+        """Analyze the distribution pattern of an alternation.
+
+        Detects:
+        - Complementary distribution (allophones)
+        - Contrastive/overlapping (separate phonemes)
+        - Free variation (interchangeable in same contexts)
+        - Neutralization (contrast lost in specific positions)
+        - Partial overlap (gradience)
+
+        Returns:
+            Tuple of (pattern_type, human_readable_analysis)
+        """
+        # Extract all environment contexts for each segment
+        contexts1 = set()
+        contexts2 = set()
+
+        # Also track positional distribution
+        positions1 = set()
+        positions2 = set()
+
+        for env_type, contexts in env1.items():
+            positions1.add(env_type)
+            for context in contexts.keys():
+                contexts1.add(f"{env_type}:{context}")
+
+        for env_type, contexts in env2.items():
+            positions2.add(env_type)
+            for context in contexts.keys():
+                contexts2.add(f"{env_type}:{context}")
+
+        shared = contexts1 & contexts2
+        only_seg1 = contexts1 - contexts2
+        only_seg2 = contexts2 - contexts1
+
+        # Positional analysis
+        _shared_positions = positions1 & positions2  # noqa: F841
+        only_pos1 = positions1 - positions2
+        only_pos2 = positions2 - positions1
+
+        total_contexts = len(contexts1) + len(contexts2)
+        overlap_ratio = (
+            len(shared) / total_contexts if total_contexts > 0 else 0
+        )
+
+        # Determine pattern with enhanced logic
+
+        # Case 1: No shared contexts at all → Complementary distribution
+        if not shared and (only_seg1 or only_seg2):
+            pattern = "complementary"
+
+            # Check if complementary by position (e.g., one initial, one final)
+            if only_pos1 and only_pos2:
+                pos1_str = ", ".join(sorted(only_pos1))
+                pos2_str = ", ".join(sorted(only_pos2))
+                analysis = (
+                    f"{pair.segment1} and {pair.segment2} are in complementary "
+                    f"distribution. {pair.segment1} occurs in {pos1_str} positions; "
+                    f"{pair.segment2} occurs in {pos2_str} positions (likely allophones)"
+                )
+            else:
+                analysis = (
+                    f"{pair.segment1} and {pair.segment2} are in complementary "
+                    f"distribution (no shared contexts; likely allophones)"
+                )
+
+        # Case 2: Complete overlap → Free variation or contrastive
+        elif shared and not (only_seg1 or only_seg2):
+            pattern = "free_variation"
+            analysis = (
+                f"{pair.segment1} and {pair.segment2} appear in identical "
+                f"contexts ({len(shared)} shared). This suggests free variation "
+                f"(interchangeable allophones) or minimal pairs (contrastive phonemes)"
+            )
+
+        # Case 3: Partial overlap - need to distinguish subtypes
+        elif shared and (only_seg1 or only_seg2):
+            # Calculate overlap metrics
+            seg1_coverage = len(shared) / len(contexts1) if contexts1 else 0
+            seg2_coverage = len(shared) / len(contexts2) if contexts2 else 0
+
+            # Neutralization: One segment has much broader distribution,
+            # the other appears mainly in specific contexts
+            # Heuristic: one segment appears in <30% of contexts, the other in >70%
+            if (seg1_coverage < 0.3 and seg2_coverage > 0.7) or (
+                seg2_coverage < 0.3 and seg1_coverage > 0.7
+            ):
+                pattern = "neutralization"
+
+                # Determine which is neutralized
+                if seg1_coverage < seg2_coverage:
+                    restricted = pair.segment1
+                    general = pair.segment2
+                    restricted_envs = only_seg1
+                else:
+                    restricted = pair.segment2
+                    general = pair.segment1
+                    restricted_envs = only_seg2
+
+                # Try to identify neutralization context
+                neutral_context = self._identify_neutralization_context(
+                    restricted_envs
+                )
+
+                if neutral_context:
+                    analysis = (
+                        f"{restricted} ~ {general} show neutralization. "
+                        f"{restricted} appears primarily {neutral_context}, "
+                        f"while {general} has broader distribution "
+                        f"({len(shared)} shared, {len(only_seg1)} exclusive to {pair.segment1}, "
+                        f"{len(only_seg2)} exclusive to {pair.segment2})"
+                    )
+                else:
+                    analysis = (
+                        f"{restricted} ~ {general} show neutralization. "
+                        f"{general} has much broader distribution "
+                        f"({len(shared)} shared, {len(only_seg1)} exclusive to {pair.segment1}, "
+                        f"{len(only_seg2)} exclusive to {pair.segment2})"
+                    )
+
+            # Partial overlap / Gradience: Substantial overlap but also distinctions
+            # High overlap ratio (>40%) suggests ongoing change or dialectal variation
+            elif overlap_ratio > 0.4:
+                pattern = "partial_overlap"
+                analysis = (
+                    f"{pair.segment1} and {pair.segment2} show partial overlap "
+                    f"({len(shared)} shared contexts = {overlap_ratio:.0%} of total). "
+                    f"This suggests gradience, ongoing sound change, or dialectal variation. "
+                    f"{len(only_seg1)} contexts exclusive to {pair.segment1}, "
+                    f"{len(only_seg2)} exclusive to {pair.segment2}"
+                )
+
+            # Contrastive/Overlapping: Standard phonemic contrast
+            else:
+                pattern = "contrastive"
+                analysis = (
+                    f"{pair.segment1} and {pair.segment2} are contrastive (distinct phonemes). "
+                    f"They contrast in {len(shared)} shared contexts, with "
+                    f"{len(only_seg1)} contexts exclusive to {pair.segment1} and "
+                    f"{len(only_seg2)} exclusive to {pair.segment2}"
+                )
+
+        else:
+            pattern = "unknown"
+            analysis = (
+                "Unable to determine distribution pattern (insufficient data)"
+            )
+
+        return pattern, analysis
+
+    def _identify_neutralization_context(
+        self, restricted_envs: Set[str]
+    ) -> str:
+        """Identify the typical neutralization context from environment strings.
+
+        Returns a human-readable description like "word-finally" or "before voiceless consonants".
+        """
+        if not restricted_envs:
+            return ""
+
+        # Count position types
+        final_count = sum(1 for env in restricted_envs if "FINAL" in env)
+        initial_count = sum(1 for env in restricted_envs if "INITIAL" in env)
+        medial_count = sum(1 for env in restricted_envs if "MEDIAL" in env)
+
+        total = len(restricted_envs)
+
+        # Check if predominantly one position
+        if final_count / total > 0.7:
+            return "word-finally"
+        elif initial_count / total > 0.7:
+            return "word-initially"
+        elif medial_count / total > 0.7:
+            # Try to identify medial context type
+            v_v = sum(1 for env in restricted_envs if "V_V" in env)
+            c_c = sum(1 for env in restricted_envs if "C_C" in env)
+
+            if v_v / medial_count > 0.7:
+                return "between vowels (intervocalic)"
+            elif c_c / medial_count > 0.7:
+                return "in consonant clusters"
+
+        return "in restricted contexts"
+
+    def process_targets(self) -> Iterator[TargetResult | AlternationResult]:
         """Process all targets from targets.txt file.
 
         Yields:
@@ -520,16 +844,23 @@ class TargetsProcessor:
                 f"Dataset file not found: {self.dataset_path}"
             )
 
-        targets = self.load_targets()
+        targets, alternations = self.load_targets()
 
+        # Process single targets
         for target in targets:
             yield self.analyze_target(target)
 
-    def process_targets_to_list(self) -> List[TargetResult]:
+        # Process alternation pairs
+        for pair in alternations:
+            yield self.analyze_alternation(pair)
+
+    def process_targets_to_list(
+        self,
+    ) -> List[TargetResult | AlternationResult]:
         """Process all targets and return as list.
 
         Returns:
-            List of TargetResult objects
+            List of TargetResult and AlternationResult objects
         """
         return list(self.process_targets())
 
@@ -540,7 +871,7 @@ class TargetsProcessor:
             Dictionary with summary statistics
         """
         try:
-            targets = self.load_targets()
+            targets, alternations = self.load_targets()
             unique_targets = list(
                 dict.fromkeys(targets)
             )  # Preserve order, remove duplicates
@@ -551,6 +882,8 @@ class TargetsProcessor:
                 "total_targets": len(targets),
                 "unique_targets": len(unique_targets),
                 "targets": unique_targets,
+                "total_alternations": len(alternations),
+                "alternations": [str(pair) for pair in alternations],
                 "targets_exist": self.targets_path.exists(),
                 "dataset_exists": self.dataset_path.exists(),
             }
@@ -615,14 +948,16 @@ def targets_exist(targets_path: str = "data/targets.txt") -> bool:
 # Use DictionaryProcessor.process_dictionary() instead.
 
 
-def load_targets(targets_path: str = "data/targets.txt") -> List[str]:
+def load_targets(
+    targets_path: str = "data/targets.txt",
+) -> Tuple[List[str], List[AlternationPair]]:
     """Load targets from file (backwards compatible function).
 
     Args:
         targets_path: Path to targets file
 
     Returns:
-        List of target characters
+        Tuple of (single_targets, alternation_pairs)
     """
     processor = TargetsProcessor(targets_path=targets_path)
     return processor.load_targets()
@@ -644,4 +979,5 @@ def process_all_targets(
     processor = TargetsProcessor(
         dataset_path=dataset_path, targets_path=targets_path
     )
-    return processor.process_targets_to_list()
+    results = processor.process_targets_to_list()
+    return [result for result in results if isinstance(result, TargetResult)]

@@ -46,7 +46,6 @@ COMMON_DIACRITICS: Dict[str, Dict[str, str | bool | None]] = {
         "scope": "any",
         "group": "length",
     },
-    # Added: extra-short (spacing, same group)
     "extra-short": {
         "glyph": "˘",
         "kind": "spacing",
@@ -66,7 +65,6 @@ COMMON_DIACRITICS: Dict[str, Dict[str, str | bool | None]] = {
         "scope": "any",
         "group": "voice",
     },  # ◌̬
-    # Added: ring above variant for voiceless (combining, same group)
     "voiceless-above": {
         "glyph": "\u030a",
         "kind": "combining",
@@ -1149,9 +1147,13 @@ def main():
         epilog="""
 Examples:
   phonenv                           # Interactive mode
-  phonenv --batch                   # Batch process targets.txt
+  phonenv --batch                   # Batch process targets.txt (auto-detects Ø alternations)
+  phonenv --batch --suppress-null   # Batch process without Ø alternations
   phonenv --create-targets          # Create sample targets.txt
   phonenv --targets path/targets.txt --output results.txt
+
+Note: Ø (null segment) alternations are auto-detected and analyzed as structural
+alternations (prothesis, epenthesis, syncope, etc.) unless suppressed.
         """,
     )
 
@@ -1216,6 +1218,40 @@ Examples:
         choices=["narrow", "broad"],
         default="narrow",
         help="Transcription mode for batch analysis (default: narrow)",
+    )
+
+    parser.add_argument(
+        "--context-window",
+        type=int,
+        choices=[1, 2],
+        default=1,
+        help="Context detail: 1=neighbor class only (V/C), 2=include segment identity (default: 1)",
+    )
+
+    parser.add_argument(
+        "--vowel-features",
+        action="store_true",
+        help="Include vowel features (front/back, high/low) in contexts",
+    )
+
+    parser.add_argument(
+        "--allow-null",
+        action="store_true",
+        default=True,
+        help="[AUTO-DETECTED] Allow null segment (Ø) alternations (default: auto-detect from targets)",
+    )
+
+    parser.add_argument(
+        "--suppress-null",
+        action="store_true",
+        help="Suppress null segment (Ø) alternations even if present in targets",
+    )
+
+    parser.add_argument(
+        "--min-evidence",
+        type=int,
+        default=3,
+        help="Minimum occurrences per segment for alternation analysis (default: 3)",
     )
 
     args = parser.parse_args()
@@ -1312,16 +1348,24 @@ def run_batch_cli(args):
         print(f"Targets: {targets_path}")
         print(f"Dataset: {dataset_path}")
         print(f"Mode: {args.mode}")
+        print(f"Context window: {args.context_window}")
+        if args.vowel_features:
+            print("Vowel features: enabled")
+        print(f"Minimum evidence: {args.min_evidence} occurrences")
 
-        # Wire up analyzer with the chosen transcription mode
-        from analyze import get_config_for_transcription_mode, IPAProcessorV2
+        # Wire up analyzer with the chosen transcription mode and context settings
+        from analyze import IPAProcessorV2, IPAConfig
+
+        config = IPAConfig(
+            match_mode=args.mode,
+            context_window=args.context_window,
+            include_vowel_features=args.vowel_features,
+        )
 
         analyzer = PhoneticAnalyzer(
             use_ipa_processing=True, transcription_mode=args.mode
         )
-        analyzer.ipa_processor_v2 = IPAProcessorV2(
-            get_config_for_transcription_mode(args.mode)
-        )
+        analyzer.ipa_processor_v2 = IPAProcessorV2(config)
 
         processor = TargetsProcessor(
             dataset_path=dataset_path,
@@ -1332,16 +1376,42 @@ def run_batch_cli(args):
         cache = get_cache()
         output_writer = AutoOutputWriter()
 
-        targets, alternations = processor.load_targets()
-        print(
-            f"Processing {len(targets)} targets and {len(alternations)} alternations..."
+        # Load targets (Ø alternations handled automatically)
+        allow_null = (
+            not args.suppress_null
+        )  # Allow unless explicitly suppressed
+        targets, alternations = processor.load_targets(
+            allow_null_segments=allow_null
         )
+
+        # Auto-detect and report structural alternations
+        structural_pairs = [
+            pair
+            for pair in alternations
+            if pair.segment1 == "" or pair.segment2 == ""
+        ]
+        phonemic_pairs = [
+            pair
+            for pair in alternations
+            if pair.segment1 != "" and pair.segment2 != ""
+        ]
+
+        if structural_pairs:
+            print(
+                f"Processing {len(targets)} targets, "
+                f"{len(phonemic_pairs)} phonemic alternations, "
+                f"and {len(structural_pairs)} structural alternations..."
+            )
+        else:
+            print(
+                f"Processing {len(targets)} targets and {len(alternations)} alternations..."
+            )
 
         results = process_targets_with_cache(
             targets, processor, cache, dataset_path, analyzer
         )
 
-        # Process alternations
+        # Process alternations with minimum evidence threshold
         for pair in alternations:
             print(f"Analyzing alternation: {pair}")
             alt_result = processor.analyze_alternation(pair)

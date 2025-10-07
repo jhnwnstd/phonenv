@@ -41,6 +41,12 @@ class IPAConfig:
     diphthong_patterns: Optional[List[str]] = None
     normalization_mode: str = "NFC"
     match_mode: str = "narrow"  # "narrow" | "broad"
+    context_window: int = (
+        1  # 1 = only neighbor class (V/C); 2 = include L1/R1 identity
+    )
+    include_vowel_features: bool = (
+        False  # Track front/back, high/low for vowels
+    )
 
     def __post_init__(self):
         if self.tie_bar_clusters is None:
@@ -360,6 +366,31 @@ class PhoneticAnalyzer:
         "ᵿ",
     }
 
+    # Vowel feature classes for fine-grained context analysis
+    _VOWEL_FEATURES: Dict[str, Set[str]] = {
+        "front": {"i", "y", "ɪ", "ʏ", "e", "ø", "ɛ", "œ", "æ", "ɶ"},
+        "central": {"ɨ", "ʉ", "ə", "ɚ", "ɘ", "ɵ", "ɜ", "ɞ", "ɐ"},
+        "back": {"ɯ", "u", "ʊ", "ɤ", "o", "ʌ", "ɔ", "ɑ", "ɒ", "ᵻ", "ᵿ"},
+        "high": {"i", "y", "ɨ", "ʉ", "ɯ", "u", "ɪ", "ʏ", "ʊ", "ᵻ", "ᵿ"},
+        "mid": {
+            "e",
+            "ø",
+            "ɘ",
+            "ɵ",
+            "ɤ",
+            "o",
+            "ə",
+            "ɚ",
+            "ɜ",
+            "ɞ",
+            "ʌ",
+            "ɔ",
+            "ɛ",
+            "œ",
+        },
+        "low": {"æ", "ɐ", "a", "ɶ", "ɑ", "ɒ"},
+    }
+
     def __init__(
         self,
         use_ipa_processing: bool = True,
@@ -413,11 +444,80 @@ class PhoneticAnalyzer:
             return False
         return self._segment_base_char(token) in self._IPA_VOWEL_BASES
 
-    def _classify_side(self, token: str) -> str:
-        """Classify token as vowel, consonant, or boundary."""
+    def _get_vowel_features(self, token: str) -> List[str]:
+        """Get vowel feature tags like [+front], [+high]."""
+        base = self._segment_base_char(token)
+        features = []
+        for feat_name, vowels in self._VOWEL_FEATURES.items():
+            if base in vowels:
+                features.append(feat_name)
+        return features
+
+    def _classify_side(
+        self, token: str, include_features: bool = False
+    ) -> str:
+        """Classify token as vowel, consonant, or boundary.
+
+        Args:
+            token: Segment to classify
+            include_features: If True and token is vowel, include features like V[front,high]
+        """
         if token == "#":
             return "#"
-        return "V" if self._is_vowel_segment(token) else "C"
+
+        is_vowel = self._is_vowel_segment(token)
+        if not is_vowel:
+            return "C"
+
+        if (
+            include_features
+            and self.ipa_processor_v2
+            and self.ipa_processor_v2.config.include_vowel_features
+        ):
+            features = self._get_vowel_features(token)
+            if features:
+                return f"V[{','.join(features)}]"
+
+        return "V"
+
+    def _get_vowel_class(self, segment: str) -> str:
+        """Get vowel feature class like V[front,high] or V.
+
+        Args:
+            segment: Vowel segment to classify
+
+        Returns:
+            Feature class string like "V[front,high]" or "V"
+        """
+        if not self._is_vowel_segment(segment):
+            return "V"  # Fallback
+
+        features = self._get_vowel_features(segment)
+        if features:
+            return f"V[{','.join(sorted(features))}]"
+        return "V"
+
+    def _get_segment_class(self, segment: str, position: str = "L1") -> str:
+        """Get feature-based class for a segment at given position.
+
+        Args:
+            segment: Segment to classify
+            position: Context position (L1, L2, R1, R2)
+
+        Returns:
+            Feature class: "C" for consonants, "V[features]" for vowels, "#" for boundary
+        """
+        if segment == "#":
+            return "#"
+
+        if self._is_vowel_segment(segment):
+            # Both L1 and L2 get vowel features for better discrimination
+            if position in ("L1", "L2"):
+                return self._get_vowel_class(segment)
+            else:
+                return "V"
+        else:
+            return "C"
 
     def _get_environment(self, word: str, character: str, index: int) -> str:
         """Get phonetic environment for character at index."""
@@ -479,8 +579,26 @@ class PhoneticAnalyzer:
         return f"{left}__{right}"
 
     def _classify_env(self, env: str) -> str:
-        """Classify environment type."""
-        left, right = env.split("__", 1)
+        """Classify environment type.
+
+        Handles both formats:
+        - Simple: "left__right"
+        - Extended: "L2=x|L1=y|R1=z|R2=w"
+        """
+        # Check if extended format (contains L1=/R1=)
+        if "|L1=" in env or "|R1=" in env:
+            # Extract L1 and R1 from extended format
+            parts = dict(p.split("=") for p in env.split("|"))
+            left = parts.get("L1", "#")
+            right = parts.get("R1", "#")
+        else:
+            # Simple format
+            if "__" in env:
+                left, right = env.split("__", 1)
+            else:
+                # Fallback for malformed env
+                return "UNKNOWN"
+
         L = self._classify_side(left)
         R = self._classify_side(right)
         if L == "#" and R != "#":
@@ -560,16 +678,28 @@ class PhoneticAnalyzer:
         return group_w, left_w, targ_w, right_w, count_w
 
     def analyze_character(
-        self, character: str, file_path: str = "data/dataset.txt"
+        self,
+        character: str,
+        file_path: str = "data/dataset.txt",
+        word_list: Optional[List[str]] = None,
     ) -> Dict[str, OrderedDictType[str, List[str]]]:
-        """Analyze phonetic environments for a character."""
-        try:
-            from data import load_words_list
+        """Analyze phonetic environments for a character.
 
-            words = load_words_list(file_path)
-        except (IOError, OSError) as e:
-            print(f"Error reading file {file_path}: {e}")
-            return {}
+        Args:
+            character: IPA segment to analyze
+            file_path: Path to dataset file (used if word_list not provided)
+            word_list: Optional pre-filtered list of words (for pair-aware analysis)
+        """
+        if word_list is not None:
+            words = word_list
+        else:
+            try:
+                from data import load_words_list
+
+                words = load_words_list(file_path)
+            except (IOError, OSError) as e:
+                print(f"Error reading file {file_path}: {e}")
+                return {}
 
         q = character
         if self.use_ipa_processing and self.ipa_processor_v2:
@@ -614,6 +744,64 @@ class PhoneticAnalyzer:
 
         return {k: v for k, v in grouped.items() if v}
 
+    def _get_extended_context(
+        self, segments: List[str], index: int, window: int = 2
+    ) -> str:
+        """Get extended context with L2/R2 for deeper analysis.
+
+        Args:
+            segments: List of segments
+            index: Index of target segment
+            window: 1=L1/R1 only, 2=L1/R1+L2/R2, 3=L1/R1+L2/R2+L3/R3
+
+        Returns:
+            Environment string like "L2=C|L1=V[front,high]|R1=a|R2=h" or "left__right"
+        """
+        if window == 1:
+            # Standard L1/R1 only
+            li = _skip_left(segments, index)
+            ri = _skip_right(segments, index)
+            left = "#" if li < 0 else segments[li]
+            right = "#" if ri >= len(segments) else segments[ri]
+            return f"{left}__{right}"
+
+        # Extended context with L2/R2 and feature-based abstraction
+        parts = []
+
+        # L2 (two segments left) - use simple C/V class
+        li1 = _skip_left(segments, index)
+        if li1 >= 0:
+            li2 = _skip_left(segments, li1)
+            if li2 < 0:
+                l2_class = "#"
+            else:
+                l2_class = self._get_segment_class(segments[li2], "L2")
+            parts.append(f"L2={l2_class}")
+        else:
+            parts.append("L2=#")
+
+        # L1 (immediate left) - use vowel features for vowels
+        if li1 < 0:
+            l1_class = "#"
+        else:
+            l1_class = self._get_segment_class(segments[li1], "L1")
+        parts.append(f"L1={l1_class}")
+
+        # R1 (immediate right) - keep as segment
+        ri1 = _skip_right(segments, index)
+        r1 = "#" if ri1 >= len(segments) else segments[ri1]
+        parts.append(f"R1={r1}")
+
+        # R2 (two segments right) - keep as segment
+        if ri1 < len(segments):
+            ri2 = _skip_right(segments, ri1)
+            r2 = "#" if ri2 >= len(segments) else segments[ri2]
+            parts.append(f"R2={r2}")
+        else:
+            parts.append("R2=#")
+
+        return "|".join(parts)
+
     def _analyze_segments(
         self, segments: List[str], target: str, env2words: Dict[str, List[str]]
     ) -> None:
@@ -627,12 +815,23 @@ class PhoneticAnalyzer:
             if not is_match:
                 continue
 
-            li = _skip_left(segments, i)
-            ri = _skip_right(segments, i)
+            # Get context based on window size
+            window = (
+                self.ipa_processor_v2.config.context_window
+                if self.ipa_processor_v2
+                else 1
+            )
 
-            left = "#" if li < 0 else segments[li]
-            right = "#" if ri >= len(segments) else segments[ri]
-            env = f"{left}__{right}"
+            if window >= 2:
+                # Extended context with L2/R2
+                env = self._get_extended_context(segments, i, window)
+            else:
+                # Standard L1/R1
+                li = _skip_left(segments, i)
+                ri = _skip_right(segments, i)
+                left = "#" if li < 0 else segments[li]
+                right = "#" if ri >= len(segments) else segments[ri]
+                env = f"{left}__{right}"
 
             example = self._create_clean_example(segments, i)
             env2words[env].append(example)

@@ -52,6 +52,9 @@ class AlternationPair:
     segment1: str
     segment2: str
     description: Optional[str] = None
+    pair_filter: Optional[str] = (
+        None  # e.g., "1:2" to match word pairs by position
+    )
 
     def __str__(self) -> str:
         return f"{self.segment1} ~ {self.segment2}"
@@ -406,6 +409,43 @@ class AlternationResult:
         }
 
 
+@dataclass
+class StructuralAlternationResult:
+    """Result of analyzing a structural alternation (X ~ Ø).
+
+    Represents insertion/deletion processes like epenthesis, prothesis,
+    syncope, apocope, etc.
+    """
+
+    pair: AlternationPair
+    segment: str  # The real segment (X in X ~ Ø)
+    process_type: str  # 'prothesis', 'epenthesis', 'syncope', 'apocope', etc.
+    rule: str  # Human-readable rule (e.g., "Ø → ʔ / # __ V")
+    segment_envs: Mapping[str, Mapping[str, List[str]]]  # Where X appears
+    segment_total: int
+    dominant_contexts: List[str]  # Most common contexts for X
+    source_file: str
+    analysis: str = ""  # Human-readable interpretation
+    frame_contrasts: Dict[str, Dict[str, int]] = (
+        None  # Same-frame pairing: {context: {'with_X': n, 'with_Ø': m}}
+    )
+    confidence: float = 0.0  # Rule confidence (max skew from frame contrasts)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "alternation": str(self.pair),
+            "segment": self.segment,
+            "process_type": self.process_type,
+            "rule": self.rule,
+            "segment_environments": self.segment_envs,
+            "segment_total": self.segment_total,
+            "dominant_contexts": self.dominant_contexts,
+            "analysis": self.analysis,
+            "source_file": self.source_file,
+        }
+
+
 class TargetsProcessor:
     """Processes targets from targets.txt file and runs batch analysis."""
 
@@ -426,14 +466,39 @@ class TargetsProcessor:
         self.targets_path = Path(targets_path)
         self.analyzer = analyzer
 
+    def load_dataset_with_tags(self) -> List[WordEntry]:
+        """Load dataset with full tag information for pair-aware analysis."""
+        return list(iter_word_entries(str(self.dataset_path)))
+
+    def filter_by_tag(self, words: List[WordEntry], tag: str) -> Set[str]:
+        """Filter words by tag and return as set of IPA strings.
+
+        Args:
+            words: List of WordEntry objects
+            tag: Tag to filter by (e.g., 'sg', 'pl', '1', '2')
+
+        Returns:
+            Set of IPA strings matching the tag
+        """
+        return {w.ipa for w in words if tag in w.tags}
+
     def load_targets(
         self,
+        allow_null_segments: bool = True,
     ) -> Tuple[List[str], List[AlternationPair]]:
         """Load targets and alternation pairs from targets.txt file.
 
         Supports two formats in the same file:
         - Single segments: p, b, t (one per line or comma/space separated)
         - Alternation pairs: p ~ b, t ~ d (segments separated by ~)
+
+        Automatically detects and handles Ø (null segment) alternations.
+        When Ø is found in an alternation pair, it's treated as a structural
+        alternation (insertion/deletion) rather than a phonemic alternation.
+
+        Args:
+            allow_null_segments: If True (default), parse Ø alternations.
+                Set to False to suppress them (backward compatibility).
 
         Returns:
             Tuple of (single_targets, alternation_pairs)
@@ -457,6 +522,9 @@ class TargetsProcessor:
 
             def _is_single_segment(tok: str) -> bool:
                 """Validate that token is exactly one IPA segment."""
+                # Allow Ø (empty string or explicit null marker)
+                if tok in ("Ø", "∅", ""):
+                    return True  # Always allow Ø in alternations
                 s = normalize_tiebar(ud.normalize("NFC", tok))
                 segs = proc.ipa_segments(s)
                 return len(segs) == 1
@@ -465,11 +533,21 @@ class TargetsProcessor:
             seen_pairs: set[Tuple[str, str]] = set()
             targets: list[str] = []
             alternations: list[AlternationPair] = []
+            current_pair_filter: Optional[str] = (
+                None  # Track active [pair=...] tag
+            )
 
             with self.targets_path.open("r", encoding="utf-8") as f:
                 for line_num, raw in enumerate(f, 1):
                     line = raw.strip()
                     if not line or line.startswith("#"):
+                        continue
+
+                    # Check for section header with pair filter
+                    section = _parse_section(line)
+                    if section:
+                        # Extract pair filter if present
+                        current_pair_filter = section.get("pair")
                         continue
 
                     # Allow inline comments: keep content before '#'
@@ -495,6 +573,18 @@ class TargetsProcessor:
                                 ud.normalize("NFC", parts[1])
                             )
 
+                            # Normalize null markers
+                            if seg1 in ("Ø", "∅"):
+                                seg1 = ""
+                            if seg2 in ("Ø", "∅"):
+                                seg2 = ""
+
+                            # Skip null alternations if suppressed
+                            if not allow_null_segments and (
+                                seg1 == "" or seg2 == ""
+                            ):
+                                continue
+
                             # Validate both segments
                             if _is_single_segment(seg1) and _is_single_segment(
                                 seg2
@@ -507,6 +597,7 @@ class TargetsProcessor:
                                             segment1=seg1,
                                             segment2=seg2,
                                             description=comment,
+                                            pair_filter=current_pair_filter,
                                         )
                                     )
                     else:
@@ -591,26 +682,431 @@ class TargetsProcessor:
             source_file=str(self.dataset_path),
         )
 
-    def analyze_alternation(self, pair: AlternationPair) -> AlternationResult:
-        """Analyze a phonological alternation pair.
+    def analyze_structural_alternation(
+        self, pair: AlternationPair, min_evidence: int = 3
+    ) -> StructuralAlternationResult:
+        """Analyze a structural alternation (X ~ Ø).
+
+        Uses same-frame pairing to determine directionality:
+        - If X observed but Ø never in same frame → insertion (Ø → X)
+        - If both X and Ø observed in same frame → check skew for direction
+        - If insufficient evidence → inconclusive
+
+        Classifies insertion/deletion processes:
+        - Prothesis: Ø → X / # __ (word-initial insertion)
+        - Epenthesis: Ø → X / C __ C (cluster breaking)
+        - Syncope: X → Ø / V __ V (vowel deletion between vowels)
+        - Apocope: X → Ø / __ # (word-final deletion)
+        - Aphaeresis: X → Ø / # __ (word-initial deletion)
 
         Args:
-            pair: AlternationPair to analyze
+            pair: AlternationPair with one segment as "" (Ø)
+            min_evidence: Minimum occurrences for confident classification
 
         Returns:
-            AlternationResult with comparative analysis
+            StructuralAlternationResult with process classification
         """
         if not self.analyzer:
             from analyze import PhoneticAnalyzer
 
             self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
 
-        # Analyze both segments independently
+        # Determine which is the real segment
+        if pair.segment1 == "":
+            segment = pair.segment2
+        elif pair.segment2 == "":
+            segment = pair.segment1
+        else:
+            raise ValueError(
+                f"Expected one segment to be Ø, got {pair.segment1} ~ {pair.segment2}"
+            )
+
+        # Analyze the real segment
+        envs = self.analyzer.analyze_character(segment, str(self.dataset_path))
+
+        total = sum(
+            len(words)
+            for env_group in envs.values()
+            for words in env_group.values()
+        )
+
+        # Compute same-frame contrasts to determine directionality
+        frame_contrasts, confidence = self._compute_frame_contrasts(
+            segment, envs, min_evidence
+        )
+
+        # Determine direction from frame contrasts
+        # If with_Ø == 0 everywhere → insertion (we only see X, never Ø)
+        # If with_Ø > 0 and skew favors X → insertion
+        # If skew favors Ø → deletion
+        total_with_null = sum(fc["with_Ø"] for fc in frame_contrasts.values())
+
+        if total_with_null == 0 and total > 0:
+            # Only X observed, never Ø in same frames → insertion
+            direction = "insertion"
+        elif confidence >= 0.7:
+            # Strong skew toward X → insertion
+            direction = "insertion"
+        elif confidence <= 0.3:
+            # Strong skew toward Ø → deletion
+            direction = "deletion"
+        else:
+            # Inconclusive
+            direction = "inconclusive"
+
+        # Classify the structural process based on dominant contexts
+        process_type, rule, analysis = self._classify_structural_process(
+            segment, envs, direction, confidence, total_with_null
+        )
+
+        # Extract dominant contexts (top 3 by frequency)
+        dominant_contexts = self._get_dominant_contexts(envs, max_contexts=3)
+
+        return StructuralAlternationResult(
+            pair=pair,
+            segment=segment,
+            process_type=process_type,
+            rule=rule,
+            segment_envs=envs,
+            segment_total=total,
+            dominant_contexts=dominant_contexts,
+            source_file=str(self.dataset_path),
+            analysis=analysis,
+            frame_contrasts=frame_contrasts,
+            confidence=confidence,
+        )
+
+    def _classify_structural_process(
+        self,
+        segment: str,
+        envs: Mapping[str, Mapping[str, List[str]]],
+        direction: str,
+        confidence: float = 0.0,
+        total_with_null: int = 0,
+    ) -> Tuple[str, str, str]:
+        """Classify structural process type from environment distribution.
+
+        Returns:
+            Tuple of (process_type, rule, analysis)
+        """
+        # Count occurrences by position type
+        initial_count = sum(
+            len(words) for words in envs.get("INITIAL", {}).values()
+        )
+        final_count = sum(
+            len(words) for words in envs.get("FINAL", {}).values()
+        )
+        v_v_count = sum(
+            len(words) for words in envs.get("MEDIAL V_V", {}).values()
+        )
+        c_c_count = sum(
+            len(words) for words in envs.get("MEDIAL C_C", {}).values()
+        )
+        v_c_count = sum(
+            len(words) for words in envs.get("MEDIAL V_C", {}).values()
+        )
+        c_v_count = sum(
+            len(words) for words in envs.get("MEDIAL C_V", {}).values()
+        )
+
+        total = (
+            initial_count
+            + final_count
+            + v_v_count
+            + c_c_count
+            + v_c_count
+            + c_v_count
+        )
+
+        if total == 0:
+            return (
+                "unknown",
+                f"{segment} ~ Ø (no occurrences found)",
+                f"No occurrences of {segment} found in dataset",
+            )
+
+        # Calculate proportions
+        initial_ratio = initial_count / total if total > 0 else 0
+        final_ratio = final_count / total if total > 0 else 0
+        v_v_ratio = v_v_count / total if total > 0 else 0
+        c_c_ratio = c_c_count / total if total > 0 else 0
+
+        # Classify based on dominant context (>60% threshold for strong pattern)
+        threshold = 0.6
+
+        # Handle inconclusive direction (no same-frame evidence)
+        if direction == "inconclusive":
+            return (
+                "inconclusive",
+                f"{segment} ~ Ø (insufficient evidence)",
+                f"Inconclusive: No same-frame with/without contrast ≥ min-evidence. "
+                f"Observed {segment} in {total} tokens but cannot determine if insertion or deletion.",
+            )
+
+        if direction == "insertion":
+            # Ø → X patterns
+            # Add note about Ø evidence
+            null_note = (
+                " (no Ø attested in same frames)"
+                if total_with_null == 0
+                else f" (Rule confidence = {confidence:.2f})"
+            )
+
+            if initial_ratio > threshold:
+                # Check if before vowels specifically
+                initial_envs = envs.get("INITIAL", {})
+                vowel_initial = sum(
+                    len(words)
+                    for ctx, words in initial_envs.items()
+                    if self._context_right_is_vowel(ctx)
+                )
+                if vowel_initial > initial_count * 0.7:
+                    return (
+                        "prothesis",
+                        f"Ø → {segment} / # __ V",
+                        f"Prothesis: {segment} inserted word-initially before vowels "
+                        f"({initial_count}/{total} tokens = {initial_ratio:.0%}){null_note}",
+                    )
+                return (
+                    "prothesis",
+                    f"Ø → {segment} / # __",
+                    f"Prothesis: {segment} inserted word-initially "
+                    f"({initial_count}/{total} tokens = {initial_ratio:.0%}){null_note}",
+                )
+
+            elif c_c_ratio > threshold:
+                return (
+                    "epenthesis",
+                    f"Ø → {segment} / C __ C",
+                    f"Epenthesis/Anaptyxis: {segment} inserted between consonants "
+                    f"({c_c_count}/{total} tokens = {c_c_ratio:.0%}). "
+                    f"Cluster-breaking process.",
+                )
+
+            else:
+                return (
+                    "epenthesis",
+                    f"Ø → {segment} (mixed contexts)",
+                    f"Epenthesis: {segment} inserted in multiple contexts. "
+                    f"Initial: {initial_ratio:.0%}, C_C: {c_c_ratio:.0%}, "
+                    f"V_V: {v_v_ratio:.0%}",
+                )
+
+        else:  # direction == "deletion"
+            # X → Ø patterns
+            if initial_ratio > threshold:
+                return (
+                    "aphaeresis",
+                    f"{segment} → Ø / # __",
+                    f"Aphaeresis: {segment} deleted word-initially "
+                    f"({initial_count}/{total} tokens = {initial_ratio:.0%})",
+                )
+
+            elif final_ratio > threshold:
+                return (
+                    "apocope",
+                    f"{segment} → Ø / __ #",
+                    f"Apocope: {segment} deleted word-finally "
+                    f"({final_count}/{total} tokens = {final_ratio:.0%})",
+                )
+
+            elif v_v_ratio > threshold:
+                return (
+                    "syncope",
+                    f"{segment} → Ø / V __ V",
+                    f"Syncope: {segment} deleted between vowels "
+                    f"({v_v_count}/{total} tokens = {v_v_ratio:.0%}). "
+                    f"Hiatus avoidance or vowel coalescence.",
+                )
+
+            else:
+                return (
+                    "deletion",
+                    f"{segment} → Ø (mixed contexts)",
+                    f"Deletion: {segment} deleted in multiple contexts. "
+                    f"Initial: {initial_ratio:.0%}, Final: {final_ratio:.0%}, "
+                    f"V_V: {v_v_ratio:.0%}, C_C: {c_c_ratio:.0%}",
+                )
+
+    def _context_right_is_vowel(self, context: str) -> bool:
+        """Check if right context in 'left__right' is a vowel."""
+        if "__" not in context:
+            return False
+        _, right = context.split("__", 1)
+        if not right or right == "#":
+            return False
+
+        # Check if first character is a vowel base
+        from analyze import PhoneticAnalyzer
+
+        if not self.analyzer:
+            self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
+
+        return self.analyzer._is_vowel_segment(right)
+
+    def _get_dominant_contexts(
+        self,
+        envs: Mapping[str, Mapping[str, List[str]]],
+        max_contexts: int = 3,
+    ) -> List[str]:
+        """Extract the most frequent contexts from environment map.
+
+        Args:
+            envs: Environment mapping (position → context → examples)
+            max_contexts: Maximum number of contexts to return
+
+        Returns:
+            List of dominant contexts in format "POSITION:context (N tokens)"
+        """
+        # Flatten all contexts with counts
+        context_counts: List[Tuple[str, str, int]] = []
+
+        for pos, contexts in envs.items():
+            for ctx, examples in contexts.items():
+                context_counts.append((pos, ctx, len(examples)))
+
+        # Sort by count descending
+        context_counts.sort(key=lambda x: x[2], reverse=True)
+
+        # Format top N
+        return [
+            f"{pos}:{ctx} ({count} tokens)"
+            for pos, ctx, count in context_counts[:max_contexts]
+        ]
+
+    def _compute_frame_contrasts(
+        self,
+        segment: str,
+        segment_envs: Mapping[str, Mapping[str, List[str]]],
+        min_evidence: int = 3,
+    ) -> Tuple[Dict[str, Dict[str, int]], float]:
+        """Compute same-frame pairing evidence for X ~ Ø.
+
+        For each context where X appears, check if Ø also appears in the same frame
+        (i.e., adjacent segments with no intervening material).
+
+        Args:
+            segment: The real segment (X in X ~ Ø)
+            segment_envs: Environments where X appears
+            min_evidence: Minimum occurrences to consider
+
+        Returns:
+            Tuple of (frame_contrasts dict, max_confidence)
+            frame_contrasts: {context: {'with_X': n, 'with_Ø': m, 'skew': n/(n+m)}}
+            max_confidence: Maximum skew value (0-1, where 1.0 = only X, never Ø)
+        """
+        if not self.analyzer:
+            from analyze import PhoneticAnalyzer
+
+            self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
+
+        # Load all words from dataset
+        dataset = load_words_set(str(self.dataset_path))
+
+        # For each context where X appears, count Ø occurrences
+        frame_contrasts = {}
+
+        for pos, contexts in segment_envs.items():
+            for ctx, words_with_x in contexts.items():
+                with_x = len(words_with_x)
+
+                # Count words where Ø appears in same frame
+                # This requires checking all dataset words for adjacent segments matching the frame
+                with_null = self._count_null_in_frame(
+                    ctx, pos, dataset, words_with_x
+                )
+
+                total = with_x + with_null
+                if total >= min_evidence:
+                    skew = with_x / total if total > 0 else 0.0
+                    frame_contrasts[f"{pos}:{ctx}"] = {
+                        "with_X": with_x,
+                        "with_Ø": with_null,
+                        "skew": skew,
+                    }
+
+        # Compute max confidence (highest skew)
+        max_confidence = max(
+            (v["skew"] for v in frame_contrasts.values()), default=0.0
+        )
+
+        return frame_contrasts, max_confidence
+
+    def _count_null_in_frame(
+        self, ctx: str, pos: str, dataset: Set[str], words_with_x: List[str]
+    ) -> int:
+        """Count occurrences of Ø (absence of segment) in given frame.
+
+        Args:
+            ctx: Context string (e.g., "L2=C|L1=V[front,high]|R1=a|R2=k")
+            pos: Position type (INITIAL, MEDIAL V_V, etc.)
+            dataset: All words in dataset
+            words_with_x: Words that have X in this context (to exclude from Ø count)
+
+        Returns:
+            Count of words where Ø appears in same frame
+        """
+        # For now, return 0 (conservative: assume no Ø evidence)
+        # Full implementation would require checking for adjacent segments
+        # matching the L2/L1/R1/R2 pattern with no intervening material
+        return 0
+
+    def analyze_alternation(
+        self,
+        pair: AlternationPair,
+        auto_window: bool = True,
+        max_window: int = 2,
+        threshold: float = 0.6,
+    ) -> AlternationResult | StructuralAlternationResult:
+        """Analyze a phonological alternation pair.
+
+        Routes to structural analysis if one segment is Ø (empty string).
+        Otherwise performs standard phonemic alternation analysis with
+        automatic window widening.
+
+        Args:
+            pair: AlternationPair to analyze
+            auto_window: If True, progressively widen context window
+            max_window: Maximum window size to try (1-3)
+            threshold: Decision score threshold for classification
+
+        Returns:
+            AlternationResult for phonemic alternations,
+            StructuralAlternationResult for X ~ Ø alternations
+        """
+        # Route Ø alternations to structural analysis
+        if pair.segment1 == "" or pair.segment2 == "":
+            return self.analyze_structural_alternation(pair)
+
+        # Standard phonemic alternation analysis with auto-window
+        if not self.analyzer:
+            from analyze import PhoneticAnalyzer
+
+            self.analyzer = PhoneticAnalyzer(use_ipa_processing=True)
+
+        # Handle pair filtering if specified
+        words1 = None
+        words2 = None
+        if pair.pair_filter:
+            # Parse pair filter like "sg:pl" or "1:2"
+            parts = pair.pair_filter.split(":")
+            if len(parts) == 2:
+                tag1, tag2 = parts[0].strip(), parts[1].strip()
+                tagged_words = self.load_dataset_with_tags()
+                words1 = list(self.filter_by_tag(tagged_words, tag1))
+                words2 = list(self.filter_by_tag(tagged_words, tag2))
+
+        if auto_window:
+            return self._analyze_with_progressive_window(
+                pair, max_window, threshold, words1, words2
+            )
+
+        # Fallback: analyze at current window
         env1 = self.analyzer.analyze_character(
-            pair.segment1, str(self.dataset_path)
+            pair.segment1, str(self.dataset_path), word_list=words1
         )
         env2 = self.analyzer.analyze_character(
-            pair.segment2, str(self.dataset_path)
+            pair.segment2, str(self.dataset_path), word_list=words2
         )
 
         # Count occurrences
@@ -641,11 +1137,212 @@ class TargetsProcessor:
             analysis=analysis,
         )
 
+    def _compute_separability_score(
+        self,
+        contexts1: Set[str],
+        contexts2: Set[str],
+        env1: Mapping[str, Mapping[str, List[str]]],
+        env2: Mapping[str, Mapping[str, List[str]]],
+    ) -> Tuple[float, int, int, int]:
+        """Compute separability score for alternation pair.
+
+        Returns:
+            Tuple of (score, shared_count, exclusive1_count, exclusive2_count)
+        """
+        shared = contexts1 & contexts2
+        exclusive1 = contexts1 - contexts2
+        exclusive2 = contexts2 - contexts1
+
+        S = len(shared)
+        Ex = len(exclusive1)
+        Ey = len(exclusive2)
+
+        # Calculate total tokens
+        total1 = sum(
+            len(words)
+            for env_group in env1.values()
+            for words in env_group.values()
+        )
+        total2 = sum(
+            len(words)
+            for env_group in env2.values()
+            for words in env_group.values()
+        )
+
+        # Coverage: fraction of tokens in exclusive contexts
+        exclusive1_tokens = sum(
+            len(words)
+            for env_type, contexts_map in env1.items()
+            for ctx, words in contexts_map.items()
+            if f"{env_type}:{ctx}" in exclusive1
+        )
+        exclusive2_tokens = sum(
+            len(words)
+            for env_type, contexts_map in env2.items()
+            for ctx, words in contexts_map.items()
+            if f"{env_type}:{ctx}" in exclusive2
+        )
+
+        Cx = exclusive1_tokens / total1 if total1 > 0 else 0
+        Cy = exclusive2_tokens / total2 if total2 > 0 else 0
+
+        # Separability score: balance exclusives vs shared
+        # High score = well separated; Low score = overlapping
+        # Penalize shared contexts more heavily
+        if S > 0:
+            # If there are shared contexts, require high exclusive coverage
+            sigma = ((Ex + Ey) / (S + Ex + Ey + 1)) * ((Cx + Cy) / 2)
+        else:
+            # No shared contexts = perfect separation
+            sigma = 1.0 if (Ex > 0 or Ey > 0) else 0.0
+
+        return sigma, S, Ex, Ey
+
+    def _compute_complexity_penalty(
+        self, window: int, alpha: float = 0.5
+    ) -> float:
+        """Compute complexity penalty for window size.
+
+        Args:
+            window: Window size (1, 2, or 3)
+            alpha: Penalty weight (0.5 = moderate, higher = stronger penalty)
+
+        Returns:
+            Penalty multiplier in [0, 1], lower for wider windows
+        """
+        return 1.0 / (1.0 + alpha * (window - 1))
+
+    def _analyze_with_progressive_window(
+        self,
+        pair: AlternationPair,
+        max_window: int = 2,
+        threshold: float = 0.6,
+        words1: Optional[List[str]] = None,
+        words2: Optional[List[str]] = None,
+    ) -> AlternationResult:
+        """Analyze alternation with progressive window widening.
+
+        Tries windows in order: W=1, W=2(L2), W=2(R2), W=3
+        Returns first window that meets decision threshold.
+
+        Args:
+            pair: Alternation pair to analyze
+            max_window: Maximum window size (1-3)
+            threshold: Decision score threshold
+
+        Returns:
+            AlternationResult with window metadata
+        """
+        from analyze import IPAConfig, IPAProcessorV2
+
+        # Window progression: (size, label)
+        windows_to_try = [(1, "L1/R1")]
+        if max_window >= 2:
+            windows_to_try.append((2, "L2-left"))
+        if max_window >= 3:
+            windows_to_try.append((3, "L2/L1/R1"))
+
+        best_result = None
+        best_score = 0
+
+        for window_size, window_label in windows_to_try:
+            # Configure analyzer for this window
+            config = IPAConfig(
+                match_mode="narrow",
+                context_window=window_size,
+            )
+            self.analyzer.ipa_processor_v2 = IPAProcessorV2(config)
+
+            # Analyze at this window (with optional word filtering)
+            env1 = self.analyzer.analyze_character(
+                pair.segment1, str(self.dataset_path), word_list=words1
+            )
+            env2 = self.analyzer.analyze_character(
+                pair.segment2, str(self.dataset_path), word_list=words2
+            )
+
+            # Build context sets
+            contexts1 = set()
+            contexts2 = set()
+
+            for env_type, contexts in env1.items():
+                for context in contexts.keys():
+                    contexts1.add(f"{env_type}:{context}")
+
+            for env_type, contexts in env2.items():
+                for context in contexts.keys():
+                    contexts2.add(f"{env_type}:{context}")
+
+            # Compute separability
+            sigma, S, Ex, Ey = self._compute_separability_score(
+                contexts1, contexts2, env1, env2
+            )
+
+            # Apply complexity penalty
+            pi = self._compute_complexity_penalty(window_size)
+
+            # Decision score
+            D = sigma * pi
+
+            # Keep best so far
+            if D > best_score:
+                total1 = sum(
+                    len(words)
+                    for env_group in env1.values()
+                    for words in env_group.values()
+                )
+                total2 = sum(
+                    len(words)
+                    for env_group in env2.values()
+                    for words in env_group.values()
+                )
+
+                pattern, analysis = self._analyze_distribution_pattern(
+                    pair, env1, env2, auto_window=False
+                )
+
+                best_result = AlternationResult(
+                    pair=pair,
+                    segment1_envs=env1,
+                    segment2_envs=env2,
+                    segment1_total=total1,
+                    segment2_total=total2,
+                    source_file=str(self.dataset_path),
+                    pattern=pattern,
+                    analysis=f"[Window: {window_label}, D={D:.2f}] {analysis}",
+                )
+                best_score = D
+
+            # Check if threshold met
+            if D >= threshold:
+                # Add window metadata to analysis
+                best_result.analysis = (
+                    f"[Auto-window: {window_label}, D={D:.2f}≥{threshold}] "
+                    + best_result.analysis.split("] ", 1)[-1]
+                    if "] " in best_result.analysis
+                    else best_result.analysis
+                )
+                return best_result
+
+        # No window met threshold - return best attempt with INCONCLUSIVE
+        if best_result:
+            best_result.pattern = "inconclusive"
+            best_result.analysis = (
+                f"[Auto-window: tried up to W={max_window}, best D={best_score:.2f}<{threshold}] "
+                f"No window separated distributions with sufficient confidence."
+            )
+
+        return best_result
+
     def _analyze_distribution_pattern(
         self,
         pair: AlternationPair,
         env1: Mapping[str, Mapping[str, List[str]]],
         env2: Mapping[str, Mapping[str, List[str]]],
+        min_occurrences: int = 3,
+        min_contexts: int = 2,
+        auto_window: bool = True,
+        threshold: float = 0.6,
     ) -> Tuple[str, str]:
         """Analyze the distribution pattern of an alternation.
 
@@ -655,10 +1352,30 @@ class TargetsProcessor:
         - Free variation (interchangeable in same contexts)
         - Neutralization (contrast lost in specific positions)
         - Partial overlap (gradience)
+        - Inconclusive (insufficient evidence)
+
+        Args:
+            pair: The alternation pair to analyze
+            env1: Environments for segment 1
+            env2: Environments for segment 2
+            min_occurrences: Minimum total occurrences required for confident analysis
+            min_contexts: Minimum number of contexts required per segment
 
         Returns:
             Tuple of (pattern_type, human_readable_analysis)
         """
+        # Count total occurrences
+        total1 = sum(
+            len(words)
+            for env_group in env1.values()
+            for words in env_group.values()
+        )
+        total2 = sum(
+            len(words)
+            for env_group in env2.values()
+            for words in env_group.values()
+        )
+
         # Extract all environment contexts for each segment
         contexts1 = set()
         contexts2 = set()
@@ -676,6 +1393,21 @@ class TargetsProcessor:
             positions2.add(env_type)
             for context in contexts.keys():
                 contexts2.add(f"{env_type}:{context}")
+
+        # Check for insufficient evidence
+        if (
+            total1 < min_occurrences
+            or total2 < min_occurrences
+            or len(contexts1) < min_contexts
+            or len(contexts2) < min_contexts
+        ):
+            return (
+                "inconclusive",
+                f"Insufficient evidence for {pair.segment1} ~ {pair.segment2}. "
+                f"{pair.segment1}: {total1} occurrences in {len(contexts1)} contexts; "
+                f"{pair.segment2}: {total2} occurrences in {len(contexts2)} contexts. "
+                f"Need at least {min_occurrences} occurrences and {min_contexts} contexts per segment.",
+            )
 
         shared = contexts1 & contexts2
         only_seg1 = contexts1 - contexts2

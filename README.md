@@ -7,6 +7,12 @@ A Python library and CLI for phonetic environment analysis. Phonenv analyzes IPA
 ## Features
 
 * **Environment Classification**: Analyzes INITIAL (`# _ X`), FINAL (`X _ #`), and MEDIAL contexts with sub-classification by neighbor types (`V_V`, `V_C`, `C_V`, `C_C`)
+* **Alternation Analysis**:
+  - **Auto-window context widening** (L1/R1 → L2/L1/R1/R2) with progressive separability scoring
+  - **Feature-based abstraction** (vowel features: front/back, high/low; consonants: C/V class)
+  - **Structural alternations** (X ~ Ø) with same-frame pairing evidence and directionality detection
+  - **Complementary distribution detection** with empirical confidence thresholds
+  - **Pattern classification**: complementary, contrastive, free variation, neutralization, partial overlap
 * **Transcription Modes**: Narrow (phonetic) mode treats diacritics as contrastive; broad (phonemic) mode folds them for pattern analysis
 * **Automatic Normalization**: Applies unambiguous mappings (e.g., ASCII `g`→`ɡ`, `:`→`ː`) during analysis
 * **Data Validation**: Detects 36+ character confusables (ASCII/IPA, Greek, Cyrillic homoglyphs) with interactive auto-fix
@@ -16,7 +22,6 @@ A Python library and CLI for phonetic environment analysis. Phonenv analyzes IPA
 * **Efficient Caching**: Uses SHA256-based result caching with configurable size limits (10,000 entries / 100MB)
 * **Interactive CLI**: Lets you browse phonemes by place/manner, apply diacritics, and manage datasets
 * **Batch Processing**: Processes multiple targets from files with comprehensive validation
-* **Alternation Analysis**: Analyzes phonological alternations between segment pairs to determine distributional relationships (complementary, contrastive, free variation, neutralization, etc.)
 * **Security Features**: Enforces path validation to restrict file access to the project directory; applies cache size limits to prevent resource exhaustion
 
 ---
@@ -219,7 +224,7 @@ The last segment before a word boundary
 
 ## Alternation Analysis
 
-Phonenv supports **phonological alternation analysis** to determine distributional relationships between segment pairs (e.g., `p ~ b`, `s ~ z`).
+Phonenv supports **advanced phonological alternation analysis** with automatic context widening, feature-based abstraction, and same-frame pairing evidence to determine distributional relationships between segment pairs.
 
 ### Quick Start
 
@@ -230,12 +235,16 @@ Add alternation pairs to `targets.txt` using the tilde (`~`) separator:
 s
 z
 
-# Alternation analysis (segments separated by ~)
-s ~ z  # voicing alternation
+# Phonemic alternations (X ~ Y)
+s ~ š  # palatalization
+p ~ b  # voicing alternation
 θ ~ ð  # dental fricative voicing
-p ~ b  # stop voicing
 
-# You can mix both formats in the same file!
+# Structural alternations (X ~ Ø)
+ʔ ~ Ø  # glottal stop insertion/deletion
+i ~ Ø  # vowel epenthesis/syncope
+
+# You can mix all formats in the same file!
 ```
 
 Run analysis as usual:
@@ -244,9 +253,35 @@ Run analysis as usual:
 phonenv --batch --format txt
 ```
 
+### Advanced Features
+
+**1. Pair-Aware Alternation Analysis** 🆕
+- Tag dataset words with paradigm information: `[sg]`, `[pl]`, `[1sg]`, `[imp]`
+- Use `[pair=sg:pl]` in targets.txt to analyze morphological alternations
+- Detects systematic patterns within paradigms (voicing, ablaut, etc.)
+- Essential for morphologically-conditioned alternations
+
+**2. Auto-Window Context Widening**
+- Starts with L1/R1 (immediate neighbors)
+- Progressively widens to L2/L1/R1/R2 if needed
+- Uses separability scoring (σ) and complexity penalty (π)
+- Decision threshold: D = σ × π ≥ 0.6
+
+**3. Feature-Based Abstraction**
+- L1/L2 vowels: `V[front,high]`, `V[back,low]`, etc.
+- L1/L2 consonants: `C` (class abstraction)
+- R1/R2: Raw segments for rule specificity
+- Prevents over-fitting to incidental differences
+
+**4. Same-Frame Pairing (X ~ Ø)**
+- Shows with-X vs with-Ø counts per context
+- Computes skew: n_X / (n_X + n_Ø)
+- Determines directionality: insertion (skew → 1.0) vs deletion (skew → 0.0)
+- Returns "inconclusive" when insufficient evidence
+
 ### Distribution Patterns
 
-Phonenv automatically detects **six distribution patterns**:
+Phonenv automatically detects **six distribution patterns** for phonemic alternations (X ~ Y):
 
 #### 1. Complementary Distribution (Allophones)
 **Linguistic Meaning**: Sounds are **allophones** of the same phoneme
@@ -304,23 +339,57 @@ else:
 
 ### Output Format
 
-Alternation results appear in the report with pattern classification:
+#### Phonemic Alternations (X ~ Y)
 
 ```
-ALTERNATION 3: 's ~ z'
+ALTERNATION 14: 's ~ š'
 ----------------------------------------
-Pattern: CONTRASTIVE (distinct phonemes)
-s: 53 occurrences | z: 15 occurrences
-Analysis: s and z are contrastive (distinct phonemes). They contrast in 1 shared contexts, with 26 contexts exclusive to s and 11 exclusive to z
+Pattern: COMPLEMENTARY DISTRIBUTION (likely allophones)
+s: 11 occurrences | š: 9 occurrences
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: L2-left, D=0.67≥0.6] s and š are in complementary distribution
 
   s appears in:
-    INITIAL:
-      # _ k ×10 : [s]kaɪ, [s]kuːl...
+    MEDIAL C_V:
+      L2=C|L1=V[low]|R1=i|R2=p _  ×3 : pa[s]ip, nipa[s]ip, ʔupa[s]ip
+      L2=V[back,high]|L1=C|R1=a|R2=h _  ×1 : ʔuk[s]ah
 
-  z appears in:
-    FINAL:
-      ɡ _ # ×3 : bæɡ[z], dɔɡ[z]...
+  š appears in:
+    MEDIAL C_V:
+      L2=V[front,high]|L1=C|R1=a|R2=h _  ×2 : ʔik[š]ah, nik[š]ah
+      L2=C|L1=V[front,high]|R1=iː|R2=t _  ×1 : ni[š]iːtva
 ```
+
+#### Structural Alternations (X ~ Ø)
+
+```
+STRUCTURAL ALTERNATION 15: 'ʔ ~ Ø'
+----------------------------------------
+Process: PROTHESIS (word-initial insertion)
+Rule: Ø → ʔ / # __
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Evidence: 21 tokens with segment 'ʔ'
+Analysis: Prothesis: ʔ inserted word-initially (17/21 tokens = 81%) (no Ø attested in same frames)
+
+  Same-frame contrasts (with-X vs with-Ø):
+    INITIAL:L2=#|L1=#|R1=u|R2=s: with-ʔ = 4, with-Ø = 0 → skew = 1.00
+    INITIAL:L2=#|L1=#|R1=u|R2=k: with-ʔ = 3, with-Ø = 0 → skew = 1.00
+
+  Dominant contexts:
+    INITIAL:L2=#|L1=#|R1=u|R2=s (4 tokens)
+    INITIAL:L2=#|L1=#|R1=u|R2=k (3 tokens)
+```
+
+### Structural Process Types
+
+For X ~ Ø alternations, Phonenv detects:
+
+- **PROTHESIS**: Ø → X / # __ (word-initial insertion, e.g., ʔ before vowels)
+- **EPENTHESIS**: Ø → X / C __ C (cluster-breaking, e.g., vowel insertion)
+- **APHAERESIS**: X → Ø / # __ (word-initial deletion)
+- **APOCOPE**: X → Ø / __ # (word-final deletion)
+- **SYNCOPE**: X → Ø / V __ V (vowel deletion between vowels)
+- **INCONCLUSIVE**: Insufficient same-frame evidence to determine direction
 
 ### Use Cases
 
@@ -331,9 +400,13 @@ p ~ b
 t ~ d
 s ~ z
 
-# Place assimilation
-n ~ m
-n ~ ŋ
+# Palatalization
+s ~ š
+t ~ tʃ
+
+# Structural processes
+ʔ ~ Ø  # glottal stop prothesis
+i ~ Ø  # vowel epenthesis
 ```
 
 **Historical Linguistics**:
@@ -341,6 +414,9 @@ n ~ ŋ
 # Sound changes
 θ ~ t  # theta > t merger
 x ~ h  # velar > glottal fricative
+
+# Vowel loss
+ə ~ Ø  # schwa deletion
 ```
 
 **Language Learning**:
@@ -349,7 +425,87 @@ x ~ h  # velar > glottal fricative
 l ~ r
 b ~ v
 θ ~ s
+
+# Allophonic variation
+p ~ pʰ
+t ~ ʔ
 ```
+
+---
+
+## Pair-Aware Alternation Analysis
+
+### Morphologically-Conditioned Alternations
+
+For alternations triggered by morphology (e.g., Polish voicing, German umlaut), use **paradigm tagging** to compare forms within the same paradigm instead of across the entire lexicon.
+
+### Dataset Tagging
+
+Tag words in `dataset.txt` with paradigm information:
+
+```
+# Polish: final devoicing in singular
+klup [sg]      # club (singular) - final /p/
+klubi [pl]     # clubs (plural) - voiced /b/
+grus [sg]      # rubble - final /s/
+gruzi [pl]     # rubble (pl) - voiced /z/
+ruk [sg]       # year - /u/ in closed syllable
+rogi [pl]      # years - /o/ in open syllable
+
+# Verbs: 1sg vs imperative
+rob'e [1sg]    # I'm doing - /b/
+rup [imp]      # do! - devoiced /p/
+```
+
+### Targets Configuration
+
+Use `[pair=X:Y]` tags to specify which paradigm forms to compare:
+
+```
+# Compare singular vs plural forms
+[pair=sg:pl]
+p ~ b          # Final devoicing
+t ~ d
+k ~ g
+s ~ z
+o ~ u          # Yers alternation
+
+# Compare 1sg vs imperative
+[pair=1sg:imp]
+b ~ p
+v ~ f
+```
+
+### How It Works
+
+1. **Parser reads `[pair=sg:pl]`** from targets.txt
+2. **Filters dataset**: Only analyzes [sg] words for first segment, [pl] for second
+3. **Compares paired contexts**: Detects systematic alternations within paradigms
+4. **Result**: Morphological patterns classified as COMPLEMENTARY instead of CONTRASTIVE
+
+### Without Tags (Wrong)
+```
+p ~ b: CONTRASTIVE (distinct phonemes)
+```
+Treats all `p` and `b` occurrences independently, misses the pattern.
+
+### With Tags (Correct)
+```
+p ~ b [pair=sg:pl]: COMPLEMENTARY DISTRIBUTION
+Pattern: Final devoicing in singular
+Rule: b → p / __ #[sg]
+```
+Detects that p/b alternate predictably by morphological context.
+
+### Tag Formats
+
+```
+[sg]           # Simple tag
+[pair=1]       # Position-based pairing
+[form=nom]     # Named attribute
+```
+
+Any tag format works - just match the `[pair=X:Y]` filter to your dataset tags.
 
 ---
 
@@ -600,7 +756,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 ## Support
 
 * **Issues**: [github.com/shameedjob/phonenv/issues](https://github.com/shameedjob/phonenv/issues)
-* **Documentation**: See markdown files in the project root
+* **Documentation**: See `docs/` directory for implementation details and change history
 * **Examples**: See the `data/` directory for sample datasets
 
 ---

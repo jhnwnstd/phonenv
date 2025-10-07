@@ -579,6 +579,22 @@ class OutputWriter:
         payload = [_to_plain(r) for r in results]
 
         with output_file.open("w", encoding="utf-8") as f:
+            # Count targets vs alternations
+            num_targets = sum(
+                1
+                for res in payload
+                if "pair" not in res
+                and "alternation" not in res
+                and "process_type" not in res
+            )
+            num_alternations = len(payload) - num_targets
+
+            # Count structural vs phonemic alternations
+            structural_count = sum(
+                1 for res in payload if "process_type" in res
+            )
+            phonemic_count = num_alternations - structural_count
+
             # Header
             f.write("PHONETIC ENVIRONMENT ANALYSIS REPORT\n")
             f.write("=" * REPORT_SEPARATOR_WIDTH + "\n")
@@ -586,7 +602,11 @@ class OutputWriter:
                 f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
             f.write(f"Transcription mode: {transcription_mode}\n")
-            f.write(f"Total targets analyzed: {len(payload)}\n")
+            f.write(f"Targets: {num_targets}\n")
+            f.write(
+                f"Alternations: {num_alternations} (phonemic: {phonemic_count}, structural: {structural_count})\n"
+            )
+            f.write(f"Total lexical items: {len(payload)}\n")
 
             # Add source file information to header
             if payload:
@@ -699,6 +719,14 @@ class OutputWriter:
         """Write alternation result details to report file."""
         import unicodedata as ud
 
+        # Check if this is a structural alternation (X ~ Ø)
+        if "process_type" in res:
+            self._write_structural_alternation_detail(
+                f, index, res, include_examples, max_examples
+            )
+            return
+
+        # Handle phonemic alternation (standard case)
         # Handle both _to_plain format (pair key) and to_dict format (alternation key)
         if "pair" in res:
             pair = res["pair"]
@@ -715,8 +743,9 @@ class OutputWriter:
         analysis = res.get("analysis", "")
         total1 = res.get("segment1_total", 0)
         total2 = res.get("segment2_total", 0)
+        total_count = total1 + total2
 
-        f.write(f"ALTERNATION {index}: '{alternation}'\n")
+        f.write(f"ALTERNATION {index}: '{alternation}' ({total_count})\n")
         f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
 
         # Format pattern type with descriptive label
@@ -734,16 +763,32 @@ class OutputWriter:
 
         f.write(f"Pattern: {pattern_display}\n")
         f.write(
-            f"{seg1}: {total1} occurrences | {seg2}: {total2} occurrences\n"
+            "Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3\n"
         )
         if analysis:
             f.write(f"Analysis: {analysis}\n")
-        f.write("\n")
+        f.write("-" * 60 + "\n\n")
 
-        # Show environments for segment1
+        # Helper to convert extended context to simple _ notation
+        def simplify_context(env: str) -> tuple:
+            """Convert L2=X|L1=Y|R1=Z format to Y _ Z for display."""
+            if "|" in env:
+                # Extended format: extract L1 and R1
+                parts = dict(p.split("=") for p in env.split("|") if "=" in p)
+                left = parts.get("L1", "#")
+                right = parts.get("R1", "#")
+                return left, right
+            elif "__" in env:
+                # Simple format
+                return tuple((env.split("__", 1) + [""])[:2])
+            else:
+                return env, ""
+
+        # VARIANT 1
         env1 = res.get("segment1_envs", res.get("segment1_environments", {}))
         if env1:
-            f.write(f"  {seg1} appears in:\n")
+            f.write(f"  VARIANT 1: '{seg1}' ({total1})\n")
+            f.write("  " + "-" * 40 + "\n")
             for group_name, environments in env1.items():
                 if not environments:
                     continue
@@ -756,11 +801,7 @@ class OutputWriter:
                             ud.normalize("NFC", ex) for ex in examples
                         )
                     )
-                    left, right = (
-                        (env.split("__", 1) + [""])[:2]
-                        if "__" in env
-                        else (env, "")
-                    )
+                    left, right = simplify_context(env)
                     count = len(deduped)
                     f.write(f"      {left} _ {right} ×{count}")
                     if include_examples and deduped:
@@ -772,11 +813,119 @@ class OutputWriter:
                     f.write("\n")
             f.write("\n")
 
-        # Show environments for segment2
+        # VARIANT 2
         env2 = res.get("segment2_envs", res.get("segment2_environments", {}))
         if env2:
-            f.write(f"  {seg2} appears in:\n")
+            f.write(f"  VARIANT 2: '{seg2}' ({total2})\n")
+            f.write("  " + "-" * 40 + "\n")
             for group_name, environments in env2.items():
+                if not environments:
+                    continue
+                f.write(f"    {group_name}:\n")
+                for env, examples in environments.items():
+                    if not isinstance(examples, (list, tuple)):
+                        examples = []
+                    deduped = list(
+                        dict.fromkeys(
+                            ud.normalize("NFC", ex) for ex in examples
+                        )
+                    )
+                    left, right = simplify_context(env)
+                    count = len(deduped)
+                    f.write(f"      {left} _ {right} ×{count}")
+                    if include_examples and deduped:
+                        shown = deduped[:max_examples]
+                        f.write(f" : {', '.join(shown)}")
+                        extra = max(0, len(deduped) - max_examples)
+                        if extra:
+                            f.write(f" (+{extra} more)")
+                    f.write("\n")
+            f.write("\n")
+
+    def _write_structural_alternation_detail(
+        self,
+        f,
+        index: int,
+        res: Dict[str, Any],
+        include_examples: bool,
+        max_examples: int,
+    ) -> None:
+        """Write structural alternation (X ~ Ø) result details to report file."""
+        import unicodedata as ud
+
+        # Extract structural alternation fields
+        if "pair" in res:
+            pair = res["pair"]
+            alternation = f"{pair.get('segment1', 'Ø') or 'Ø'} ~ {pair.get('segment2', 'Ø') or 'Ø'}"
+        else:
+            alternation = res.get("alternation", "")
+
+        segment = res.get("segment", "")
+        process_type = res.get("process_type", "unknown")
+        rule = res.get("rule", "")
+        analysis = res.get("analysis", "")
+        total = res.get("segment_total", 0)
+        dominant_contexts = res.get("dominant_contexts", [])
+
+        # Write header
+        f.write(f"STRUCTURAL ALTERNATION {index}: '{alternation}' ({total})\n")
+        f.write("-" * NARROW_SEPARATOR_WIDTH + "\n")
+
+        # Format process type with descriptive label
+        process_labels = {
+            "prothesis": "PROTHESIS (word-initial insertion)",
+            "epenthesis": "EPENTHESIS (insertion)",
+            "syncope": "SYNCOPE (vowel deletion)",
+            "apocope": "APOCOPE (word-final deletion)",
+            "aphaeresis": "APHAERESIS (word-initial deletion)",
+            "deletion": "DELETION",
+            "inconclusive": "INCONCLUSIVE",
+            "unknown": "UNKNOWN PROCESS",
+        }
+        process_display = process_labels.get(
+            process_type, process_type.upper()
+        )
+
+        f.write(f"Process: {process_display}\n")
+        f.write(f"Rule: {rule}\n")
+        f.write(
+            "Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3\n"
+        )
+        if analysis:
+            f.write(f"Analysis: {analysis}\n")
+        f.write("-" * 60 + "\n\n")
+
+        # Show same-frame contrasts if available
+        frame_contrasts = res.get("frame_contrasts", {})
+        if frame_contrasts:
+            f.write("  Same-frame contrasts (with-X vs with-\u00d8):\n")
+            # Show top 3 by with_X count
+            sorted_frames = sorted(
+                frame_contrasts.items(),
+                key=lambda kv: kv[1]["with_X"],
+                reverse=True,
+            )[:3]
+            for ctx, counts in sorted_frames:
+                with_x = counts["with_X"]
+                with_null = counts["with_\u00d8"]
+                skew = counts["skew"]
+                f.write(
+                    f"    {ctx}: with-{segment} = {with_x}, with-\u00d8 = {with_null} \u2192 skew = {skew:.2f}\n"
+                )
+            f.write("\n")
+
+        # Show dominant contexts
+        if dominant_contexts:
+            f.write("  Dominant contexts:\n")
+            for ctx in dominant_contexts:
+                f.write(f"    {ctx}\n")
+            f.write("\n")
+
+        # Show detailed environments for the real segment
+        envs = res.get("segment_envs", res.get("segment_environments", {}))
+        if envs and include_examples:
+            f.write(f"  {segment} distribution:\n")
+            for group_name, environments in envs.items():
                 if not environments:
                     continue
                 f.write(f"    {group_name}:\n")
@@ -795,7 +944,7 @@ class OutputWriter:
                     )
                     count = len(deduped)
                     f.write(f"      {left} _ {right} ×{count}")
-                    if include_examples and deduped:
+                    if deduped:
                         shown = deduped[:max_examples]
                         f.write(f" : {', '.join(shown)}")
                         extra = max(0, len(deduped) - max_examples)

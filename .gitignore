@@ -218,3 +218,6 @@ data/test/
 
 # Cache directory
 data/.cache/
+
+# Documentation
+docs/

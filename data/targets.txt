@@ -1,17 +1,42 @@
-# English RP phonetic analysis
-[lang=en-GB; mode=narrow]
+# Polish targets to analyze obstruent voicing and the o~u alternation
+[lang=pol; mode=narrow; profile=polish]
 
-# Voicing alternations
-s ~ z  # plural voicing
-θ ~ ð  # dental fricative voicing
-t ~ d  # stop voicing
-
-# Vowel distribution
-ɪ ~ iː  # short vs long high front
-ʊ ~ uː  # short vs long high back
-
-# Individual segments for comparison
+# Obstruents involved in voicing alternations
+p
+b
+t
+d
+k
+g
 s
 z
-θ
-ɪ
+š
+ž
+f
+v
+w
+x
+
+# Sonorants (context tracking; not primary alternants)
+m
+n
+r
+l
+j
+
+# Vowels to track (focus on o~u)
+a
+e
+i
+o
+u
+
+# Alternation pairs (use these to run alternation analysis)
+o ~ u
+p ~ b
+t ~ d
+k ~ g
+s ~ z
+š ~ ž
+f ~ v
+w ~ v

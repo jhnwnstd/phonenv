@@ -1,0 +1,716 @@
+PHONETIC ENVIRONMENT ANALYSIS REPORT
+============================================================
+Generated: 2025-10-07 22:13:05
+Transcription mode: narrow
+Targets: 24
+Alternations: 8 (phonemic: 8, structural: 0)
+Total lexical items: 32
+Source dataset: data/dataset.txt
+
+SUMMARY
+----------------------------------------
+Target     Count        Envs
+----------------------------------------
+p          11           6
+b          7            5
+t          12           7
+d          7            5
+k          13           6
+g          0            0
+s          14           8
+z          5            4
+š          6            4
+ž          8            4
+f          1            1
+v          11           6
+w          9            7
+x          2            1
+m          4            4
+n          10           6
+r          16           8
+l          8            6
+j          4            3
+a          0            0
+e          11           7
+i          22           14
+o          39           28
+u          30           25
+
+============================================================
+
+TARGET 1: 'p' (11)
+----------------------------------------
+  INITIAL:
+    # _ s ×2 : [p]soce, [p]soć
+
+  FINAL:
+    u _ # ×4 : klu[p], tru[p], žwu[p], ru[p]
+    o _ # ×2 : sno[p], ko[p]
+
+  MEDIAL V_V:
+    o _ i ×1 : sno[p]i
+    u _ i ×1 : tru[p]i
+
+  MEDIAL V_C:
+    o _ ' ×1 : ko[p]'e
+
+—
+
+TARGET 2: 'b' (7)
+----------------------------------------
+  INITIAL:
+    # _ o ×2 : [b]ori, [b]oji
+    # _ u ×2 : [b]ur, [b]uj
+
+  MEDIAL V_V:
+    o _ i ×1 : žwo[b]i
+    u _ i ×1 : klu[b]i
+
+  MEDIAL V_C:
+    o _ ' ×1 : ro[b]'e
+
+—
+
+TARGET 3: 't' (12)
+----------------------------------------
+  INITIAL:
+    # _ r ×4 : [t]rup, [t]rupi, [t]rut, [t]rudi
+
+  FINAL:
+    u _ # ×2 : tru[t], lu[t]
+    o _ # ×1 : ko[t]
+
+  MEDIAL V_V:
+    o _ i ×1 : ko[t]i
+
+  MEDIAL V_C:
+    o _ v ×2 : o[t]vože, o[t]vuš
+
+  MEDIAL C_V:
+    s _ o ×1 : s[t]oje
+    s _ u ×1 : s[t]uj
+
+—
+
+TARGET 4: 'd' (7)
+----------------------------------------
+  INITIAL:
+    # _ o ×2 : [d]om, [d]omi
+    # _ ž ×2 : [d]žvon, [d]žvoni
+
+  MEDIAL V_V:
+    o _ i ×1 : lo[d]i
+    u _ i ×1 : tru[d]i
+
+  MEDIAL V_C:
+    o _ z ×1 : vo[d]ze
+
+—
+
+TARGET 5: 'k' (13)
+----------------------------------------
+  INITIAL:
+    # _ o ×6 : [k]ot, [k]oti, [k]oš, [k]oše, [k]op'e (+1 more)
+    # _ l ×2 : [k]lup, [k]lubi
+
+  FINAL:
+    u _ # ×2 : wu[k], ru[k]
+    o _ # ×1 : so[k]
+
+  MEDIAL V_V:
+    o _ i ×1 : so[k]i
+    u _ i ×1 : wu[k]i
+
+—
+
+TARGET 6: 'g' (0)
+----------------------------------------
+No environments found.
+
+—
+
+TARGET 7: 's' (14)
+----------------------------------------
+  INITIAL:
+    # _ o ×3 : [s]ok, [s]oki, [s]oli
+    # _ n ×2 : [s]nop, [s]nopi
+    # _ t ×2 : [s]toje, [s]tuj
+    # _ u ×1 : [s]ul
+
+  FINAL:
+    u _ # ×2 : ɡru[s], vu[s]
+    o _ # ×1 : no[s]
+
+  MEDIAL V_V:
+    o _ i ×1 : no[s]i
+
+  MEDIAL C_V:
+    p _ o ×2 : p[s]oce, p[s]oć
+
+—
+
+TARGET 8: 'z' (5)
+----------------------------------------
+  INITIAL:
+    # _ w ×2 : [z]wov'e, [z]wuf
+
+  MEDIAL V_V:
+    o _ i ×1 : vo[z]i
+    u _ i ×1 : ɡru[z]i
+
+  MEDIAL C_V:
+    d _ e ×1 : vod[z]e
+
+—
+
+TARGET 9: 'š' (6)
+----------------------------------------
+  INITIAL:
+    # _ u ×2 : [š]um, [š]umi
+
+  FINAL:
+    u _ # ×2 : nu[š], otvu[š]
+    o _ # ×1 : ko[š]
+
+  MEDIAL V_V:
+    o _ e ×1 : ko[š]e
+
+—
+
+TARGET 10: 'ž' (8)
+----------------------------------------
+  INITIAL:
+    # _ u ×2 : [ž]ur, [ž]uri
+    # _ w ×2 : [ž]wup, [ž]wobi
+
+  MEDIAL V_V:
+    o _ e ×2 : no[ž]e, otvo[ž]e
+
+  MEDIAL C_C:
+    d _ v ×2 : d[ž]von, d[ž]voni
+
+—
+
+TARGET 11: 'f' (1)
+----------------------------------------
+  FINAL:
+    u _ # ×1 : zwu[f]
+
+—
+
+TARGET 12: 'v' (11)
+----------------------------------------
+  INITIAL:
+    # _ o ×3 : [v]ozi, [v]owi, [v]odze
+    # _ u ×3 : [v]us, [v]uw, [v]uć
+
+  MEDIAL V_C:
+    o _ ' ×1 : zwo[v]'e
+
+  MEDIAL C_V:
+    ž _ o ×2 : dž[v]on, dž[v]oni
+    t _ o ×1 : ot[v]ože
+    t _ u ×1 : ot[v]uš
+
+—
+
+TARGET 13: 'w' (9)
+----------------------------------------
+  INITIAL:
+    # _ u ×3 : [w]uk, [w]uɡi, [w]uki
+
+  FINAL:
+    u _ # ×1 : vu[w]
+
+  MEDIAL V_V:
+    o _ i ×1 : vo[w]i
+
+  MEDIAL C_V:
+    z _ o ×1 : z[w]ov'e
+    z _ u ×1 : z[w]uf
+    ž _ o ×1 : ž[w]obi
+    ž _ u ×1 : ž[w]up
+
+—
+
+TARGET 14: 'x' (2)
+----------------------------------------
+  INITIAL:
+    # _ r ×2 : [x]ron'e, [x]ron'
+
+—
+
+TARGET 15: 'm' (4)
+----------------------------------------
+  FINAL:
+    o _ # ×1 : do[m]
+    u _ # ×1 : šu[m]
+
+  MEDIAL V_V:
+    o _ i ×1 : do[m]i
+    u _ i ×1 : šu[m]i
+
+—
+
+TARGET 16: 'n' (10)
+----------------------------------------
+  INITIAL:
+    # _ o ×3 : [n]os, [n]osi, [n]ože
+    # _ u ×1 : [n]uš
+
+  FINAL:
+    o _ # ×1 : džvo[n]
+
+  MEDIAL V_V:
+    o _ i ×1 : džvo[n]i
+
+  MEDIAL V_C:
+    o _ ' ×2 : xro[n]'e, xro[n]'
+
+  MEDIAL C_V:
+    s _ o ×2 : s[n]op, s[n]opi
+
+—
+
+TARGET 17: 'r' (16)
+----------------------------------------
+  INITIAL:
+    # _ o ×2 : [r]oɡi, [r]ob'e
+    # _ u ×2 : [r]uk, [r]up
+
+  FINAL:
+    u _ # ×2 : bu[r], žu[r]
+
+  MEDIAL V_V:
+    o _ i ×1 : bo[r]i
+    u _ i ×1 : žu[r]i
+
+  MEDIAL C_V:
+    t _ u ×4 : t[r]up, t[r]upi, t[r]ut, t[r]udi
+    x _ o ×2 : x[r]on'e, x[r]on'
+    ɡ _ u ×2 : ɡ[r]us, ɡ[r]uzi
+
+—
+
+TARGET 18: 'l' (8)
+----------------------------------------
+  INITIAL:
+    # _ o ×1 : [l]odi
+    # _ u ×1 : [l]ut
+
+  FINAL:
+    u _ # ×2 : su[l], oɡu[l]
+
+  MEDIAL V_V:
+    o _ e ×1 : oɡo[l]e
+    o _ i ×1 : so[l]i
+
+  MEDIAL C_V:
+    k _ u ×2 : k[l]up, k[l]ubi
+
+—
+
+TARGET 19: 'j' (4)
+----------------------------------------
+  FINAL:
+    u _ # ×2 : bu[j], stu[j]
+
+  MEDIAL V_V:
+    o _ e ×1 : sto[j]e
+    o _ i ×1 : bo[j]i
+
+—
+
+TARGET 20: 'a' (0)
+----------------------------------------
+No environments found.
+
+—
+
+TARGET 21: 'e' (11)
+----------------------------------------
+  FINAL:
+    ' _ # ×4 : rob'[e], kop'[e], xron'[e], zwov'[e]
+    ž _ # ×2 : nož[e], otvož[e]
+    c _ # ×1 : psoc[e]
+    j _ # ×1 : stoj[e]
+    l _ # ×1 : oɡol[e]
+    z _ # ×1 : vodz[e]
+    š _ # ×1 : koš[e]
+
+—
+
+TARGET 22: 'i' (22)
+----------------------------------------
+  FINAL:
+    b _ # ×2 : klub[i], žwob[i]
+    d _ # ×2 : trud[i], lod[i]
+    k _ # ×2 : wuk[i], sok[i]
+    m _ # ×2 : dom[i], šum[i]
+    p _ # ×2 : trup[i], snop[i]
+    r _ # ×2 : bor[i], žur[i]
+    z _ # ×2 : ɡruz[i], voz[i]
+    ɡ _ # ×2 : wuɡ[i], roɡ[i]
+    j _ # ×1 : boj[i]
+    l _ # ×1 : sol[i]
+    n _ # ×1 : džvon[i]
+    s _ # ×1 : nos[i]
+    t _ # ×1 : kot[i]
+    w _ # ×1 : vow[i]
+
+—
+
+TARGET 23: 'o' (39)
+----------------------------------------
+  INITIAL:
+    # _ t ×2 : [o]tvože, [o]tvuš
+    # _ ɡ ×2 : [o]ɡole, [o]ɡul
+
+  MEDIAL C_C:
+    d _ m ×2 : d[o]m, d[o]mi
+    k _ p ×2 : k[o]p'e, k[o]p
+    k _ t ×2 : k[o]t, k[o]ti
+    k _ š ×2 : k[o]š, k[o]še
+    n _ p ×2 : sn[o]p, sn[o]pi
+    n _ s ×2 : n[o]s, n[o]si
+    r _ n ×2 : xr[o]n'e, xr[o]n'
+    s _ k ×2 : s[o]k, s[o]ki
+    v _ n ×2 : džv[o]n, džv[o]ni
+    b _ j ×1 : b[o]ji
+    b _ r ×1 : b[o]ri
+    l _ d ×1 : l[o]di
+    n _ ž ×1 : n[o]že
+    r _ b ×1 : r[o]b'e
+    r _ ɡ ×1 : r[o]ɡi
+    s _ c ×1 : ps[o]ce
+    s _ l ×1 : s[o]li
+    s _ ć ×1 : ps[o]ć
+    t _ j ×1 : st[o]je
+    v _ d ×1 : v[o]dze
+    v _ w ×1 : v[o]wi
+    v _ z ×1 : v[o]zi
+    v _ ž ×1 : otv[o]že
+    w _ b ×1 : žw[o]bi
+    w _ v ×1 : zw[o]v'e
+    ɡ _ l ×1 : oɡ[o]le
+
+—
+
+TARGET 24: 'u' (30)
+----------------------------------------
+  MEDIAL C_C:
+    r _ p ×3 : tr[u]p, tr[u]pi, r[u]p
+    w _ k ×2 : w[u]k, w[u]ki
+    š _ m ×2 : š[u]m, š[u]mi
+    ž _ r ×2 : ž[u]r, ž[u]ri
+    b _ j ×1 : b[u]j
+    b _ r ×1 : b[u]r
+    l _ b ×1 : kl[u]bi
+    l _ p ×1 : kl[u]p
+    l _ t ×1 : l[u]t
+    n _ š ×1 : n[u]š
+    r _ d ×1 : tr[u]di
+    r _ k ×1 : r[u]k
+    r _ s ×1 : ɡr[u]s
+    r _ t ×1 : tr[u]t
+    r _ z ×1 : ɡr[u]zi
+    s _ l ×1 : s[u]l
+    t _ j ×1 : st[u]j
+    v _ s ×1 : v[u]s
+    v _ w ×1 : v[u]w
+    v _ ć ×1 : v[u]ć
+    v _ š ×1 : otv[u]š
+    w _ f ×1 : zw[u]f
+    w _ p ×1 : žw[u]p
+    w _ ɡ ×1 : w[u]ɡi
+    ɡ _ l ×1 : oɡ[u]l
+
+—
+
+ALTERNATION 25: 'o ~ u' (69)
+----------------------------------------
+Pattern: CONTRASTIVE (distinct phonemes)
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: L1/R1, D=0.70≥0.6] o and u are contrastive (distinct phonemes). They contrast in 6 shared contexts, with 22 contexts exclusive to o and 19 exclusive to u
+------------------------------------------------------------
+
+  VARIANT 1: 'o' (39)
+  ----------------------------------------
+    INITIAL:
+      # _ t ×2 : [o]tvože, [o]tvuš
+      # _ ɡ ×2 : [o]ɡole, [o]ɡul
+    MEDIAL C_C:
+      d _ m ×2 : d[o]m, d[o]mi
+      k _ p ×2 : k[o]p'e, k[o]p
+      k _ t ×2 : k[o]t, k[o]ti
+      k _ š ×2 : k[o]š, k[o]še
+      n _ p ×2 : sn[o]p, sn[o]pi
+      n _ s ×2 : n[o]s, n[o]si
+      r _ n ×2 : xr[o]n'e, xr[o]n'
+      s _ k ×2 : s[o]k, s[o]ki
+      v _ n ×2 : džv[o]n, džv[o]ni
+      b _ j ×1 : b[o]ji
+      b _ r ×1 : b[o]ri
+      l _ d ×1 : l[o]di
+      n _ ž ×1 : n[o]že
+      r _ b ×1 : r[o]b'e
+      r _ ɡ ×1 : r[o]ɡi
+      s _ c ×1 : ps[o]ce
+      s _ l ×1 : s[o]li
+      s _ ć ×1 : ps[o]ć
+      t _ j ×1 : st[o]je
+      v _ d ×1 : v[o]dze
+      v _ w ×1 : v[o]wi
+      v _ z ×1 : v[o]zi
+      v _ ž ×1 : otv[o]že
+      w _ b ×1 : žw[o]bi
+      w _ v ×1 : zw[o]v'e
+      ɡ _ l ×1 : oɡ[o]le
+
+  VARIANT 2: 'u' (30)
+  ----------------------------------------
+    MEDIAL C_C:
+      r _ p ×3 : tr[u]p, tr[u]pi, r[u]p
+      w _ k ×2 : w[u]k, w[u]ki
+      š _ m ×2 : š[u]m, š[u]mi
+      ž _ r ×2 : ž[u]r, ž[u]ri
+      b _ j ×1 : b[u]j
+      b _ r ×1 : b[u]r
+      l _ b ×1 : kl[u]bi
+      l _ p ×1 : kl[u]p
+      l _ t ×1 : l[u]t
+      n _ š ×1 : n[u]š
+      r _ d ×1 : tr[u]di
+      r _ k ×1 : r[u]k
+      r _ s ×1 : ɡr[u]s
+      r _ t ×1 : tr[u]t
+      r _ z ×1 : ɡr[u]zi
+      s _ l ×1 : s[u]l
+      t _ j ×1 : st[u]j
+      v _ s ×1 : v[u]s
+      v _ w ×1 : v[u]w
+      v _ ć ×1 : v[u]ć
+      v _ š ×1 : otv[u]š
+      w _ f ×1 : zw[u]f
+      w _ p ×1 : žw[u]p
+      w _ ɡ ×1 : w[u]ɡi
+      ɡ _ l ×1 : oɡ[u]l
+
+—
+
+ALTERNATION 26: 'p ~ b' (18)
+----------------------------------------
+Pattern: INCONCLUSIVE
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: tried up to W=2, best D=0.36<0.6] No window separated distributions with sufficient confidence.
+------------------------------------------------------------
+
+  VARIANT 1: 'p' (11)
+  ----------------------------------------
+    INITIAL:
+      # _ s ×2 : [p]soce, [p]soć
+    FINAL:
+      u _ # ×4 : klu[p], tru[p], žwu[p], ru[p]
+      o _ # ×2 : sno[p], ko[p]
+    MEDIAL V_V:
+      o _ i ×1 : sno[p]i
+      u _ i ×1 : tru[p]i
+    MEDIAL V_C:
+      o _ ' ×1 : ko[p]'e
+
+  VARIANT 2: 'b' (7)
+  ----------------------------------------
+    INITIAL:
+      # _ o ×2 : [b]ori, [b]oji
+      # _ u ×2 : [b]ur, [b]uj
+    MEDIAL V_V:
+      o _ i ×1 : žwo[b]i
+      u _ i ×1 : klu[b]i
+    MEDIAL V_C:
+      o _ ' ×1 : ro[b]'e
+
+—
+
+ALTERNATION 27: 't ~ d' (19)
+----------------------------------------
+Pattern: CONTRASTIVE (distinct phonemes)
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: L1/R1, D=0.74≥0.6] t and d are contrastive (distinct phonemes). They contrast in 1 shared contexts, with 6 contexts exclusive to t and 4 exclusive to d
+------------------------------------------------------------
+
+  VARIANT 1: 't' (12)
+  ----------------------------------------
+    INITIAL:
+      # _ r ×4 : [t]rup, [t]rupi, [t]rut, [t]rudi
+    FINAL:
+      u _ # ×2 : tru[t], lu[t]
+      o _ # ×1 : ko[t]
+    MEDIAL V_V:
+      o _ i ×1 : ko[t]i
+    MEDIAL V_C:
+      o _ v ×2 : o[t]vože, o[t]vuš
+    MEDIAL C_V:
+      s _ o ×1 : s[t]oje
+      s _ u ×1 : s[t]uj
+
+  VARIANT 2: 'd' (7)
+  ----------------------------------------
+    INITIAL:
+      # _ o ×2 : [d]om, [d]omi
+      # _ ž ×2 : [d]žvon, [d]žvoni
+    MEDIAL V_V:
+      o _ i ×1 : lo[d]i
+      u _ i ×1 : tru[d]i
+    MEDIAL V_C:
+      o _ z ×1 : vo[d]ze
+
+—
+
+ALTERNATION 28: 'k ~ g' (13)
+----------------------------------------
+Pattern: INCONCLUSIVE
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: L1/R1, D=1.00≥0.6] Insufficient evidence for k ~ g. k: 13 occurrences in 6 contexts; g: 0 occurrences in 0 contexts. Need at least 3 occurrences and 2 contexts per segment.
+------------------------------------------------------------
+
+  VARIANT 1: 'k' (13)
+  ----------------------------------------
+    INITIAL:
+      # _ o ×6 : [k]ot, [k]oti, [k]oš, [k]oše, [k]op'e (+1 more)
+      # _ l ×2 : [k]lup, [k]lubi
+    FINAL:
+      u _ # ×2 : wu[k], ru[k]
+      o _ # ×1 : so[k]
+    MEDIAL V_V:
+      o _ i ×1 : so[k]i
+      u _ i ×1 : wu[k]i
+
+—
+
+ALTERNATION 29: 's ~ z' (19)
+----------------------------------------
+Pattern: CONTRASTIVE (distinct phonemes)
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: L1/R1, D=0.72≥0.6] s and z are contrastive (distinct phonemes). They contrast in 1 shared contexts, with 7 contexts exclusive to s and 3 exclusive to z
+------------------------------------------------------------
+
+  VARIANT 1: 's' (14)
+  ----------------------------------------
+    INITIAL:
+      # _ o ×3 : [s]ok, [s]oki, [s]oli
+      # _ n ×2 : [s]nop, [s]nopi
+      # _ t ×2 : [s]toje, [s]tuj
+      # _ u ×1 : [s]ul
+    FINAL:
+      u _ # ×2 : ɡru[s], vu[s]
+      o _ # ×1 : no[s]
+    MEDIAL V_V:
+      o _ i ×1 : no[s]i
+    MEDIAL C_V:
+      p _ o ×2 : p[s]oce, p[s]oć
+
+  VARIANT 2: 'z' (5)
+  ----------------------------------------
+    INITIAL:
+      # _ w ×2 : [z]wov'e, [z]wuf
+    MEDIAL V_V:
+      o _ i ×1 : vo[z]i
+      u _ i ×1 : ɡru[z]i
+    MEDIAL C_V:
+      d _ e ×1 : vod[z]e
+
+—
+
+ALTERNATION 30: 'š ~ ž' (14)
+----------------------------------------
+Pattern: INCONCLUSIVE
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: tried up to W=2, best D=0.41<0.6] No window separated distributions with sufficient confidence.
+------------------------------------------------------------
+
+  VARIANT 1: 'š' (6)
+  ----------------------------------------
+    INITIAL:
+      # _ u ×2 : [š]um, [š]umi
+    FINAL:
+      V[back,high] _ # ×2 : nu[š], otvu[š]
+      V[back,mid] _ # ×1 : ko[š]
+    MEDIAL C_V:
+      V[back,mid] _ e ×1 : ko[š]e
+
+  VARIANT 2: 'ž' (8)
+  ----------------------------------------
+    INITIAL:
+      # _ u ×2 : [ž]ur, [ž]uri
+      # _ w ×1 : [ž]wobi
+      # _ w ×1 : [ž]wup
+    MEDIAL C_V:
+      V[back,mid] _ e ×2 : no[ž]e, otvo[ž]e
+    MEDIAL C_C:
+      C _ v ×2 : d[ž]von, d[ž]voni
+
+—
+
+ALTERNATION 31: 'f ~ v' (12)
+----------------------------------------
+Pattern: INCONCLUSIVE
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: L1/R1, D=1.00≥0.6] Insufficient evidence for f ~ v. f: 1 occurrences in 1 contexts; v: 11 occurrences in 6 contexts. Need at least 3 occurrences and 2 contexts per segment.
+------------------------------------------------------------
+
+  VARIANT 1: 'f' (1)
+  ----------------------------------------
+    FINAL:
+      u _ # ×1 : zwu[f]
+
+  VARIANT 2: 'v' (11)
+  ----------------------------------------
+    INITIAL:
+      # _ o ×3 : [v]ozi, [v]owi, [v]odze
+      # _ u ×3 : [v]us, [v]uw, [v]uć
+    MEDIAL V_C:
+      o _ ' ×1 : zwo[v]'e
+    MEDIAL C_V:
+      ž _ o ×2 : dž[v]on, dž[v]oni
+      t _ o ×1 : ot[v]ože
+      t _ u ×1 : ot[v]uš
+
+—
+
+ALTERNATION 32: 'w ~ v' (20)
+----------------------------------------
+Pattern: COMPLEMENTARY DISTRIBUTION (likely allophones)
+Method: Auto-window = L2-left; Abstraction = {L2/L1: class+features, R1/R2: segment}; Min-evidence = 3
+Analysis: [Auto-window: L2-left, D=0.67≥0.6] w and v are in complementary distribution. w occurs in FINAL positions; v occurs in MEDIAL C_C positions (likely allophones)
+------------------------------------------------------------
+
+  VARIANT 1: 'w' (9)
+  ----------------------------------------
+    INITIAL:
+      # _ u ×2 : [w]uk, [w]uki
+      # _ u ×1 : [w]uɡi
+    FINAL:
+      V[back,high] _ # ×1 : vu[w]
+    MEDIAL C_V:
+      C _ o ×1 : ž[w]obi
+      C _ o ×1 : z[w]ov'e
+      C _ u ×1 : z[w]uf
+      C _ u ×1 : ž[w]up
+      V[back,mid] _ i ×1 : vo[w]i
+
+  VARIANT 2: 'v' (11)
+  ----------------------------------------
+    INITIAL:
+      # _ o ×1 : [v]odze
+      # _ o ×1 : [v]owi
+      # _ o ×1 : [v]ozi
+      # _ u ×1 : [v]us
+      # _ u ×1 : [v]uw
+      # _ u ×1 : [v]uć
+    MEDIAL C_V:
+      C _ o ×2 : dž[v]on, dž[v]oni
+      C _ o ×1 : ot[v]ože
+      C _ u ×1 : ot[v]uš
+    MEDIAL C_C:
+      V[back,mid] _ ' ×1 : zwo[v]'e
+

@@ -29,6 +29,18 @@ from phonenv_io import (
     get_cache_stats,
     AutoOutputWriter,
 )
+from config import (
+    DEFAULT_DATASET_PATH,
+    DEFAULT_TARGETS_PATH,
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_TERMINAL_WIDTH,
+    DEFAULT_TERMINAL_HEIGHT,
+    PREVIEW_TRUNCATE_LENGTH,
+    REPORT_SEPARATOR_WIDTH,
+    NARROW_SEPARATOR_WIDTH,
+    DEFAULT_TRANSCRIPTION_MODE,
+    DEFAULT_MIN_EVIDENCE,
+)
 
 # ========================= DIACRITIC PANEL =========================
 
@@ -300,6 +312,25 @@ def normalize_user_input(text: str) -> str:
     return text.strip().lower()
 
 
+def safe_input(prompt: str) -> str:
+    """Get user input with EOF/KeyboardInterrupt handling.
+
+    Args:
+        prompt: Input prompt to display
+
+    Returns:
+        User input as string
+
+    Raises:
+        SystemExit: On EOF or KeyboardInterrupt (exits gracefully)
+    """
+    try:
+        return input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print("\n\nGoodbye!")
+        sys.exit(0)
+
+
 def calculate_total_occurrences(results) -> int:
     """Safely calculate total occurrences across results."""
     return sum(getattr(r, "total_occurrences", 0) for r in results)
@@ -311,17 +342,17 @@ def calculate_total_occurrences(results) -> int:
 class InteractivePhonenvCLI:
     """Interactive command line interface for phonetic environment analysis."""
 
-    # UI Constants
-    DEFAULT_TERMINAL_WIDTH = 100
-    DEFAULT_TERMINAL_HEIGHT = 20
-    PREVIEW_TRUNCATE_LENGTH = 25
-    REPORT_SEPARATOR_WIDTH = 60
-    NARROW_SEPARATOR_WIDTH = 40
+    # UI Constants (imported from config module)
+    DEFAULT_TERMINAL_WIDTH = DEFAULT_TERMINAL_WIDTH
+    DEFAULT_TERMINAL_HEIGHT = DEFAULT_TERMINAL_HEIGHT
+    PREVIEW_TRUNCATE_LENGTH = PREVIEW_TRUNCATE_LENGTH
+    REPORT_SEPARATOR_WIDTH = REPORT_SEPARATOR_WIDTH
+    NARROW_SEPARATOR_WIDTH = NARROW_SEPARATOR_WIDTH
 
-    # File paths
-    DEFAULT_DATASET_PATH = "data/dataset.txt"
-    DEFAULT_TARGETS_PATH = "data/targets.txt"
-    DEFAULT_OUTPUT_DIR = "data/output"
+    # File paths (imported from config module)
+    DEFAULT_DATASET_PATH = DEFAULT_DATASET_PATH
+    DEFAULT_TARGETS_PATH = DEFAULT_TARGETS_PATH
+    DEFAULT_OUTPUT_DIR = DEFAULT_OUTPUT_DIR
 
     # Transcription modes
     class TranscriptionMode:
@@ -497,7 +528,7 @@ class InteractivePhonenvCLI:
             print(f"  {total:>{width}}. {back_label}")
         print()
         prompt = prompt or f"Choose (1–{total}) › "
-        choice = normalize_user_input(input(prompt))
+        choice = normalize_user_input(safe_input(prompt))
 
         # Empty Enter serves as back/exit
         if not choice:
@@ -527,7 +558,7 @@ class InteractivePhonenvCLI:
         """Initialize the interactive CLI."""
         raw_path = file_path or self.DEFAULT_DATASET_PATH
         self.file_path = resolve_data_file(raw_path)
-        self.transcription_mode = "narrow"
+        self.transcription_mode = DEFAULT_TRANSCRIPTION_MODE
         self.analyzer: Optional[PhoneticAnalyzer] = None
         self.dict_processor = DictionaryProcessor(self.file_path)
         self._create_analyzer()
@@ -608,7 +639,7 @@ class InteractivePhonenvCLI:
                 if not allow_back
                 else "Select mode (1-2) or '3'/'b' to go back: "
             )
-            choice = normalize_user_input(input(prompt))
+            choice = normalize_user_input(safe_input(prompt))
 
             if allow_back and choice in {"3", "b", "back"}:
                 return
@@ -1302,8 +1333,12 @@ alternations (prothesis, epenthesis, syncope, etc.) unless suppressed.
 
 
 def process_targets_with_cache(
-    targets, processor, cache, dataset_path, analyzer
-):
+    targets: List[str],
+    processor: Any,
+    cache: Any,
+    dataset_path: str,
+    analyzer: Any,
+) -> List[Any]:
     """Shared batch processing logic with caching (module-level version)."""
     results = []
     for i, target in enumerate(targets, 1):
@@ -1320,7 +1355,7 @@ def process_targets_with_cache(
     return results
 
 
-def print_batch_summary(results, output_paths):
+def print_batch_summary(results: List[Any], output_paths: Dict[str, str]) -> None:
     """Print standardized batch processing summary."""
     print("\nBatch analysis complete!")
     print(f"Results written to: {list(output_paths.values())[0]}")
@@ -1330,7 +1365,7 @@ def print_batch_summary(results, output_paths):
         print(f"Total occurrences: {total}")
 
 
-def run_batch_cli(args):
+def run_batch_cli(args: argparse.Namespace) -> None:
     """Run batch processing from command line."""
     # Resolve file paths with optional .txt extension
     targets_path = resolve_data_file(args.targets)

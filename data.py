@@ -1146,18 +1146,36 @@ class TargetsProcessor:
     ) -> Tuple[float, int, int, int]:
         """Compute separability score for alternation pair.
 
+        This algorithm determines how well two phonetic segments are distributed
+        in complementary (non-overlapping) contexts. Used for auto-window context
+        widening to find the optimal level of detail.
+
+        Algorithm:
+        1. Identify context overlap:
+           - Shared contexts (S): where both segments appear
+           - Exclusive contexts (Ex, Ey): unique to each segment
+        2. Calculate coverage (Cx, Cy): fraction of tokens in exclusive contexts
+        3. Compute separability score (σ):
+           - If overlapping: σ = (context_separation × token_coverage)
+           - If complementary: σ = 1.0 (perfect separation)
+
+        High σ (near 1.0) indicates complementary distribution (likely allophones).
+        Low σ (near 0.0) indicates overlapping distribution (likely contrastive).
+
         Returns:
             Tuple of (score, shared_count, exclusive1_count, exclusive2_count)
         """
-        shared = contexts1 & contexts2
-        exclusive1 = contexts1 - contexts2
-        exclusive2 = contexts2 - contexts1
+        # Step 1: Partition contexts into shared vs. exclusive sets
+        shared = contexts1 & contexts2  # Contexts where both segments appear
+        exclusive1 = contexts1 - contexts2  # Contexts unique to segment1
+        exclusive2 = contexts2 - contexts1  # Contexts unique to segment2
 
-        S = len(shared)
-        Ex = len(exclusive1)
-        Ey = len(exclusive2)
+        S = len(shared)  # Number of overlapping contexts
+        Ex = len(exclusive1)  # Number of exclusive contexts for segment1
+        Ey = len(exclusive2)  # Number of exclusive contexts for segment2
 
-        # Calculate total tokens
+        # Step 2: Calculate total token counts for each segment
+        # (tokens = actual word occurrences, not just unique contexts)
         total1 = sum(
             len(words)
             for env_group in env1.values()
@@ -1169,7 +1187,9 @@ class TargetsProcessor:
             for words in env_group.values()
         )
 
-        # Coverage: fraction of tokens in exclusive contexts
+        # Step 3: Calculate exclusive coverage (Cx, Cy)
+        # Coverage = fraction of tokens appearing in exclusive contexts
+        # High coverage means most occurrences are in non-overlapping environments
         exclusive1_tokens = sum(
             len(words)
             for env_type, contexts_map in env1.items()
@@ -1186,14 +1206,20 @@ class TargetsProcessor:
         Cx = exclusive1_tokens / total1 if total1 > 0 else 0
         Cy = exclusive2_tokens / total2 if total2 > 0 else 0
 
-        # Separability score: balance exclusives vs shared
-        # High score = well separated; Low score = overlapping
-        # Penalize shared contexts more heavily
+        # Step 4: Compute separability score (σ)
+        # σ balances two factors:
+        #   - Context separation: (Ex + Ey) / (S + Ex + Ey + 1)
+        #     Higher when more contexts are exclusive vs. shared
+        #   - Token coverage: (Cx + Cy) / 2
+        #     Higher when most tokens appear in exclusive contexts
         if S > 0:
-            # If there are shared contexts, require high exclusive coverage
+            # If there are shared contexts, penalize by weighting exclusive coverage
+            # Example: If S=10, Ex=5, Ey=5, Cx=0.8, Cy=0.7
+            #   → σ = (10/21) × (0.75) ≈ 0.36 (moderate overlap)
             sigma = ((Ex + Ey) / (S + Ex + Ey + 1)) * ((Cx + Cy) / 2)
         else:
-            # No shared contexts = perfect separation
+            # No shared contexts = perfect complementary distribution
+            # Example: Ex=15, Ey=12, S=0 → σ = 1.0 (allophones)
             sigma = 1.0 if (Ex > 0 or Ey > 0) else 0.0
 
         return sigma, S, Ex, Ey
@@ -1202,6 +1228,18 @@ class TargetsProcessor:
         self, window: int, alpha: float = 0.5
     ) -> float:
         """Compute complexity penalty for window size.
+
+        Wider context windows (L2/L1/R1/R2) capture more detail but risk
+        overfitting to incidental differences. This penalty discourages
+        unnecessarily wide windows unless they provide significantly better
+        separability.
+
+        Formula: π = 1 / (1 + α × (window - 1))
+
+        Examples (α=0.5):
+        - window=1 (L1/R1): π = 1.0 (no penalty, simplest)
+        - window=2 (L2/L1/R1/R2): π = 0.67 (moderate penalty)
+        - window=3 (L3/.../R3): π = 0.5 (strong penalty, rarely worth it)
 
         Args:
             window: Window size (1, 2, or 3)
@@ -1222,20 +1260,41 @@ class TargetsProcessor:
     ) -> AlternationResult:
         """Analyze alternation with progressive window widening.
 
-        Tries windows in order: W=1, W=2(L2), W=2(R2), W=3
-        Returns first window that meets decision threshold.
+        AUTO-WINDOW ALGORITHM:
+        ----------------------
+        This algorithm automatically finds the optimal context window size
+        for alternation analysis, balancing detail vs. overfitting.
+
+        Process:
+        1. Start with simplest window (W=1: L1/R1 only)
+        2. Compute separability score σ (how well segments separate)
+        3. Apply complexity penalty π (discourages wider windows)
+        4. Calculate decision score: D = σ × π
+        5. If D ≥ threshold (0.6), accept this window and stop
+        6. Otherwise, try wider window (W=2: L2/L1/R1/R2)
+        7. Return window with best D score
+
+        Decision Examples:
+        - D=0.75: Strong complementary distribution at this window → ACCEPT
+        - D=0.45: Weak separation, try wider window → CONTINUE
+        - D=0.30: Overlapping distribution even with detail → CONTRASTIVE
 
         Args:
             pair: Alternation pair to analyze
             max_window: Maximum window size (1-3)
-            threshold: Decision score threshold
+            threshold: Decision score threshold (default 0.6)
+            words1: Optional word list for segment1 (for pair filtering)
+            words2: Optional word list for segment2 (for pair filtering)
 
         Returns:
-            AlternationResult with window metadata
+            AlternationResult with best window and decision metadata
         """
         from analyze import IPAConfig, IPAProcessorV2
 
-        # Window progression: (size, label)
+        # Define window progression: start simple, gradually add detail
+        # W=1: L1/R1 (immediate neighbors only)
+        # W=2: L2/L1/R1/R2 (extends to second neighbor on left)
+        # W=3: L3/.../R3 (full context, rarely needed)
         windows_to_try = [(1, "L1/R1")]
         if max_window >= 2:
             windows_to_try.append((2, "L2-left"))
@@ -1243,17 +1302,19 @@ class TargetsProcessor:
             windows_to_try.append((3, "L2/L1/R1"))
 
         best_result = None
-        best_score = 0
+        best_score = 0  # Track highest D score across all windows
 
+        # Progressive window widening: try each window in sequence
         for window_size, window_label in windows_to_try:
-            # Configure analyzer for this window
+            # Step 1: Configure analyzer for this context window
             config = IPAConfig(
                 match_mode="narrow",
                 context_window=window_size,
             )
             self.analyzer.ipa_processor_v2 = IPAProcessorV2(config)
 
-            # Analyze at this window (with optional word filtering)
+            # Step 2: Analyze both segments at this window level
+            # (with optional word filtering for morphological alternations)
             env1 = self.analyzer.analyze_character(
                 pair.segment1, str(self.dataset_path), word_list=words1
             )
@@ -1261,7 +1322,8 @@ class TargetsProcessor:
                 pair.segment2, str(self.dataset_path), word_list=words2
             )
 
-            # Build context sets
+            # Step 3: Build unified context sets for comparison
+            # Format: "env_type:context" (e.g., "MEDIAL V_V:V_V", "INITIAL:#_V")
             contexts1 = set()
             contexts2 = set()
 
@@ -1273,18 +1335,22 @@ class TargetsProcessor:
                 for context in contexts.keys():
                     contexts2.add(f"{env_type}:{context}")
 
-            # Compute separability
+            # Step 4: Compute separability score (σ)
+            # How well do the segments separate into exclusive contexts?
             sigma, S, Ex, Ey = self._compute_separability_score(
                 contexts1, contexts2, env1, env2
             )
 
-            # Apply complexity penalty
+            # Step 5: Apply complexity penalty (π)
+            # Penalize wider windows to avoid overfitting
             pi = self._compute_complexity_penalty(window_size)
 
-            # Decision score
+            # Step 6: Calculate decision score (D = σ × π)
+            # High D = good separation with reasonable complexity
             D = sigma * pi
 
-            # Keep best so far
+            # Step 7: Track best result (highest D score)
+            # Even if D < threshold, keep best window as fallback
             if D > best_score:
                 total1 = sum(
                     len(words)

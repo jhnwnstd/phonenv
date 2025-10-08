@@ -285,7 +285,9 @@ def _scan_line(
     return offs, warns
 
 
-def _collect_issues(words: Iterable[str], targets: Iterable[str]):
+def _collect_issues(
+    words: Iterable[str], targets: Iterable[str]
+) -> Tuple[Dict[str, List[str]], List[Offense], List[WarningItem]]:
     offenders: Dict[str, List[str]] = defaultdict(list)
     offenses: List[Offense] = []
     warnings: List[WarningItem] = []

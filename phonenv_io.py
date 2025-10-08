@@ -12,17 +12,29 @@ import csv
 import enum
 import hashlib
 import json
+import sys
 import time
 from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from config import (
+    CACHE_MAX_ENTRIES,
+    CACHE_MAX_SIZE_MB,
+    CACHE_FILENAME,
+    DEFAULT_CACHE_DIR,
+    DEFAULT_OUTPUT_DIR,
+    REPORT_SEPARATOR_WIDTH,
+    NARROW_SEPARATOR_WIDTH,
+)
+from logger import get_logger
 
-# Output formatting constants
-REPORT_SEPARATOR_WIDTH = 60
-NARROW_SEPARATOR_WIDTH = 40
+# Additional constants not in config
 DEFAULT_CACHE_MAX_AGE_DAYS = 30.0
 MAX_SLUG_LENGTH = 80
+
+# Initialize logger
+logger = get_logger()
 
 # ========================= RESULT CACHING =========================
 
@@ -56,12 +68,25 @@ class CacheEntry:
 
 
 class ResultCache:
-    """Manages caching of phonetic analysis results with SHA256-based keys."""
+    """Manages caching of phonetic analysis results with SHA256-based keys.
 
-    def __init__(self, cache_dir: str = "data/.cache"):
+    Args:
+        cache_dir: Directory for cache files (default from config.DEFAULT_CACHE_DIR)
+        max_entries: Maximum cache entries before LRU eviction (default from config.CACHE_MAX_ENTRIES)
+        max_size_mb: Maximum cache size in MB before LRU eviction (default from config.CACHE_MAX_SIZE_MB)
+    """
+
+    def __init__(
+        self,
+        cache_dir: str = DEFAULT_CACHE_DIR,
+        max_entries: int = CACHE_MAX_ENTRIES,
+        max_size_mb: int = CACHE_MAX_SIZE_MB,
+    ):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.cache_file = self.cache_dir / "analysis_cache.jsonl"
+        self.cache_file = self.cache_dir / CACHE_FILENAME
+        self.max_entries = max_entries
+        self.max_size_mb = max_size_mb
 
         # In-memory cache for faster access during session
         self._memory_cache: Dict[str, CacheEntry] = {}
@@ -80,11 +105,18 @@ class ResultCache:
                         data = json.loads(line)
                         entry = CacheEntry.from_dict(data)
                         self._memory_cache[entry.key] = entry
-                    except (json.JSONDecodeError, TypeError, KeyError):
-                        # skip malformed lines
+                    except (json.JSONDecodeError, TypeError, KeyError) as e:
+                        # Skip malformed cache entry (corrupted or incompatible version)
+                        logger.warning(
+                            f"Skipping corrupted cache entry",
+                            cache_file=str(self.cache_file),
+                            error=str(e),
+                        )
                         continue
         except (IOError, OSError) as e:
-            print(f"Warning: Could not load cache: {e}")
+            logger.cache_error(
+                "load", e, cache_file=str(self.cache_file)
+            )
 
     def _save_cache(self) -> None:
         try:
@@ -96,9 +128,18 @@ class ResultCache:
                     )
             temp_file.replace(self.cache_file)
         except (IOError, OSError) as e:
-            print(f"Warning: Could not save cache: {e}")
+            logger.cache_error(
+                "save",
+                e,
+                cache_file=str(self.cache_file),
+                note="Cache will not persist between sessions",
+            )
 
     def _compute_dataset_hash(self, dataset_path: str) -> str:
+        """Compute SHA256 hash of dataset file for cache validation.
+
+        Returns empty string if file doesn't exist or cannot be read.
+        """
         path = Path(dataset_path)
         if not path.exists():
             return ""
@@ -108,7 +149,13 @@ class ResultCache:
                 for chunk in iter(lambda: f.read(8192), b""):
                     hasher.update(chunk)
             return hasher.hexdigest()
-        except (IOError, OSError):
+        except (IOError, OSError) as e:
+            logger.warning(
+                f"Could not compute hash for dataset",
+                dataset=dataset_path,
+                error=str(e),
+                note="Caching will be disabled for this file",
+            )
             return ""
 
     def _compute_cache_key(

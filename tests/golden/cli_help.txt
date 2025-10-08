@@ -1,0 +1,49 @@
+usage: main.py [-h] [--batch] [--targets PATH] [--dataset PATH]
+               [--output PATH] [--format {jsonl,json,csv,txt}]
+               [--create-targets] [--clear-cache] [--cache-stats]
+               [--mode {narrow,broad}] [--context-window {1,2}]
+               [--vowel-features] [--allow-null] [--suppress-null]
+               [--min-evidence MIN_EVIDENCE]
+
+Phonenv - Interactive Phonetic Environment Analysis
+
+options:
+  -h, --help            show this help message and exit
+  --batch, -b           Run batch processing on targets.txt file
+  --targets PATH, -t PATH
+                        Path to targets file (default: data/targets.txt)
+  --dataset PATH, -d PATH
+                        Path to dataset file (default: data/dataset.txt)
+  --output PATH, -o PATH
+                        Output file path (auto-generated if not specified)
+  --format {jsonl,json,csv,txt}, -f {jsonl,json,csv,txt}
+                        Output format for batch processing (default: txt)
+  --create-targets      Create sample targets.txt file and exit
+  --clear-cache         Clear analysis cache and exit
+  --cache-stats         Show cache statistics and exit
+  --mode {narrow,broad}
+                        Transcription mode for batch analysis (default:
+                        narrow)
+  --context-window {1,2}
+                        Context detail: 1=neighbor class only (V/C), 2=include
+                        segment identity (default: 1)
+  --vowel-features      Include vowel features (front/back, high/low) in
+                        contexts
+  --allow-null          [AUTO-DETECTED] Allow null segment (Ø) alternations
+                        (default: auto-detect from targets)
+  --suppress-null       Suppress null segment (Ø) alternations even if present
+                        in targets
+  --min-evidence MIN_EVIDENCE
+                        Minimum occurrences per segment for alternation
+                        analysis (default: 3)
+
+Examples:
+  phonenv                           # Interactive mode
+  phonenv --batch                   # Batch process targets.txt (auto-detects Ø alternations)
+  phonenv --batch --suppress-null   # Batch process without Ø alternations
+  phonenv --create-targets          # Create sample targets.txt
+  phonenv --targets path/targets.txt --output results.txt
+
+Note: Ø (null segment) alternations are auto-detected and analyzed as structural
+alternations (prothesis, epenthesis, syncope, etc.) unless suppressed.
+        

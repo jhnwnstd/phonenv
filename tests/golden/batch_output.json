@@ -1,0 +1,1543 @@
+{
+  "metadata": {
+    "format": "phonenv-json",
+    "version": "1.0",
+    "timestamp": "2025-10-07T22:13:12.699799",
+    "total_results": 32
+  },
+  "results": [
+    {
+      "target": "p",
+      "environments": {
+        "INITIAL": {
+          "#__s": [
+            "[p]soce",
+            "[p]soć"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "klu[p]",
+            "tru[p]",
+            "žwu[p]",
+            "ru[p]"
+          ],
+          "o__#": [
+            "sno[p]",
+            "ko[p]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "sno[p]i"
+          ],
+          "u__i": [
+            "tru[p]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__'": [
+            "ko[p]'e"
+          ]
+        }
+      },
+      "total_occurrences": 11,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "b",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[b]ori",
+            "[b]oji"
+          ],
+          "#__u": [
+            "[b]ur",
+            "[b]uj"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "žwo[b]i"
+          ],
+          "u__i": [
+            "klu[b]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__'": [
+            "ro[b]'e"
+          ]
+        }
+      },
+      "total_occurrences": 7,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "t",
+      "environments": {
+        "INITIAL": {
+          "#__r": [
+            "[t]rup",
+            "[t]rupi",
+            "[t]rut",
+            "[t]rudi"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "tru[t]",
+            "lu[t]"
+          ],
+          "o__#": [
+            "ko[t]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "ko[t]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__v": [
+            "o[t]vože",
+            "o[t]vuš"
+          ]
+        },
+        "MEDIAL C_V": {
+          "s__o": [
+            "s[t]oje"
+          ],
+          "s__u": [
+            "s[t]uj"
+          ]
+        }
+      },
+      "total_occurrences": 12,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "d",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[d]om",
+            "[d]omi"
+          ],
+          "#__ž": [
+            "[d]žvon",
+            "[d]žvoni"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "lo[d]i"
+          ],
+          "u__i": [
+            "tru[d]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__z": [
+            "vo[d]ze"
+          ]
+        }
+      },
+      "total_occurrences": 7,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "k",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[k]ot",
+            "[k]oti",
+            "[k]oš",
+            "[k]oše",
+            "[k]op'e",
+            "[k]op"
+          ],
+          "#__l": [
+            "[k]lup",
+            "[k]lubi"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "wu[k]",
+            "ru[k]"
+          ],
+          "o__#": [
+            "so[k]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "so[k]i"
+          ],
+          "u__i": [
+            "wu[k]i"
+          ]
+        }
+      },
+      "total_occurrences": 13,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "g",
+      "environments": {},
+      "total_occurrences": 0,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "s",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[s]ok",
+            "[s]oki",
+            "[s]oli"
+          ],
+          "#__n": [
+            "[s]nop",
+            "[s]nopi"
+          ],
+          "#__t": [
+            "[s]toje",
+            "[s]tuj"
+          ],
+          "#__u": [
+            "[s]ul"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "ɡru[s]",
+            "vu[s]"
+          ],
+          "o__#": [
+            "no[s]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "no[s]i"
+          ]
+        },
+        "MEDIAL C_V": {
+          "p__o": [
+            "p[s]oce",
+            "p[s]oć"
+          ]
+        }
+      },
+      "total_occurrences": 14,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "z",
+      "environments": {
+        "INITIAL": {
+          "#__w": [
+            "[z]wov'e",
+            "[z]wuf"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "vo[z]i"
+          ],
+          "u__i": [
+            "ɡru[z]i"
+          ]
+        },
+        "MEDIAL C_V": {
+          "d__e": [
+            "vod[z]e"
+          ]
+        }
+      },
+      "total_occurrences": 5,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "š",
+      "environments": {
+        "INITIAL": {
+          "#__u": [
+            "[š]um",
+            "[š]umi"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "nu[š]",
+            "otvu[š]"
+          ],
+          "o__#": [
+            "ko[š]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__e": [
+            "ko[š]e"
+          ]
+        }
+      },
+      "total_occurrences": 6,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "ž",
+      "environments": {
+        "INITIAL": {
+          "#__u": [
+            "[ž]ur",
+            "[ž]uri"
+          ],
+          "#__w": [
+            "[ž]wup",
+            "[ž]wobi"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__e": [
+            "no[ž]e",
+            "otvo[ž]e"
+          ]
+        },
+        "MEDIAL C_C": {
+          "d__v": [
+            "d[ž]von",
+            "d[ž]voni"
+          ]
+        }
+      },
+      "total_occurrences": 8,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "f",
+      "environments": {
+        "FINAL": {
+          "u__#": [
+            "zwu[f]"
+          ]
+        }
+      },
+      "total_occurrences": 1,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "v",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[v]ozi",
+            "[v]owi",
+            "[v]odze"
+          ],
+          "#__u": [
+            "[v]us",
+            "[v]uw",
+            "[v]uć"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__'": [
+            "zwo[v]'e"
+          ]
+        },
+        "MEDIAL C_V": {
+          "ž__o": [
+            "dž[v]on",
+            "dž[v]oni"
+          ],
+          "t__o": [
+            "ot[v]ože"
+          ],
+          "t__u": [
+            "ot[v]uš"
+          ]
+        }
+      },
+      "total_occurrences": 11,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "w",
+      "environments": {
+        "INITIAL": {
+          "#__u": [
+            "[w]uk",
+            "[w]uɡi",
+            "[w]uki"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "vu[w]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "vo[w]i"
+          ]
+        },
+        "MEDIAL C_V": {
+          "z__o": [
+            "z[w]ov'e"
+          ],
+          "z__u": [
+            "z[w]uf"
+          ],
+          "ž__o": [
+            "ž[w]obi"
+          ],
+          "ž__u": [
+            "ž[w]up"
+          ]
+        }
+      },
+      "total_occurrences": 9,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "x",
+      "environments": {
+        "INITIAL": {
+          "#__r": [
+            "[x]ron'e",
+            "[x]ron'"
+          ]
+        }
+      },
+      "total_occurrences": 2,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "m",
+      "environments": {
+        "FINAL": {
+          "o__#": [
+            "do[m]"
+          ],
+          "u__#": [
+            "šu[m]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "do[m]i"
+          ],
+          "u__i": [
+            "šu[m]i"
+          ]
+        }
+      },
+      "total_occurrences": 4,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "n",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[n]os",
+            "[n]osi",
+            "[n]ože"
+          ],
+          "#__u": [
+            "[n]uš"
+          ]
+        },
+        "FINAL": {
+          "o__#": [
+            "džvo[n]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "džvo[n]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__'": [
+            "xro[n]'e",
+            "xro[n]'"
+          ]
+        },
+        "MEDIAL C_V": {
+          "s__o": [
+            "s[n]op",
+            "s[n]opi"
+          ]
+        }
+      },
+      "total_occurrences": 10,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "r",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[r]oɡi",
+            "[r]ob'e"
+          ],
+          "#__u": [
+            "[r]uk",
+            "[r]up"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "bu[r]",
+            "žu[r]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "bo[r]i"
+          ],
+          "u__i": [
+            "žu[r]i"
+          ]
+        },
+        "MEDIAL C_V": {
+          "t__u": [
+            "t[r]up",
+            "t[r]upi",
+            "t[r]ut",
+            "t[r]udi"
+          ],
+          "x__o": [
+            "x[r]on'e",
+            "x[r]on'"
+          ],
+          "ɡ__u": [
+            "ɡ[r]us",
+            "ɡ[r]uzi"
+          ]
+        }
+      },
+      "total_occurrences": 16,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "l",
+      "environments": {
+        "INITIAL": {
+          "#__o": [
+            "[l]odi"
+          ],
+          "#__u": [
+            "[l]ut"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "su[l]",
+            "oɡu[l]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__e": [
+            "oɡo[l]e"
+          ],
+          "o__i": [
+            "so[l]i"
+          ]
+        },
+        "MEDIAL C_V": {
+          "k__u": [
+            "k[l]up",
+            "k[l]ubi"
+          ]
+        }
+      },
+      "total_occurrences": 8,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "j",
+      "environments": {
+        "FINAL": {
+          "u__#": [
+            "bu[j]",
+            "stu[j]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__e": [
+            "sto[j]e"
+          ],
+          "o__i": [
+            "bo[j]i"
+          ]
+        }
+      },
+      "total_occurrences": 4,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "a",
+      "environments": {},
+      "total_occurrences": 0,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "e",
+      "environments": {
+        "FINAL": {
+          "'__#": [
+            "rob'[e]",
+            "kop'[e]",
+            "xron'[e]",
+            "zwov'[e]"
+          ],
+          "ž__#": [
+            "nož[e]",
+            "otvož[e]"
+          ],
+          "c__#": [
+            "psoc[e]"
+          ],
+          "j__#": [
+            "stoj[e]"
+          ],
+          "l__#": [
+            "oɡol[e]"
+          ],
+          "z__#": [
+            "vodz[e]"
+          ],
+          "š__#": [
+            "koš[e]"
+          ]
+        }
+      },
+      "total_occurrences": 11,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "i",
+      "environments": {
+        "FINAL": {
+          "b__#": [
+            "klub[i]",
+            "žwob[i]"
+          ],
+          "d__#": [
+            "trud[i]",
+            "lod[i]"
+          ],
+          "k__#": [
+            "wuk[i]",
+            "sok[i]"
+          ],
+          "m__#": [
+            "dom[i]",
+            "šum[i]"
+          ],
+          "p__#": [
+            "trup[i]",
+            "snop[i]"
+          ],
+          "r__#": [
+            "bor[i]",
+            "žur[i]"
+          ],
+          "z__#": [
+            "ɡruz[i]",
+            "voz[i]"
+          ],
+          "ɡ__#": [
+            "wuɡ[i]",
+            "roɡ[i]"
+          ],
+          "j__#": [
+            "boj[i]"
+          ],
+          "l__#": [
+            "sol[i]"
+          ],
+          "n__#": [
+            "džvon[i]"
+          ],
+          "s__#": [
+            "nos[i]"
+          ],
+          "t__#": [
+            "kot[i]"
+          ],
+          "w__#": [
+            "vow[i]"
+          ]
+        }
+      },
+      "total_occurrences": 22,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "o",
+      "environments": {
+        "INITIAL": {
+          "#__t": [
+            "[o]tvože",
+            "[o]tvuš"
+          ],
+          "#__ɡ": [
+            "[o]ɡole",
+            "[o]ɡul"
+          ]
+        },
+        "MEDIAL C_C": {
+          "d__m": [
+            "d[o]m",
+            "d[o]mi"
+          ],
+          "k__p": [
+            "k[o]p'e",
+            "k[o]p"
+          ],
+          "k__t": [
+            "k[o]t",
+            "k[o]ti"
+          ],
+          "k__š": [
+            "k[o]š",
+            "k[o]še"
+          ],
+          "n__p": [
+            "sn[o]p",
+            "sn[o]pi"
+          ],
+          "n__s": [
+            "n[o]s",
+            "n[o]si"
+          ],
+          "r__n": [
+            "xr[o]n'e",
+            "xr[o]n'"
+          ],
+          "s__k": [
+            "s[o]k",
+            "s[o]ki"
+          ],
+          "v__n": [
+            "džv[o]n",
+            "džv[o]ni"
+          ],
+          "b__j": [
+            "b[o]ji"
+          ],
+          "b__r": [
+            "b[o]ri"
+          ],
+          "l__d": [
+            "l[o]di"
+          ],
+          "n__ž": [
+            "n[o]že"
+          ],
+          "r__b": [
+            "r[o]b'e"
+          ],
+          "r__ɡ": [
+            "r[o]ɡi"
+          ],
+          "s__c": [
+            "ps[o]ce"
+          ],
+          "s__l": [
+            "s[o]li"
+          ],
+          "s__ć": [
+            "ps[o]ć"
+          ],
+          "t__j": [
+            "st[o]je"
+          ],
+          "v__d": [
+            "v[o]dze"
+          ],
+          "v__w": [
+            "v[o]wi"
+          ],
+          "v__z": [
+            "v[o]zi"
+          ],
+          "v__ž": [
+            "otv[o]že"
+          ],
+          "w__b": [
+            "žw[o]bi"
+          ],
+          "w__v": [
+            "zw[o]v'e"
+          ],
+          "ɡ__l": [
+            "oɡ[o]le"
+          ]
+        }
+      },
+      "total_occurrences": 39,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "target": "u",
+      "environments": {
+        "MEDIAL C_C": {
+          "r__p": [
+            "tr[u]p",
+            "tr[u]pi",
+            "r[u]p"
+          ],
+          "w__k": [
+            "w[u]k",
+            "w[u]ki"
+          ],
+          "š__m": [
+            "š[u]m",
+            "š[u]mi"
+          ],
+          "ž__r": [
+            "ž[u]r",
+            "ž[u]ri"
+          ],
+          "b__j": [
+            "b[u]j"
+          ],
+          "b__r": [
+            "b[u]r"
+          ],
+          "l__b": [
+            "kl[u]bi"
+          ],
+          "l__p": [
+            "kl[u]p"
+          ],
+          "l__t": [
+            "l[u]t"
+          ],
+          "n__š": [
+            "n[u]š"
+          ],
+          "r__d": [
+            "tr[u]di"
+          ],
+          "r__k": [
+            "r[u]k"
+          ],
+          "r__s": [
+            "ɡr[u]s"
+          ],
+          "r__t": [
+            "tr[u]t"
+          ],
+          "r__z": [
+            "ɡr[u]zi"
+          ],
+          "s__l": [
+            "s[u]l"
+          ],
+          "t__j": [
+            "st[u]j"
+          ],
+          "v__s": [
+            "v[u]s"
+          ],
+          "v__w": [
+            "v[u]w"
+          ],
+          "v__ć": [
+            "v[u]ć"
+          ],
+          "v__š": [
+            "otv[u]š"
+          ],
+          "w__f": [
+            "zw[u]f"
+          ],
+          "w__p": [
+            "žw[u]p"
+          ],
+          "w__ɡ": [
+            "w[u]ɡi"
+          ],
+          "ɡ__l": [
+            "oɡ[u]l"
+          ]
+        }
+      },
+      "total_occurrences": 30,
+      "source_file": "data/dataset.txt"
+    },
+    {
+      "pair": {
+        "segment1": "o",
+        "segment2": "u",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "INITIAL": {
+          "#__t": [
+            "[o]tvože",
+            "[o]tvuš"
+          ],
+          "#__ɡ": [
+            "[o]ɡole",
+            "[o]ɡul"
+          ]
+        },
+        "MEDIAL C_C": {
+          "d__m": [
+            "d[o]m",
+            "d[o]mi"
+          ],
+          "k__p": [
+            "k[o]p'e",
+            "k[o]p"
+          ],
+          "k__t": [
+            "k[o]t",
+            "k[o]ti"
+          ],
+          "k__š": [
+            "k[o]š",
+            "k[o]še"
+          ],
+          "n__p": [
+            "sn[o]p",
+            "sn[o]pi"
+          ],
+          "n__s": [
+            "n[o]s",
+            "n[o]si"
+          ],
+          "r__n": [
+            "xr[o]n'e",
+            "xr[o]n'"
+          ],
+          "s__k": [
+            "s[o]k",
+            "s[o]ki"
+          ],
+          "v__n": [
+            "džv[o]n",
+            "džv[o]ni"
+          ],
+          "b__j": [
+            "b[o]ji"
+          ],
+          "b__r": [
+            "b[o]ri"
+          ],
+          "l__d": [
+            "l[o]di"
+          ],
+          "n__ž": [
+            "n[o]že"
+          ],
+          "r__b": [
+            "r[o]b'e"
+          ],
+          "r__ɡ": [
+            "r[o]ɡi"
+          ],
+          "s__c": [
+            "ps[o]ce"
+          ],
+          "s__l": [
+            "s[o]li"
+          ],
+          "s__ć": [
+            "ps[o]ć"
+          ],
+          "t__j": [
+            "st[o]je"
+          ],
+          "v__d": [
+            "v[o]dze"
+          ],
+          "v__w": [
+            "v[o]wi"
+          ],
+          "v__z": [
+            "v[o]zi"
+          ],
+          "v__ž": [
+            "otv[o]že"
+          ],
+          "w__b": [
+            "žw[o]bi"
+          ],
+          "w__v": [
+            "zw[o]v'e"
+          ],
+          "ɡ__l": [
+            "oɡ[o]le"
+          ]
+        }
+      },
+      "segment2_envs": {
+        "MEDIAL C_C": {
+          "r__p": [
+            "tr[u]p",
+            "tr[u]pi",
+            "r[u]p"
+          ],
+          "w__k": [
+            "w[u]k",
+            "w[u]ki"
+          ],
+          "š__m": [
+            "š[u]m",
+            "š[u]mi"
+          ],
+          "ž__r": [
+            "ž[u]r",
+            "ž[u]ri"
+          ],
+          "b__j": [
+            "b[u]j"
+          ],
+          "b__r": [
+            "b[u]r"
+          ],
+          "l__b": [
+            "kl[u]bi"
+          ],
+          "l__p": [
+            "kl[u]p"
+          ],
+          "l__t": [
+            "l[u]t"
+          ],
+          "n__š": [
+            "n[u]š"
+          ],
+          "r__d": [
+            "tr[u]di"
+          ],
+          "r__k": [
+            "r[u]k"
+          ],
+          "r__s": [
+            "ɡr[u]s"
+          ],
+          "r__t": [
+            "tr[u]t"
+          ],
+          "r__z": [
+            "ɡr[u]zi"
+          ],
+          "s__l": [
+            "s[u]l"
+          ],
+          "t__j": [
+            "st[u]j"
+          ],
+          "v__s": [
+            "v[u]s"
+          ],
+          "v__w": [
+            "v[u]w"
+          ],
+          "v__ć": [
+            "v[u]ć"
+          ],
+          "v__š": [
+            "otv[u]š"
+          ],
+          "w__f": [
+            "zw[u]f"
+          ],
+          "w__p": [
+            "žw[u]p"
+          ],
+          "w__ɡ": [
+            "w[u]ɡi"
+          ],
+          "ɡ__l": [
+            "oɡ[u]l"
+          ]
+        }
+      },
+      "segment1_total": 39,
+      "segment2_total": 30,
+      "source_file": "data/dataset.txt",
+      "pattern": "contrastive",
+      "analysis": "[Auto-window: L1/R1, D=0.70≥0.6] o and u are contrastive (distinct phonemes). They contrast in 6 shared contexts, with 22 contexts exclusive to o and 19 exclusive to u"
+    },
+    {
+      "pair": {
+        "segment1": "p",
+        "segment2": "b",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "INITIAL": {
+          "#__s": [
+            "[p]soce",
+            "[p]soć"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "klu[p]",
+            "tru[p]",
+            "žwu[p]",
+            "ru[p]"
+          ],
+          "o__#": [
+            "sno[p]",
+            "ko[p]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "sno[p]i"
+          ],
+          "u__i": [
+            "tru[p]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__'": [
+            "ko[p]'e"
+          ]
+        }
+      },
+      "segment2_envs": {
+        "INITIAL": {
+          "#__o": [
+            "[b]ori",
+            "[b]oji"
+          ],
+          "#__u": [
+            "[b]ur",
+            "[b]uj"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "žwo[b]i"
+          ],
+          "u__i": [
+            "klu[b]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__'": [
+            "ro[b]'e"
+          ]
+        }
+      },
+      "segment1_total": 11,
+      "segment2_total": 7,
+      "source_file": "data/dataset.txt",
+      "pattern": "inconclusive",
+      "analysis": "[Auto-window: tried up to W=2, best D=0.36<0.6] No window separated distributions with sufficient confidence."
+    },
+    {
+      "pair": {
+        "segment1": "t",
+        "segment2": "d",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "INITIAL": {
+          "#__r": [
+            "[t]rup",
+            "[t]rupi",
+            "[t]rut",
+            "[t]rudi"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "tru[t]",
+            "lu[t]"
+          ],
+          "o__#": [
+            "ko[t]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "ko[t]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__v": [
+            "o[t]vože",
+            "o[t]vuš"
+          ]
+        },
+        "MEDIAL C_V": {
+          "s__o": [
+            "s[t]oje"
+          ],
+          "s__u": [
+            "s[t]uj"
+          ]
+        }
+      },
+      "segment2_envs": {
+        "INITIAL": {
+          "#__o": [
+            "[d]om",
+            "[d]omi"
+          ],
+          "#__ž": [
+            "[d]žvon",
+            "[d]žvoni"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "lo[d]i"
+          ],
+          "u__i": [
+            "tru[d]i"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__z": [
+            "vo[d]ze"
+          ]
+        }
+      },
+      "segment1_total": 12,
+      "segment2_total": 7,
+      "source_file": "data/dataset.txt",
+      "pattern": "contrastive",
+      "analysis": "[Auto-window: L1/R1, D=0.74≥0.6] t and d are contrastive (distinct phonemes). They contrast in 1 shared contexts, with 6 contexts exclusive to t and 4 exclusive to d"
+    },
+    {
+      "pair": {
+        "segment1": "k",
+        "segment2": "g",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "INITIAL": {
+          "#__o": [
+            "[k]ot",
+            "[k]oti",
+            "[k]oš",
+            "[k]oše",
+            "[k]op'e",
+            "[k]op"
+          ],
+          "#__l": [
+            "[k]lup",
+            "[k]lubi"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "wu[k]",
+            "ru[k]"
+          ],
+          "o__#": [
+            "so[k]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "so[k]i"
+          ],
+          "u__i": [
+            "wu[k]i"
+          ]
+        }
+      },
+      "segment2_envs": {},
+      "segment1_total": 13,
+      "segment2_total": 0,
+      "source_file": "data/dataset.txt",
+      "pattern": "inconclusive",
+      "analysis": "[Auto-window: L1/R1, D=1.00≥0.6] Insufficient evidence for k ~ g. k: 13 occurrences in 6 contexts; g: 0 occurrences in 0 contexts. Need at least 3 occurrences and 2 contexts per segment."
+    },
+    {
+      "pair": {
+        "segment1": "s",
+        "segment2": "z",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "INITIAL": {
+          "#__o": [
+            "[s]ok",
+            "[s]oki",
+            "[s]oli"
+          ],
+          "#__n": [
+            "[s]nop",
+            "[s]nopi"
+          ],
+          "#__t": [
+            "[s]toje",
+            "[s]tuj"
+          ],
+          "#__u": [
+            "[s]ul"
+          ]
+        },
+        "FINAL": {
+          "u__#": [
+            "ɡru[s]",
+            "vu[s]"
+          ],
+          "o__#": [
+            "no[s]"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "no[s]i"
+          ]
+        },
+        "MEDIAL C_V": {
+          "p__o": [
+            "p[s]oce",
+            "p[s]oć"
+          ]
+        }
+      },
+      "segment2_envs": {
+        "INITIAL": {
+          "#__w": [
+            "[z]wov'e",
+            "[z]wuf"
+          ]
+        },
+        "MEDIAL V_V": {
+          "o__i": [
+            "vo[z]i"
+          ],
+          "u__i": [
+            "ɡru[z]i"
+          ]
+        },
+        "MEDIAL C_V": {
+          "d__e": [
+            "vod[z]e"
+          ]
+        }
+      },
+      "segment1_total": 14,
+      "segment2_total": 5,
+      "source_file": "data/dataset.txt",
+      "pattern": "contrastive",
+      "analysis": "[Auto-window: L1/R1, D=0.72≥0.6] s and z are contrastive (distinct phonemes). They contrast in 1 shared contexts, with 7 contexts exclusive to s and 3 exclusive to z"
+    },
+    {
+      "pair": {
+        "segment1": "š",
+        "segment2": "ž",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "INITIAL": {
+          "L2=#|L1=#|R1=u|R2=m": [
+            "[š]um",
+            "[š]umi"
+          ]
+        },
+        "FINAL": {
+          "L2=C|L1=V[back,high]|R1=#|R2=#": [
+            "nu[š]",
+            "otvu[š]"
+          ],
+          "L2=C|L1=V[back,mid]|R1=#|R2=#": [
+            "ko[š]"
+          ]
+        },
+        "MEDIAL C_V": {
+          "L2=C|L1=V[back,mid]|R1=e|R2=#": [
+            "ko[š]e"
+          ]
+        }
+      },
+      "segment2_envs": {
+        "INITIAL": {
+          "L2=#|L1=#|R1=u|R2=r": [
+            "[ž]ur",
+            "[ž]uri"
+          ],
+          "L2=#|L1=#|R1=w|R2=o": [
+            "[ž]wobi"
+          ],
+          "L2=#|L1=#|R1=w|R2=u": [
+            "[ž]wup"
+          ]
+        },
+        "MEDIAL C_V": {
+          "L2=C|L1=V[back,mid]|R1=e|R2=#": [
+            "no[ž]e",
+            "otvo[ž]e"
+          ]
+        },
+        "MEDIAL C_C": {
+          "L2=#|L1=C|R1=v|R2=o": [
+            "d[ž]von",
+            "d[ž]voni"
+          ]
+        }
+      },
+      "segment1_total": 6,
+      "segment2_total": 8,
+      "source_file": "data/dataset.txt",
+      "pattern": "inconclusive",
+      "analysis": "[Auto-window: tried up to W=2, best D=0.41<0.6] No window separated distributions with sufficient confidence."
+    },
+    {
+      "pair": {
+        "segment1": "f",
+        "segment2": "v",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "FINAL": {
+          "u__#": [
+            "zwu[f]"
+          ]
+        }
+      },
+      "segment2_envs": {
+        "INITIAL": {
+          "#__o": [
+            "[v]ozi",
+            "[v]owi",
+            "[v]odze"
+          ],
+          "#__u": [
+            "[v]us",
+            "[v]uw",
+            "[v]uć"
+          ]
+        },
+        "MEDIAL V_C": {
+          "o__'": [
+            "zwo[v]'e"
+          ]
+        },
+        "MEDIAL C_V": {
+          "ž__o": [
+            "dž[v]on",
+            "dž[v]oni"
+          ],
+          "t__o": [
+            "ot[v]ože"
+          ],
+          "t__u": [
+            "ot[v]uš"
+          ]
+        }
+      },
+      "segment1_total": 1,
+      "segment2_total": 11,
+      "source_file": "data/dataset.txt",
+      "pattern": "inconclusive",
+      "analysis": "[Auto-window: L1/R1, D=1.00≥0.6] Insufficient evidence for f ~ v. f: 1 occurrences in 1 contexts; v: 11 occurrences in 6 contexts. Need at least 3 occurrences and 2 contexts per segment."
+    },
+    {
+      "pair": {
+        "segment1": "w",
+        "segment2": "v",
+        "description": null,
+        "pair_filter": null
+      },
+      "segment1_envs": {
+        "INITIAL": {
+          "L2=#|L1=#|R1=u|R2=k": [
+            "[w]uk",
+            "[w]uki"
+          ],
+          "L2=#|L1=#|R1=u|R2=ɡ": [
+            "[w]uɡi"
+          ]
+        },
+        "FINAL": {
+          "L2=C|L1=V[back,high]|R1=#|R2=#": [
+            "vu[w]"
+          ]
+        },
+        "MEDIAL C_V": {
+          "L2=#|L1=C|R1=o|R2=b": [
+            "ž[w]obi"
+          ],
+          "L2=#|L1=C|R1=o|R2=v": [
+            "z[w]ov'e"
+          ],
+          "L2=#|L1=C|R1=u|R2=f": [
+            "z[w]uf"
+          ],
+          "L2=#|L1=C|R1=u|R2=p": [
+            "ž[w]up"
+          ],
+          "L2=C|L1=V[back,mid]|R1=i|R2=#": [
+            "vo[w]i"
+          ]
+        }
+      },
+      "segment2_envs": {
+        "INITIAL": {
+          "L2=#|L1=#|R1=o|R2=d": [
+            "[v]odze"
+          ],
+          "L2=#|L1=#|R1=o|R2=w": [
+            "[v]owi"
+          ],
+          "L2=#|L1=#|R1=o|R2=z": [
+            "[v]ozi"
+          ],
+          "L2=#|L1=#|R1=u|R2=s": [
+            "[v]us"
+          ],
+          "L2=#|L1=#|R1=u|R2=w": [
+            "[v]uw"
+          ],
+          "L2=#|L1=#|R1=u|R2=ć": [
+            "[v]uć"
+          ]
+        },
+        "MEDIAL C_V": {
+          "L2=C|L1=C|R1=o|R2=n": [
+            "dž[v]on",
+            "dž[v]oni"
+          ],
+          "L2=V[back,mid]|L1=C|R1=o|R2=ž": [
+            "ot[v]ože"
+          ],
+          "L2=V[back,mid]|L1=C|R1=u|R2=š": [
+            "ot[v]uš"
+          ]
+        },
+        "MEDIAL C_C": {
+          "L2=C|L1=V[back,mid]|R1='|R2=e": [
+            "zwo[v]'e"
+          ]
+        }
+      },
+      "segment1_total": 9,
+      "segment2_total": 11,
+      "source_file": "data/dataset.txt",
+      "pattern": "complementary",
+      "analysis": "[Auto-window: L2-left, D=0.67≥0.6] w and v are in complementary distribution. w occurs in FINAL positions; v occurs in MEDIAL C_C positions (likely allophones)"
+    }
+  ]
+}

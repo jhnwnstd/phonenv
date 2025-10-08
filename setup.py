@@ -48,6 +48,17 @@ setup(
         "phonenv_io",
         "utils",
         "validate",
+        "config",
+        "logger",
+        "models",
+        "parsers",
+        "processors",
+        "alternations",
+    ],
+    packages=[
+        "output",
+        "output.formats",
+        "cli",
     ],
     classifiers=[
         "Intended Audience :: Science/Research",

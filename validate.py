@@ -23,6 +23,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 from utils import in_ipa_blocks
+from parsers import read_file_lines
 
 # ========================= Unicode blocks & allowances =========================
 
@@ -142,11 +143,9 @@ def _load_targets(path: Optional[Path]) -> List[str]:
 # ========================= Raw file I/O (for fixing) =========================
 
 
-def _read_file_lines(path: Path) -> List[str]:
-    if not path.exists():
-        return []
-    with path.open("r", encoding="utf-8") as f:
-        return f.read().splitlines(keepends=True)
+# _read_file_lines moved to parsers module
+# Using alias for backward compatibility within this file
+_read_file_lines = read_file_lines
 
 
 def _backup_then_write(path: Path, new_lines: List[str]) -> None:
